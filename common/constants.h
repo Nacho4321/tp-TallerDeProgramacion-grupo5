@@ -1,0 +1,31 @@
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
+
+#include <cstdint>
+#include <string>
+
+const std::uint8_t MOVE_UP_PRESSED = 0x01;
+const std::uint8_t MOVE_UP_RELEASED = 0x02;
+const std::uint8_t MOVE_DOWN_PRESSED = 0x03;
+const std::uint8_t MOVE_DOWN_RELEASED = 0x04;
+const std::uint8_t MOVE_LEFT_PRESSED = 0x05;
+const std::uint8_t MOVE_LEFT_RELEASED = 0x06;
+const std::uint8_t MOVE_RIGHT_PRESSED = 0x07;
+const std::uint8_t MOVE_RIGHT_RELEASED = 0x08;
+
+const std::uint8_t UPDATE_POSITIONS = 0x20;
+
+const int OPCODE_SIZE = 1;
+
+const std::string MOVE_UP_PRESSED_STR = "move_up_pressed";              // NOLINT
+const std::string MOVE_UP_RELEASED_STR = "move_up_released";            // NOLINT
+const std::string MOVE_DOWN_PRESSED_STR = "move_down_pressed";          // NOLINT
+const std::string MOVE_DOWN_RELEASED_STR = "move_down_released";        // NOLINT
+const std::string MOVE_LEFT_PRESSED_STR = "move_left_pressed";            // NOLINT
+const std::string MOVE_LEFT_RELEASED_STR = "move_left_released";          // NOLINT
+const std::string MOVE_RIGHT_PRESSED_STR = "move_right_pressed";          // NOLINT
+const std::string MOVE_RIGHT_RELEASED_STR = "move_right_released";        // NOLINT
+const std::string UPDATE_POSITIONS_STR = "update_positions";  // NOLINT
+
+
+#endif
