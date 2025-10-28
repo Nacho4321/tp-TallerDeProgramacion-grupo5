@@ -8,8 +8,9 @@ target_sources(taller_tests
     ${CMAKE_SOURCE_DIR}/server/acceptor.cpp
     ${CMAKE_SOURCE_DIR}/server/client_handler.cpp
     ${CMAKE_SOURCE_DIR}/server/outbox_monitor.cpp
-    ${CMAKE_SOURCE_DIR}/common/game_client_receiver.cpp
-    ${CMAKE_SOURCE_DIR}/common/game_client_sender.cpp
+    ${CMAKE_SOURCE_DIR}/client/game_client_receiver.cpp
+    ${CMAKE_SOURCE_DIR}/client/game_client_sender.cpp
+    ${CMAKE_SOURCE_DIR}/client/game_client_handler.cpp
     PUBLIC
     # .h files
     )

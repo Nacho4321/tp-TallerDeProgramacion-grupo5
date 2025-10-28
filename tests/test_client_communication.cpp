@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <thread>
 #include <chrono>
-#include "../common/game_client_handler.h"
+#include "../client/game_client_handler.h"
 #include "../common/socket.h"
 #include "../common/protocol.h"
 #include "../common/constants.h"

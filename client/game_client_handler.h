@@ -1,8 +1,8 @@
 #ifndef GAME_CLIENT_HANDLER_H
 #define GAME_CLIENT_HANDLER_H
 
-#include "protocol.h"
-#include "queue.h"
+#include "../common/protocol.h"
+#include "../common/queue.h"
 #include "game_client_sender.h"
 #include "game_client_receiver.h"
 
