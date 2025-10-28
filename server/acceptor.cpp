@@ -16,7 +16,6 @@ void Acceptor::run() {
             outbox_monitor.add(c->get_outbox());
             c->start();
 
-            std::lock_guard<std::mutex> lock(mtx);
             clients.push_back(std::move(c));
         } catch (...) {
             if (!should_keep_running())
@@ -35,7 +34,6 @@ void Acceptor::stop() {
 }
 
 void Acceptor::clear() {
-    std::lock_guard<std::mutex> lock(mtx);
     for (auto& client: clients) {
         try {
             outbox_monitor.remove(client->get_outbox());
@@ -52,7 +50,6 @@ void Acceptor::clear() {
 }
 
 void Acceptor::reap() {
-    std::lock_guard<std::mutex> lock(mtx);
     for (auto it = clients.begin(); it != clients.end();) {
         auto& c = *it;
         if (!c->is_alive()) {
@@ -64,25 +61,6 @@ void Acceptor::reap() {
             ++it;
         }
     }
-}
-
-std::vector<int> Acceptor::get_client_ids() {
-    std::lock_guard<std::mutex> lock(mtx);
-    std::vector<int> ids;
-    for (auto& c : clients)
-        ids.push_back(c->get_id());
-    return ids;
-}
-
-void Acceptor::send_to_client(int client_id, const OutgoingMessage& msg) {
-    std::lock_guard<std::mutex> lock(mtx);
-    for (auto& c : clients) {
-        if (c->get_id() == client_id) {
-            c->get_outbox()->try_push(msg);
-            return;
-        }
-    }
-    std::cerr << "[Acceptor] Cliente " << client_id << " no encontrado\n";
 }
 
 void Acceptor::broadcast(const OutgoingMessage& msg) {

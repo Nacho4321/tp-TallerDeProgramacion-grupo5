@@ -26,6 +26,6 @@ void GameClientSender::run() {
 }
 
 void GameClientSender::stop() {
-    Thread::stop();  // Marca el flag de detención
+    Thread::stop(); 
     outgoing_messages.close();  // Cierra la cola para interrumpir pop()
 }

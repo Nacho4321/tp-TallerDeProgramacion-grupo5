@@ -11,7 +11,7 @@ void GameClientHandler::start() {
 }
 
 void GameClientHandler::stop() {
-    // parar ambos: sender cerrará su cola, receiver cerrará el socket
+    // parar ambos
     sender.stop();
     receiver.stop();
 }

@@ -21,11 +21,9 @@ private:
 public:
     explicit GameClientHandler(Protocol& proto);
 
-    // No copy
     GameClientHandler(const GameClientHandler&) = delete;
     GameClientHandler& operator=(const GameClientHandler&) = delete;
 
-    // Movimiento no permitido (podríamos implementarlo si hace falta)
     GameClientHandler(GameClientHandler&&) = delete;
     GameClientHandler& operator=(GameClientHandler&&) = delete;
 
