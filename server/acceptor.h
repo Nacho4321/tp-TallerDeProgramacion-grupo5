@@ -24,8 +24,6 @@ class Acceptor : public Thread
     OutboxMonitor outbox_monitor;
     int next_id = 0;
 
-    std::mutex mtx;
-
 public:
     explicit Acceptor(const char *port, Queue<IncomingMessage> &global_inbox);
     explicit Acceptor(Socket &&acc, Queue<IncomingMessage> &global_inbox);
@@ -33,8 +31,6 @@ public:
     void run() override;
     void stop() override;
 
-    std::vector<int> get_client_ids();
-    void send_to_client(int client_id, const OutgoingMessage &msg);
     void broadcast(const OutgoingMessage &msg);
 
 private:

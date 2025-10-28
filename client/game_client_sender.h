@@ -2,10 +2,10 @@
 #define GAME_CLIENT_SENDER_H
 
 #include <memory>
-#include "queue.h"
-#include "socket.h"
-#include "thread.h"
-#include "protocol.h"
+#include "../common/queue.h"
+#include "../common/socket.h"
+#include "../common/thread.h"
+#include "../common/protocol.h"
 
 class GameClientSender : public Thread {
 private:
@@ -16,13 +16,11 @@ public:
     explicit GameClientSender(Protocol& proto, Queue<std::string>& messages);
     
     void run() override;
-    void stop() override;  // Sobreescribimos stop para cerrar la cola de mensajes
+    void stop() override;  
     
-    // No permitimos la copia del sender
     GameClientSender(const GameClientSender&) = delete;
     GameClientSender& operator=(const GameClientSender&) = delete;
 
-    // Pero sí permitimos el movimiento
     GameClientSender(GameClientSender&&) = default;
     GameClientSender& operator=(GameClientSender&&) = default;
 };

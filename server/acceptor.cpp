@@ -20,7 +20,6 @@ void Acceptor::run()
             outbox_monitor.add(c->get_outbox());
             c->start();
 
-            std::lock_guard<std::mutex> lock(mtx);
             clients.push_back(std::move(c));
         }
         catch (...)

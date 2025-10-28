@@ -1,9 +1,7 @@
 #include <gtest/gtest.h>
 #include <thread>
 #include <chrono>
-#include "../common/game_client_receiver.h"
-#include "../common/game_client_sender.h"
-#include "../common/queue.h"
+#include "../client/game_client_handler.h"
 #include "../common/socket.h"
 #include "../common/protocol.h"
 #include "../common/constants.h"
@@ -12,9 +10,7 @@
 static const char* TEST_PORT = "50001";
 
 TEST(ClientCommunicationTest, SendAndReceiveMessage) {
-    // Crear colas para mensajes
-    Queue<DecodedMessage> incoming;
-    Queue<std::string> outgoing;
+    // Nada: el handler encapsula las colas internas
 
     std::thread server_thread([&]() {
         Socket listener(TEST_PORT);              // servidor escucha
@@ -32,30 +28,24 @@ TEST(ClientCommunicationTest, SendAndReceiveMessage) {
     Socket client("localhost", TEST_PORT);
     Protocol proto_client(std::move(client));
 
-    // Crear sender y receiver
-    GameClientSender sender(proto_client, outgoing);
-    GameClientReceiver receiver(proto_client, incoming);
+    // Crear un handler que maneja sender/receiver internamente
+    GameClientHandler handler(proto_client);
+    handler.start();
 
-    // Iniciar los hilos
-    sender.start();
-    receiver.start();
-
-    // Enviar un mensaje
-    outgoing.push(MOVE_UP_PRESSED_STR);
+    // Enviar un mensaje usando la interfaz del handler
+    handler.send(MOVE_UP_PRESSED_STR);
 
     // Dar tiempo para que se procese
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     // Intentar recibir respuesta
     DecodedMessage response;
-    ASSERT_TRUE(incoming.try_pop(response));
+    ASSERT_TRUE(handler.try_receive(response));
     ASSERT_EQ(response.cmd, MOVE_UP_PRESSED_STR);
 
-    // Detener los hilos
-    sender.stop();
-    receiver.stop();
-    sender.join();
-    receiver.join();
+    // Detener y esperar al handler
+    handler.stop();
+    handler.join();
 
     server_thread.join();
 }
