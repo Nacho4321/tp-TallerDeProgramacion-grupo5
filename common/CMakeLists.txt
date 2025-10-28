@@ -10,6 +10,7 @@ target_sources(taller_common
     socket.cpp
     game_client_receiver.cpp
     game_client_sender.cpp
+    game_client_handler.cpp
     PUBLIC
     # .h files
     constants.h
@@ -22,4 +23,5 @@ target_sources(taller_common
     messages.h
     game_client_receiver.h
     game_client_sender.h
+    game_client_handler.h
     )
