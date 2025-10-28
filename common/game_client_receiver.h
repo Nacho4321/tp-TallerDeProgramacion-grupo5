@@ -7,6 +7,8 @@
 #include "thread.h"
 #include "protocol.h"
 
+// TODO: -Mover a client/ junto con el sender
+
 class GameClientReceiver : public Thread {
 private:
     Protocol& protocol;
