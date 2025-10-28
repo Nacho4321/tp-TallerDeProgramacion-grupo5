@@ -10,7 +10,7 @@
 class Server
 {
 private:
-    Queue<Event> event_queue;
+    Queue<std::shared_ptr<Event>> event_queue;
     EventLoop need_for_speed;
 
     void process_input(const std::string &input, bool &connected);

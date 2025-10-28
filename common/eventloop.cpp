@@ -9,7 +9,7 @@ void EventLoop::run()
     {
         try
         {
-            Event event = event_queue.pop();
+            auto event = event_queue.pop();
             dispatcher.handle_event(event);
         }
         catch (const ClosedQueue &)
