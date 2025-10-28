@@ -18,7 +18,7 @@ int main(int argc, const char *argv[])
             std::cerr << "Use: " << argv[0] << SERVER_PARAMS;
             return FAILURE;
         }
-        Server server;
+        Server server(argv[1]);
         server.start();
     }
     catch (const std::exception &e)

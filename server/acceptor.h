@@ -16,9 +16,10 @@
 // TODO: -Usar monitor y dejar de usar mutexes en el acceptor
 //       -Dejar al acceptor con unica responsabilidad, q deje de hacer broadcast y demas
 
-class Acceptor: public Thread {
-    Socket& acceptor;
-    Queue<IncomingMessage>& global_inbox;
+class Acceptor : public Thread
+{
+    Socket acceptor;
+    Queue<IncomingMessage> &global_inbox;
     std::vector<std::unique_ptr<ClientHandler>> clients;
     OutboxMonitor outbox_monitor;
     int next_id = 0;
@@ -26,18 +27,19 @@ class Acceptor: public Thread {
     std::mutex mtx;
 
 public:
-    explicit Acceptor(Socket& acc, Queue<IncomingMessage>& global_inbox);
+    explicit Acceptor(const char *port, Queue<IncomingMessage> &global_inbox);
+    explicit Acceptor(Socket &&acc, Queue<IncomingMessage> &global_inbox);
 
     void run() override;
     void stop() override;
 
     std::vector<int> get_client_ids();
-    void send_to_client(int client_id, const OutgoingMessage& msg);
-    void broadcast(const OutgoingMessage& msg);
+    void send_to_client(int client_id, const OutgoingMessage &msg);
+    void broadcast(const OutgoingMessage &msg);
 
 private:
     void clear();
     void reap();
 };
 
-#endif  // ACCEPTOR_H
+#endif // ACCEPTOR_H

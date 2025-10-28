@@ -9,7 +9,7 @@ void Server::start()
     auto e2 = std::make_shared<PlayerMovedEvent>(2, MOVE_FORWARD, 15.5, 22.3, right, backwards);
     event_queue.push(e1);
     event_queue.push(e2);
-
+    acceptor.start();
     need_for_speed.start();
     std::string input;
     bool connected = true;
@@ -20,7 +20,8 @@ void Server::start()
     }
     try
     {
-
+        acceptor.stop();
+        acceptor.join();
         need_for_speed.stop();
         need_for_speed.join();
     }

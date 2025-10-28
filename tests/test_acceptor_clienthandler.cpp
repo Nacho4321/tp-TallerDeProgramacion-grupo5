@@ -12,17 +12,19 @@
 #include "../server/messages.h"
 #include "../common/queue.h"
 
-static const char* TEST_PORT = "50100"; // usa un puerto distinto de los tests anteriores
+static const char *TEST_PORT = "50100"; // usa un puerto distinto de los tests anteriores
 
 // ================================================================
 // TEST: Cliente se conecta y envía mensaje al Acceptor
 // ================================================================
-TEST(AcceptorIntegrationTest, ClientConnectsAndSendsMessage) {
+TEST(AcceptorIntegrationTest, ClientConnectsAndSendsMessage)
+{
     Queue<IncomingMessage> global_inbox;
 
-    std::thread server_thread([&]() {
+    std::thread server_thread([&]()
+                              {
         Socket listener(TEST_PORT);  // crea socket servidor
-        Acceptor acceptor(listener, global_inbox);
+        Acceptor acceptor(std::move(listener), global_inbox);
         acceptor.start();
 
         // Esperamos a que llegue un mensaje desde el cliente
@@ -30,8 +32,7 @@ TEST(AcceptorIntegrationTest, ClientConnectsAndSendsMessage) {
         EXPECT_EQ(msg.cmd, MOVE_UP_PRESSED_STR);
 
         acceptor.stop();
-        acceptor.join();
-    });
+        acceptor.join(); });
 
     // Dejamos tiempo para que el servidor se levante
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -47,12 +48,14 @@ TEST(AcceptorIntegrationTest, ClientConnectsAndSendsMessage) {
 // ================================================================
 // TEST: Broadcast desde el Acceptor llega al cliente
 // ================================================================
-TEST(AcceptorIntegrationTest, BroadcastMessageToClient) {
+TEST(AcceptorIntegrationTest, BroadcastMessageToClient)
+{
     Queue<IncomingMessage> global_inbox;
 
-    std::thread server_thread([&]() {
+    std::thread server_thread([&]()
+                              {
         Socket listener(TEST_PORT);
-        Acceptor acceptor(listener, global_inbox);
+        Acceptor acceptor(std::move(listener), global_inbox);
         acceptor.start();
 
         // Esperamos un poco a que se conecte el cliente
@@ -67,8 +70,7 @@ TEST(AcceptorIntegrationTest, BroadcastMessageToClient) {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
         acceptor.stop();
-        acceptor.join();
-    });
+        acceptor.join(); });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
@@ -86,12 +88,14 @@ TEST(AcceptorIntegrationTest, BroadcastMessageToClient) {
 // ================================================================
 // TEST: Multiples clientes reciben broadcast desde el Acceptor
 // ================================================================
-TEST(AcceptorIntegrationTest, BroadcastToMultipleClients) {
+TEST(AcceptorIntegrationTest, BroadcastToMultipleClients)
+{
     Queue<IncomingMessage> global_inbox;
     Socket listener(TEST_PORT);
-    Acceptor acceptor(listener, global_inbox);
+    Acceptor acceptor(std::move(listener), global_inbox);
 
-    std::thread server_thread([&]() {
+    std::thread server_thread([&]()
+                              {
         acceptor.start();
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
@@ -101,8 +105,7 @@ TEST(AcceptorIntegrationTest, BroadcastToMultipleClients) {
 
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
         acceptor.stop();
-        acceptor.join();
-    });
+        acceptor.join(); });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
