@@ -24,7 +24,7 @@ TEST(AcceptorIntegrationTest, ClientConnectsAndSendsMessage)
     std::thread server_thread([&]()
                               {
         Socket listener(TEST_PORT);  // crea socket servidor
-        Acceptor acceptor(std::move(listener), global_inbox);
+        Acceptor acceptor(listener, global_inbox);
         acceptor.start();
 
         // Esperamos a que llegue un mensaje desde el cliente
@@ -55,7 +55,7 @@ TEST(AcceptorIntegrationTest, BroadcastMessageToClient)
     std::thread server_thread([&]()
                               {
         Socket listener(TEST_PORT);
-        Acceptor acceptor(std::move(listener), global_inbox);
+        Acceptor acceptor(listener, global_inbox);
         acceptor.start();
 
         // Esperamos un poco a que se conecte el cliente
@@ -92,7 +92,7 @@ TEST(AcceptorIntegrationTest, BroadcastToMultipleClients)
 {
     Queue<IncomingMessage> global_inbox;
     Socket listener(TEST_PORT);
-    Acceptor acceptor(std::move(listener), global_inbox);
+    Acceptor acceptor(listener, global_inbox);
 
     std::thread server_thread([&]()
                               {

@@ -26,7 +26,7 @@ class Acceptor : public Thread
 
 public:
     explicit Acceptor(const char *port, Queue<IncomingMessage> &global_inbox);
-    explicit Acceptor(Socket &&acc, Queue<IncomingMessage> &global_inbox);
+    explicit Acceptor(Socket &acc, Queue<IncomingMessage> &global_inbox);
 
     void run() override;
     void stop() override;

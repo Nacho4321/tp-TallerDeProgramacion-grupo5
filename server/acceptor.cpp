@@ -1,6 +1,6 @@
 #include "acceptor.h"
 
-Acceptor::Acceptor(Socket &&acc, Queue<IncomingMessage> &global_inbox) : acceptor(std::move(acc)), global_inbox(global_inbox) {}
+Acceptor::Acceptor(Socket &acc, Queue<IncomingMessage> &global_inbox) : acceptor(std::move(acc)), global_inbox(global_inbox) {}
 
 Acceptor::Acceptor(const char *port, Queue<IncomingMessage> &global_inbox) : acceptor(Socket(port)), global_inbox(global_inbox) {}
 
@@ -46,7 +46,6 @@ void Acceptor::stop()
 
 void Acceptor::clear()
 {
-    std::lock_guard<std::mutex> lock(mtx);
     for (auto &client : clients)
     {
         try
@@ -74,7 +73,6 @@ void Acceptor::clear()
 
 void Acceptor::reap()
 {
-    std::lock_guard<std::mutex> lock(mtx);
     for (auto it = clients.begin(); it != clients.end();)
     {
         auto &c = *it;
@@ -90,29 +88,6 @@ void Acceptor::reap()
             ++it;
         }
     }
-}
-
-std::vector<int> Acceptor::get_client_ids()
-{
-    std::lock_guard<std::mutex> lock(mtx);
-    std::vector<int> ids;
-    for (auto &c : clients)
-        ids.push_back(c->get_id());
-    return ids;
-}
-
-void Acceptor::send_to_client(int client_id, const OutgoingMessage &msg)
-{
-    std::lock_guard<std::mutex> lock(mtx);
-    for (auto &c : clients)
-    {
-        if (c->get_id() == client_id)
-        {
-            c->get_outbox()->try_push(msg);
-            return;
-        }
-    }
-    std::cerr << "[Acceptor] Cliente " << client_id << " no encontrado\n";
 }
 
 void Acceptor::broadcast(const OutgoingMessage &msg)

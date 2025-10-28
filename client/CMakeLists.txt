@@ -10,6 +10,6 @@ target_sources(taller_client
     # .h files
     game_client_receiver.h
     game_client_sender.h
-    game_client_handler.h)
+    game_client_handler.h
     client.h
     )
