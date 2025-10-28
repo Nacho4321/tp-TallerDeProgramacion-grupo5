@@ -1,6 +1,8 @@
 #include <iostream>
 #include <exception>
 #include <SDL2pp/SDL2pp.hh>
+#include <SDL2/SDL.h>       
+#include <SDL2/SDL_image.h>     
 #include "camera.h"
 #include "renderer.h"
 
@@ -90,25 +92,15 @@ public:
 // Main game class that coordinates everything
 class Game {
 private:
-    SDL sdl;
-    Window window;
-    Renderer renderer;
-    Texture sprites;
-    Texture texture_backround;
     CarRenderer carRenderer;
     InputHandler inputHandler;
 
 public:
     Game() 
-        : sdl(SDL_INIT_VIDEO),
-          window("SDL2pp Car Game with Camera",
-                 SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                 640, 480,
-                 SDL_WINDOW_RESIZABLE),
-          renderer(window, -1, SDL_RENDERER_ACCELERATED),
-          sprites(renderer, DATA_PATH "/cars/Mobile - Grand Theft Auto 4 - Miscellaneous - Cars.png"),
-          texture_backround(renderer, DATA_PATH "/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png"),
-          carRenderer(renderer, sprites, texture_backround),
+        : carRenderer("SDL2pp Car Game with Camera",
+                      640, 480,
+                      "data/cars/Mobile - Grand Theft Auto 4 - Miscellaneous - Cars.png",
+                      "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png"),
           inputHandler(960, 540) {}  // Start at center of world
 
     void run() {
@@ -120,7 +112,7 @@ public:
 
             // Keep car within world bounds
             inputHandler.constrainToBounds(
-                texture_backround.GetWidth(), texture_backround.GetHeight(),  // World size
+                carRenderer.getBackgroundWidth(), carRenderer.getBackgroundHeight(),  // World size
                 30, 30       // Approximate car size
             );
 

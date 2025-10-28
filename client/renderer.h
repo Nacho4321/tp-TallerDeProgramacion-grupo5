@@ -2,6 +2,7 @@
 #define RENDERER_H
 
 #include <SDL2pp/SDL2pp.hh>
+#include <SDL2/SDL.h>
 #include <cmath>
 #include "camera.h"
 
@@ -19,20 +20,30 @@ static SDL_Rect cars[] = {
 
 class CarRenderer {
 private:
-    Renderer& renderer;
-    Texture& sprites;
-    Texture& texture_backround;
+    SDL sdl;
+    Window window;
+    Renderer renderer;
+    Texture sprites;
+    Texture texture_backround;
     Camera camera;  
     const int num_sprites;
     unsigned int prev_ticks;
     int sprite_index;
 
 public:
-    CarRenderer(Renderer& rend, Texture& tex, Texture& bg) 
-        : renderer(rend), 
-          sprites(tex),
-          texture_backround(bg),
-          camera(640, 480),
+    CarRenderer(const char* windowTitle, 
+                int windowWidth, int windowHeight,
+                const char* spritesPath,
+                const char* backgroundPath) 
+        : sdl(SDL_INIT_VIDEO),
+          window(windowTitle,
+                 SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                 windowWidth, windowHeight,
+                 SDL_WINDOW_RESIZABLE),
+          renderer(window, -1, SDL_RENDERER_ACCELERATED),
+          sprites(renderer, "data/cars/Mobile - Grand Theft Auto 4 - Miscellaneous - Cars.png"),
+          texture_backround(renderer, "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png"),
+          camera(windowWidth, windowHeight),
           num_sprites(sizeof(cars) / sizeof(SDL_Rect)),
           prev_ticks(SDL_GetTicks()),
           sprite_index(0) {}
@@ -80,6 +91,14 @@ public:
         );
 
         renderer.Present();
+    }
+
+    int getBackgroundWidth() const {
+        return texture_backround.GetWidth();
+    }
+
+    int getBackgroundHeight() const {
+        return texture_backround.GetHeight();
     }
 };
 
