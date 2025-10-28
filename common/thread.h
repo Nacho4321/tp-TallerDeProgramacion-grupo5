@@ -5,7 +5,8 @@
 #include <iostream>
 #include <thread>
 
-class Runnable {
+class Runnable
+{
 public:
     virtual void start() = 0;
     virtual void join() = 0;
@@ -15,7 +16,8 @@ public:
     virtual ~Runnable() {}
 };
 
-class Thread: public Runnable {
+class Thread : public Runnable
+{
 private:
     std::thread thread;
 
@@ -28,26 +30,35 @@ protected:
     bool should_keep_running() const { return _keep_running; }
 
 public:
-    Thread(): _keep_running(true), _is_alive(false) {}
+    Thread() : _keep_running(true), _is_alive(false) {}
 
-    void start() override {
+    void start() override
+    {
         _keep_running = true;
         thread = std::thread(&Thread::main, this);
         _is_alive = true;
     }
 
-    void join() override {
-        if (thread.joinable()) {
+    void join() override
+    {
+        if (thread.joinable())
+        {
             thread.join();
         }
     }
 
-    void main() {
-        try {
+    void main()
+    {
+        try
+        {
             this->run();
-        } catch (const std::exception& err) {
+        }
+        catch (const std::exception &err)
+        {
             std::cerr << "Unexpected exception: " << err.what() << "\n";
-        } catch (...) {
+        }
+        catch (...)
+        {
             std::cerr << "Unexpected exception: <unknown>\n";
         }
 
@@ -66,11 +77,11 @@ public:
     virtual void run() = 0;
     virtual ~Thread() {}
 
-    Thread(const Thread&) = delete;
-    Thread& operator=(const Thread&) = delete;
+    Thread(const Thread &) = delete;
+    Thread &operator=(const Thread &) = delete;
 
-    Thread(Thread&& other) = delete;
-    Thread& operator=(Thread&& other) = delete;
+    Thread(Thread &&other) = delete;
+    Thread &operator=(Thread &&other) = delete;
 };
 
 #endif
