@@ -2,26 +2,26 @@
 
 void EventDispatcher::init_handlers()
 {
-    listeners[MOVE_FORWARD] = [this](std::shared_ptr<Event> e)
+    listeners[MOVE_UP_PRESSED] = [this](Event &e)
     { move_forward(e); };
+    listeners[MOVE_UP_RELEASED] = [this](Event &e)
+    { move_released(e); };
 }
-void EventDispatcher::move_forward(std::shared_ptr<Event> event)
+void EventDispatcher::move_forward(Event &event)
 {
-    if (auto pmEvent = std::dynamic_pointer_cast<PlayerMovedEvent>(event))
-    {
-        std::cout << "Player " << pmEvent->client_id
-                  << " se movió a X=" << pmEvent->new_X
-                  << " Y=" << pmEvent->new_Y << std::endl;
-    }
-    else
-    {
-        std::cerr << "Error: evento no es PlayerMovedEvent\n";
-    }
+    PlayerMovedEvent mover{event.client_id, event.action, 10.0, 20.0, forward, forward};
+    std::cout << "Jugador se movio para adelante" << std::endl;
 }
 
-void EventDispatcher::handle_event(std::shared_ptr<Event> event)
+void EventDispatcher::move_released(Event &event)
 {
-    auto it = listeners.find(event->action);
+    PlayerMovedEvent mover{event.client_id, event.action, 3.0, 0, forward, forward};
+    std::cout << "Jugador dejo de moverse para adelante" << std::endl;
+}
+
+void EventDispatcher::handle_event(Event &event)
+{
+    auto it = listeners.find(event.action);
     if (it != listeners.end())
     {
         it->second(event);

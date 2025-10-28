@@ -5,8 +5,8 @@
 
 void Server::start()
 {
-    auto e1 = std::make_shared<PlayerMovedEvent>(1, MOVE_FORWARD, 10.0, 20.0, left, forwmard);
-    auto e2 = std::make_shared<PlayerMovedEvent>(2, MOVE_FORWARD, 15.5, 22.3, right, backwards);
+    Event e1 = Event(1, MOVE_UP_PRESSED);
+    Event e2 = Event(2, MOVE_UP_RELEASED);
     event_queue.push(e1);
     event_queue.push(e2);
     acceptor.start();

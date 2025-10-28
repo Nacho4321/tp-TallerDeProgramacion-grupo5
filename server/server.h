@@ -12,7 +12,7 @@ class Server
 {
 private:
     GameLoop need_for_speed;
-    Queue<std::shared_ptr<Event>> event_queue;
+    Queue<Event> event_queue;
 
     Queue<IncomingMessage> global_inbox;
     Acceptor acceptor;

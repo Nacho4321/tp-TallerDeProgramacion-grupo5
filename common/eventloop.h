@@ -13,11 +13,11 @@
 class EventLoop : public Thread
 {
 private:
-    Queue<std::shared_ptr<Event>> &event_queue;
+    Queue<Event> &event_queue;
     EventDispatcher dispatcher;
 
 public:
-    explicit EventLoop(Queue<std::shared_ptr<Event>> &e_queue) : event_queue(e_queue), dispatcher() {}
+    explicit EventLoop(Queue<Event> &e_queue) : event_queue(e_queue), dispatcher() {}
     void run() override;
     void stop() override;
     ~EventLoop() override = default;

@@ -3,15 +3,15 @@
 #include <memory>
 #include <functional>
 #include "Event.h"
-
-#define MOVE_FORWARD 0
+#include "constants.h"
 
 class EventDispatcher
 {
 private:
-    std::unordered_map<uint8_t, std::function<void(std::shared_ptr<Event>)>> listeners;
+    std::unordered_map<uint8_t, std::function<void(Event &)>> listeners;
     void init_handlers();
-    void move_forward(std::shared_ptr<Event> event);
+    void move_forward(Event &event);
+    void move_released(Event &event);
 
 public:
     EventDispatcher()
@@ -19,5 +19,5 @@ public:
         init_handlers();
     }
 
-    void handle_event(std::shared_ptr<Event> event);
+    void handle_event(Event &event);
 };
