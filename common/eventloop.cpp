@@ -14,7 +14,6 @@ void EventLoop::run()
         }
         catch (const ClosedQueue &)
         {
-            std::cout << "Cola cerrada, terminando event loop.\n";
             break;
         }
         catch (const std::exception &e)
