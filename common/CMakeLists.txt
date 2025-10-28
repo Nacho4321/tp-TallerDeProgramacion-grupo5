@@ -1,6 +1,7 @@
 target_sources(taller_common
     PRIVATE
     # .cpp files
+    gameloop.cpp
     eventloop.cpp
     eventDispatcher.cpp
     protocol.cpp
@@ -14,6 +15,7 @@ target_sources(taller_common
     game_client_sender.cpp
     PUBLIC
     # .h files
+    gameloop.h
     eventloop.h
     queue.h
     thread.h

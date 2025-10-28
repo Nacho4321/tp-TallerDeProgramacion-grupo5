@@ -15,4 +15,4 @@ public:
     explicit GameLoop(Queue<std::shared_ptr<Event>> &e_queue) : event_loop(e_queue) {}
     void run() override;
 };
-#endif;
+#endif
