@@ -36,4 +36,8 @@ void Server::process_input(const std::string &input, bool &connected)
     {
         connected = false;
     }
+    if (input == "start")
+    {
+        need_for_speed.start_game();
+    }
 }

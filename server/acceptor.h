@@ -4,7 +4,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
-
+#include <list>
 #include "../common/protocol.h"
 #include "../common/queue.h"
 #include "../common/socket.h"
@@ -21,12 +21,13 @@ class Acceptor : public Thread
     Socket acceptor;
     Queue<IncomingMessage> &global_inbox;
     std::vector<std::unique_ptr<ClientHandler>> clients;
+    Queue<int> &game_clients;
     OutboxMonitor outbox_monitor;
     int next_id = 0;
 
 public:
-    explicit Acceptor(const char *port, Queue<IncomingMessage> &global_inbox);
-    explicit Acceptor(Socket &acc, Queue<IncomingMessage> &global_inbox);
+    explicit Acceptor(const char *port, Queue<IncomingMessage> &global_inbox, Queue<int> &clients);
+    explicit Acceptor(Socket &acc, Queue<IncomingMessage> &global_inbox, Queue<int> &client);
 
     void run() override;
     void stop() override;

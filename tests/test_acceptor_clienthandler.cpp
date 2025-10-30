@@ -20,11 +20,11 @@ static const char *TEST_PORT = "50100"; // usa un puerto distinto de los tests a
 TEST(AcceptorIntegrationTest, ClientConnectsAndSendsMessage)
 {
     Queue<IncomingMessage> global_inbox;
-
+    Queue<int> players;
     std::thread server_thread([&]()
                               {
         Socket listener(TEST_PORT);  // crea socket servidor
-        Acceptor acceptor(listener, global_inbox);
+        Acceptor acceptor(listener, global_inbox, players);
         acceptor.start();
 
         // Esperamos a que llegue un mensaje desde el cliente
@@ -51,11 +51,11 @@ TEST(AcceptorIntegrationTest, ClientConnectsAndSendsMessage)
 TEST(AcceptorIntegrationTest, BroadcastMessageToClient)
 {
     Queue<IncomingMessage> global_inbox;
-
+    Queue<int> players;
     std::thread server_thread([&]()
                               {
         Socket listener(TEST_PORT);
-        Acceptor acceptor(listener, global_inbox);
+        Acceptor acceptor(listener, global_inbox, players);
         acceptor.start();
 
         // Esperamos un poco a que se conecte el cliente
@@ -91,8 +91,9 @@ TEST(AcceptorIntegrationTest, BroadcastMessageToClient)
 TEST(AcceptorIntegrationTest, BroadcastToMultipleClients)
 {
     Queue<IncomingMessage> global_inbox;
+    Queue<int> players;
     Socket listener(TEST_PORT);
-    Acceptor acceptor(listener, global_inbox);
+    Acceptor acceptor(listener, global_inbox, players);
 
     std::thread server_thread([&]()
                               {

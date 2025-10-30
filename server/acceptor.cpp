@@ -1,8 +1,8 @@
 #include "acceptor.h"
 
-Acceptor::Acceptor(Socket &acc, Queue<IncomingMessage> &global_inbox) : acceptor(std::move(acc)), global_inbox(global_inbox) {}
+Acceptor::Acceptor(Socket &acc, Queue<IncomingMessage> &global_inbox, Queue<int> &clients) : acceptor(std::move(acc)), global_inbox(global_inbox), game_clients(clients) {}
 
-Acceptor::Acceptor(const char *port, Queue<IncomingMessage> &global_inbox) : acceptor(Socket(port)), global_inbox(global_inbox) {}
+Acceptor::Acceptor(const char *port, Queue<IncomingMessage> &global_inbox, Queue<int> &clients) : acceptor(Socket(port)), global_inbox(global_inbox), game_clients(clients) {}
 
 void Acceptor::run()
 {
@@ -13,6 +13,7 @@ void Acceptor::run()
             Socket peer = acceptor.accept(); // bloqueante, espera cliente
 
             int id = next_id++;
+            game_clients.push(id);
             auto c = std::make_unique<ClientHandler>(std::move(peer), id, global_inbox);
 
             reap(); // limpiar clientes muertos

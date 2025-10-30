@@ -10,17 +10,19 @@
 #include "../server/acceptor.h"
 #include "../server/messages.h"
 
-using namespace std;  // Para los literales de chrono
+using namespace std; // Para los literales de chrono
 
-static const char* TEST_PORT = "50200";
+static const char *TEST_PORT = "50200";
 
-TEST(FullIntegrationTest, CompleteClientServerCommunication) {
+TEST(FullIntegrationTest, CompleteClientServerCommunication)
+{
     Queue<IncomingMessage> global_inbox;
-
+    Queue<int> players;
     // Thread para el servidor con Acceptor
-    std::thread server_thread([&]() {
+    std::thread server_thread([&]()
+                              {
         Socket listener(TEST_PORT);
-        Acceptor acceptor(listener, global_inbox);
+        Acceptor acceptor(listener, global_inbox,players);
         acceptor.start();
 
         // Esperamos mensaje del cliente
@@ -36,8 +38,7 @@ TEST(FullIntegrationTest, CompleteClientServerCommunication) {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
         acceptor.stop();
-        acceptor.join();
-    });
+        acceptor.join(); });
 
     // Esperamos a que el servidor esté listo
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -46,13 +47,13 @@ TEST(FullIntegrationTest, CompleteClientServerCommunication) {
     Socket peer("localhost", TEST_PORT);
     Protocol proto(std::move(peer));
     GameClientHandler client(proto);
-    
+
     // Iniciamos el cliente
     client.start();
-    
+
     // Cliente envía mensaje
     client.send(MOVE_UP_PRESSED_STR);
-    
+
     // Esperamos un poco para que el mensaje llegue
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
