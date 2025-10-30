@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.22)
 
 if (POLICY CMP0135)
     cmake_policy(SET CMP0135 NEW)
@@ -54,13 +54,13 @@ target_include_directories(taller_common PUBLIC .)
 # HEY!! TODO XXX: add more dependendies (either for client, server or editor)
 if(TALLER_CLIENT OR TALLER_EDITOR)
     include(FetchContent)
+    
     FetchContent_Declare(
         SDL2
         GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
         GIT_TAG release-2.30.8
         GIT_SHALLOW TRUE
         GIT_PROGRESS TRUE
-        OVERRIDE_FIND_PACKAGE
     )
 
     FetchContent_Declare(
@@ -69,7 +69,6 @@ if(TALLER_CLIENT OR TALLER_EDITOR)
         GIT_TAG release-2.8.2
         GIT_SHALLOW TRUE
         GIT_PROGRESS TRUE
-        OVERRIDE_FIND_PACKAGE
     )
 
     FetchContent_Declare(
@@ -78,7 +77,6 @@ if(TALLER_CLIENT OR TALLER_EDITOR)
         GIT_TAG release-2.8.0
         GIT_SHALLOW TRUE
         GIT_PROGRESS TRUE
-        OVERRIDE_FIND_PACKAGE
     )
 
     FetchContent_Declare(
@@ -87,38 +85,59 @@ if(TALLER_CLIENT OR TALLER_EDITOR)
         GIT_TAG release-2.22.0
         GIT_SHALLOW TRUE
         GIT_PROGRESS TRUE
-        OVERRIDE_FIND_PACKAGE
     )
 
+    # Make SDL2 libraries available
+    FetchContent_MakeAvailable(SDL2 SDL2_image SDL2_mixer SDL2_ttf)
+    
+    # Create aliases that libSDL2pp expects (if they don't exist)
+    if(NOT TARGET SDL2_image::SDL2_image)
+        add_library(SDL2_image::SDL2_image ALIAS SDL2_image)
+    endif()
+    if(NOT TARGET SDL2_mixer::SDL2_mixer)
+        add_library(SDL2_mixer::SDL2_mixer ALIAS SDL2_mixer)
+    endif()
+    if(NOT TARGET SDL2_ttf::SDL2_ttf)
+        add_library(SDL2_ttf::SDL2_ttf ALIAS SDL2_ttf)
+    endif()
+    
+    # Now get libSDL2pp without the optional features
+    # We'll manually link the libraries later
     FetchContent_Declare(
         libSDL2pp
-        OVERRIDE_FIND_PACKAGE
         URL https://github.com/libSDL2pp/libSDL2pp/archive/cc198c9a5657048bee67ece82de620b2d5661084.zip
     )
-
-    FetchContent_MakeAvailable(SDL2 SDL2_image SDL2_mixer SDL2_ttf libSDL2pp)
+    
+    set(SDL2PP_WITH_IMAGE OFF CACHE BOOL "" FORCE)
+    set(SDL2PP_WITH_MIXER OFF CACHE BOOL "" FORCE)
+    set(SDL2PP_WITH_TTF OFF CACHE BOOL "" FORCE)
+    
+    FetchContent_MakeAvailable(libSDL2pp)
+    
+    # Manually add the SDL2_image definitions to SDL2pp target
+    target_compile_definitions(SDL2pp PUBLIC SDL2PP_WITH_IMAGE)
+    target_compile_definitions(SDL2pp PUBLIC SDL2PP_WITH_MIXER)
+    target_compile_definitions(SDL2pp PUBLIC SDL2PP_WITH_TTF)
+    target_link_libraries(SDL2pp PUBLIC SDL2_image::SDL2_image SDL2_mixer::SDL2_mixer SDL2_ttf::SDL2_ttf)
 endif()
 
 # Program section
 # ---------------
 if(TALLER_CLIENT)
-    # HEY!! TODO XXX: Change the name of the executable to the one you like!
     add_executable(taller_client)
-
-    # Make them depend on taller_common lib
     add_dependencies(taller_client taller_common SDL2pp::SDL2pp)
-
-    # Add source files and enable warnings
-    # HEY!! TODO XXX: add more subfolders here
     add_subdirectory(client)
-
     set_project_warnings(taller_client ${TALLER_MAKE_WARNINGS_AS_ERRORS} FALSE)
-
-    # add libSDL2pp's headers
     target_include_directories(taller_client PRIVATE ${libSDL2pp_SOURCE_DIR})
-
-    # Link the taller_common lib target
-    target_link_libraries(taller_client taller_common SDL2pp::SDL2pp)
+    
+    # Link SDL2pp AND the SDL2 extension libraries
+    target_link_libraries(taller_client 
+        taller_common 
+        SDL2pp::SDL2pp
+        SDL2_image::SDL2_image
+        SDL2_mixer::SDL2_mixer
+        SDL2_ttf::SDL2_ttf
+    )
 endif()
 
 if(TALLER_SERVER)

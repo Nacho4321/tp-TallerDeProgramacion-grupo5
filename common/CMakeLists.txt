@@ -1,8 +1,30 @@
 target_sources(taller_common
     PRIVATE
     # .cpp files
-    foo.cpp
+    gameloop.cpp
+    eventloop.cpp
+    eventDispatcher.cpp
+    protocol.cpp
+    liberror.cpp
+    protocol_encode.cpp
+    protocol_receivers.cpp
+    protocol_utils.cpp
+    resolver.cpp
+    socket.cpp
     PUBLIC
     # .h files
-    foo.h
+    gameloop.h
+    eventloop.h
+    queue.h
+    thread.h
+    Event.h
+    eventDispatcher.h
+    constants.h
+    liberror.h
+    protocol.h
+    queue.h
+    resolver.h
+    socket.h
+    thread.h
+    messages.h
     )
