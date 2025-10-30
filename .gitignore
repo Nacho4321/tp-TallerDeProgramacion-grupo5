@@ -1,5 +1,6 @@
 build/
 _deps/
+lib/
 
 # CMake generated files
 CMakeFiles/

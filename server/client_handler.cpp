@@ -10,6 +10,10 @@ void ClientReceiver::run() {
             DecodedMessage dec_msg = protocol.receiveMessage();
             if (dec_msg.cmd.empty())
                 break;  // EOF o desconexión
+
+            std::cout << "[Server] Client " << client_id << " sent: " 
+                      << dec_msg.cmd << std::endl;  // DEBUG
+
             IncomingMessage msg =
                     make_message_from_decoded(dec_msg);  // Basicamente le agrega el client id
             global_inbox.push(msg);

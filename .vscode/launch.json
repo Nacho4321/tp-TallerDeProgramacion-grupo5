@@ -1,0 +1,58 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug taller_server",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/taller_server",
+            "args": ["8080"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "Debug taller_client",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/taller_client",
+            "args": ["localhost", "8080"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build",
+            "miDebuggerPath": "/usr/bin/gdb"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Debug Server + Client",
+            "configurations": ["Debug taller_server", "Debug taller_client"],
+            "stopAll": true,
+            "preLaunchTask": "build",
+            "presentation": {
+                "order": 1
+            }
+        }
+    ]
+}
