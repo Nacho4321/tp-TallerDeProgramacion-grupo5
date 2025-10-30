@@ -9,15 +9,18 @@ void EventDispatcher::init_handlers()
 }
 void EventDispatcher::move_up(Event &event)
 {
+    players_map_mutex.lock();
     Position actual_pos = players[event.client_id].position;
     actual_pos.direction_y = up;
     actual_pos.new_Y = actual_pos.new_Y + 14;
     players[event.client_id].position = actual_pos;
     players[event.client_id].state = event.action;
+    players_map_mutex.unlock();
 }
 
 void EventDispatcher::move_up_released(Event &event)
 {
+    players_map_mutex.lock();
     Position actual_pos = players[event.client_id].position;
     if (actual_pos.new_Y > 0)
     {
@@ -29,6 +32,7 @@ void EventDispatcher::move_up_released(Event &event)
     }
     players[event.client_id].position = actual_pos;
     players[event.client_id].state = event.action;
+    players_map_mutex.unlock();
 }
 
 void EventDispatcher::handle_event(Event &event)

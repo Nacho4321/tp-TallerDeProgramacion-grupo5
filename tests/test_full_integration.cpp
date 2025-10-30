@@ -18,11 +18,12 @@ TEST(FullIntegrationTest, CompleteClientServerCommunication)
 {
     Queue<IncomingMessage> global_inbox;
     Queue<int> players;
+    OutboxMonitor outbox_monitor;
     // Thread para el servidor con Acceptor
     std::thread server_thread([&]()
                               {
         Socket listener(TEST_PORT);
-        Acceptor acceptor(listener, global_inbox,players);
+        Acceptor acceptor(listener, global_inbox,players, outbox_monitor);
         acceptor.start();
 
         // Esperamos mensaje del cliente

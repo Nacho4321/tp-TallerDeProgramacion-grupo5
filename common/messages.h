@@ -1,14 +1,17 @@
 #ifndef MESSAGES_H
 #define MESSAGES_H
-
+#include "Event.h"
 #include <string>
 
 // Mensaje que el server va a manejar en su loop
-struct OutgoingMessage {
-    std::string cmd;
+struct OutgoingMessage
+{
+    int player_id;
+    Position new_pos;
 };
 
-struct IncomingMessage {
+struct IncomingMessage
+{
     std::string cmd;
     int client_id;
 };

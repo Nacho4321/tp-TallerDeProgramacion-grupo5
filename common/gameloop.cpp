@@ -9,7 +9,18 @@ void GameLoop::run()
         {
             init_players();
         }
-
+        /*         else
+                {
+                    for (auto &player : players)
+                    {
+                        int id = player.first;
+                        Position pos = player.second.position;
+                        OutgoingMessage msg = OutgoingMessage{
+                            id, pos};
+                        // outbox_moitor.broadcast(msg);
+                        std::cout << id << pos.new_X << msg.player_id << std::endl;
+                    }
+                } */
         // esperar a que den start
         // abrir taller
         // jugar primer carrera

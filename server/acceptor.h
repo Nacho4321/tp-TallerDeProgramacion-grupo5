@@ -22,12 +22,12 @@ class Acceptor : public Thread
     Queue<IncomingMessage> &global_inbox;
     std::vector<std::unique_ptr<ClientHandler>> clients;
     Queue<int> &game_clients;
-    OutboxMonitor outbox_monitor;
+    OutboxMonitor &outbox_monitor;
     int next_id = 0;
 
 public:
-    explicit Acceptor(const char *port, Queue<IncomingMessage> &global_inbox, Queue<int> &clients);
-    explicit Acceptor(Socket &acc, Queue<IncomingMessage> &global_inbox, Queue<int> &client);
+    explicit Acceptor(const char *port, Queue<IncomingMessage> &global_inbox, Queue<int> &clients, OutboxMonitor &outboxes);
+    explicit Acceptor(Socket &acc, Queue<IncomingMessage> &global_inbox, Queue<int> &client, OutboxMonitor &outboxes);
 
     void run() override;
     void stop() override;

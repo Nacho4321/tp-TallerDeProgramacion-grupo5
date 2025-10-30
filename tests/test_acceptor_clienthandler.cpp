@@ -21,10 +21,11 @@ TEST(AcceptorIntegrationTest, ClientConnectsAndSendsMessage)
 {
     Queue<IncomingMessage> global_inbox;
     Queue<int> players;
+    OutboxMonitor outbox_monitor;
     std::thread server_thread([&]()
                               {
         Socket listener(TEST_PORT);  // crea socket servidor
-        Acceptor acceptor(listener, global_inbox, players);
+        Acceptor acceptor(listener, global_inbox, players, outbox_monitor);
         acceptor.start();
 
         // Esperamos a que llegue un mensaje desde el cliente
@@ -52,10 +53,11 @@ TEST(AcceptorIntegrationTest, BroadcastMessageToClient)
 {
     Queue<IncomingMessage> global_inbox;
     Queue<int> players;
+    OutboxMonitor outbox_monitor;
     std::thread server_thread([&]()
                               {
         Socket listener(TEST_PORT);
-        Acceptor acceptor(listener, global_inbox, players);
+        Acceptor acceptor(listener, global_inbox, players, outbox_monitor);
         acceptor.start();
 
         // Esperamos un poco a que se conecte el cliente
@@ -92,8 +94,9 @@ TEST(AcceptorIntegrationTest, BroadcastToMultipleClients)
 {
     Queue<IncomingMessage> global_inbox;
     Queue<int> players;
+    OutboxMonitor outbox_monitor;
     Socket listener(TEST_PORT);
-    Acceptor acceptor(listener, global_inbox, players);
+    Acceptor acceptor(listener, global_inbox, players, outbox_monitor);
 
     std::thread server_thread([&]()
                               {

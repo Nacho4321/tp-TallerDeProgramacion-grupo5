@@ -1,8 +1,8 @@
 #include "acceptor.h"
 
-Acceptor::Acceptor(Socket &acc, Queue<IncomingMessage> &global_inbox, Queue<int> &clients) : acceptor(std::move(acc)), global_inbox(global_inbox), game_clients(clients) {}
+Acceptor::Acceptor(Socket &acc, Queue<IncomingMessage> &global_inbox, Queue<int> &clients, OutboxMonitor &outboxes) : acceptor(std::move(acc)), global_inbox(global_inbox), game_clients(clients), outbox_monitor(outboxes) {}
 
-Acceptor::Acceptor(const char *port, Queue<IncomingMessage> &global_inbox, Queue<int> &clients) : acceptor(Socket(port)), global_inbox(global_inbox), game_clients(clients) {}
+Acceptor::Acceptor(const char *port, Queue<IncomingMessage> &global_inbox, Queue<int> &clients, OutboxMonitor &outboxes) : acceptor(Socket(port)), global_inbox(global_inbox), game_clients(clients), outbox_monitor(outboxes) {}
 
 void Acceptor::run()
 {
