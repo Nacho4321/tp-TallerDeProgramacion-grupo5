@@ -36,7 +36,7 @@ void Client::start()
             outgoing_messages.push(input);
         }
 
-        DecodedMessage message;
+        ServerMessage message;
         incoming_messages.try_pop(message); // Try to pop a message from the incoming queue
 
         CarPosition position;         // This position should come from server messages

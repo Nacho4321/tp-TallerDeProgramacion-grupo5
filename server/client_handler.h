@@ -9,23 +9,21 @@
 #include "../common/queue.h"
 #include "../common/socket.h"
 #include "../common/thread.h"
+#include "../common/messages.h"
 
-#include "messages.h"
+#include "client_handler_msg.h"
 
 // ---------------- ClientReceiver ----------------
 class ClientReceiver : public Thread
 {
     Protocol &protocol;
     int client_id;
-    Queue<ClientMessage> &global_inbox;
+    Queue<ClientHandlerMessage> &global_inbox;
 
 public:
-    ClientReceiver(Protocol &proto, int id, Queue<ClientMessage> &global_inbox);
+    ClientReceiver(Protocol &proto, int id, Queue<ClientHandlerMessage> &global_inbox);
 
     void run() override;
-
-private:
-    ClientMessage make_message_from_decoded(const DecodedMessage &cmd);
 };
 
 // ---------------- ClientSender ----------------
@@ -45,13 +43,13 @@ class ClientHandler
 {
     Protocol protocol;
     std::shared_ptr<Queue<ServerMessage>> outbox;
-    Queue<ClientMessage> &global_inbox;
+    Queue<ClientHandlerMessage> &global_inbox;
     ClientSender sender;
     int client_id;
     ClientReceiver receiver;
 
 public:
-    ClientHandler(Socket &&p, int id, Queue<ClientMessage> &global_inbox);
+    ClientHandler(Socket &&p, int id, Queue<ClientHandlerMessage> &global_inbox);
 
     void start();
     void stop();

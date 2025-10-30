@@ -5,8 +5,7 @@
 #include <vector>
 
 #include "../common/queue.h"
-
-#include "messages.h"
+#include "../common/messages.h"
 
 class OutboxMonitor
 {

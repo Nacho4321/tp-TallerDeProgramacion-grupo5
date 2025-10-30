@@ -6,6 +6,7 @@
 #include "PlayerData.h"
 #include "../common/messages.h"
 #include "../server/outbox_monitor.h"
+#include "../server/client_handler_msg.h"
 class GameLoop : public Thread
 {
 private:
@@ -17,12 +18,12 @@ private:
     EventLoop event_loop;
     Queue<int> &game_clients;
     bool started;
-    Queue<ClientMessage> &global_inbox;
+    Queue<ClientHandlerMessage> &global_inbox;
     OutboxMonitor &outbox_moitor;
     void init_players();
 
 public:
-    explicit GameLoop(Queue<Event> &e_queue, Queue<int> &clientes, Queue<ClientMessage> &global_q, OutboxMonitor &outboxes) : players_map_mutex(), players(), event_loop(players_map_mutex, players, e_queue), game_clients(clientes), started(false), global_inbox(global_q), outbox_moitor(outboxes) {}
+    explicit GameLoop(Queue<Event> &e_queue, Queue<int> &clientes, Queue<ClientHandlerMessage> &global_q, OutboxMonitor &outboxes) : players_map_mutex(), players(), event_loop(players_map_mutex, players, e_queue), game_clients(clientes), started(false), global_inbox(global_q), outbox_moitor(outboxes) {}
     void run() override;
     void start_game();
 };

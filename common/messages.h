@@ -4,15 +4,19 @@
 #include <string>
 
 // Mensaje que el server va a manejar en su loop
-struct ServerMessage
+struct PlayerPositionUpdate
 {
     int player_id;
     Position new_pos;
 };
 
-struct ClientMessage
+struct ServerMessage 
+{
+    std::vector<PlayerPositionUpdate> positions;
+};
+
+struct ClientMessage 
 {
     std::string cmd;
-    int client_id;
 };
 #endif

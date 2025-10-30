@@ -25,7 +25,7 @@ private:
     GameClientSender sender;
 
     // Message queue and receiver thread
-    Queue<DecodedMessage> incoming_messages;
+    Queue<ServerMessage> incoming_messages;
     GameClientReceiver receiver;
 
     CarRenderer car_renderer;

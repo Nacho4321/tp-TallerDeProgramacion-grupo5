@@ -1,7 +1,7 @@
 #include "client_handler.h"
 
 // ---------------- ClientReceiver ----------------
-ClientReceiver::ClientReceiver(Protocol &proto, int id, Queue<ClientMessage> &global_inbox) : protocol(proto), client_id(id), global_inbox(global_inbox) {}
+ClientReceiver::ClientReceiver(Protocol &proto, int id, Queue<ClientHandlerMessage> &global_inbox) : protocol(proto), client_id(id), global_inbox(global_inbox) {}
 
 void ClientReceiver::run()
 {
@@ -9,15 +9,15 @@ void ClientReceiver::run()
     {
         while (should_keep_running())
         {
-            DecodedMessage dec_msg = protocol.receiveMessage();
-            if (dec_msg.cmd.empty())
+            ClientMessage client_msg = protocol.receiveClientMessage();
+            if (client_msg.cmd.empty())
                 break; // EOF o desconexión
 
             std::cout << "[Server] Client " << client_id << " sent: "
-                      << dec_msg.cmd << std::endl; // DEBUG
-
-            ClientMessage msg =
-                make_message_from_decoded(dec_msg); // Basicamente le agrega el client id
+                      << client_msg.cmd << std::endl; // DEBUG
+            ClientHandlerMessage msg; // para agregarle el id
+            msg.client_id = client_id;
+            msg.msg = client_msg;
             global_inbox.push(msg);
         }
     }
@@ -25,14 +25,6 @@ void ClientReceiver::run()
     {
         std::cerr << "[Receiver] Exception: " << e.what() << std::endl;
     }
-}
-
-ClientMessage ClientReceiver::make_message_from_decoded(const DecodedMessage &cmd)
-{
-    ClientMessage im;
-    im.cmd = cmd.cmd;
-    im.client_id = this->client_id;
-    return im;
 }
 
 // ---------------- ClientSender ----------------
@@ -54,7 +46,7 @@ void ClientSender::run()
                 // La cola fue cerrada: salimos del loop
                 break;
             }
-            protocol.sendMessage(msg.cmd);
+            protocol.sendMessage(msg);
         }
     }
     catch (const std::exception &e)
@@ -64,7 +56,7 @@ void ClientSender::run()
 }
 
 // ---------------- ClientHandler ----------------
-ClientHandler::ClientHandler(Socket &&p, int id, Queue<ClientMessage> &global_inbox) : protocol(std::move(p)),
+ClientHandler::ClientHandler(Socket &&p, int id, Queue<ClientHandlerMessage> &global_inbox) : protocol(std::move(p)),
                                                                                        outbox(std::make_shared<Queue<ServerMessage>>(100)), // bounded queue tamaño 100
                                                                                        global_inbox(global_inbox),
                                                                                        sender(protocol, *outbox),

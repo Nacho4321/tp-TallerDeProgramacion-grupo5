@@ -17,7 +17,7 @@ TEST(ProtocolLocalhostTest, SendAndReceiveUpPressed) {
         Socket listener(TEST_PORT);              // servidor escucha
         Socket peer = listener.accept();         // bloqueante
         Protocol proto_server(std::move(peer));  // protocolo del servidor
-        DecodedMessage msg = proto_server.receiveMessage(); // bloqueante
+        ClientMessage msg = proto_server.receiveClientMessage(); // bloqueante
         EXPECT_EQ(msg.cmd, MOVE_UP_PRESSED_STR);
     });
 
@@ -25,7 +25,9 @@ TEST(ProtocolLocalhostTest, SendAndReceiveUpPressed) {
 
     Socket client("localhost", TEST_PORT);       // cliente conecta
     Protocol proto_client(std::move(client));    // protocolo del cliente
-    proto_client.sendMessage(MOVE_UP_PRESSED_STR);
+    ClientMessage client_msg;
+    client_msg.cmd = MOVE_UP_PRESSED_STR;
+    proto_client.sendMessage(client_msg);
 
     server_thread.join();
 }
@@ -35,7 +37,7 @@ TEST(ProtocolLocalhostTest, SendAndReceiveRightReleased) {
         Socket listener(TEST_PORT);
         Socket peer = listener.accept();
         Protocol proto_server(std::move(peer));
-        DecodedMessage msg = proto_server.receiveMessage();
+        ClientMessage msg = proto_server.receiveClientMessage();
         EXPECT_EQ(msg.cmd, MOVE_RIGHT_RELEASED_STR);
     });
 
@@ -43,7 +45,9 @@ TEST(ProtocolLocalhostTest, SendAndReceiveRightReleased) {
 
     Socket client("localhost", TEST_PORT);
     Protocol proto_client(std::move(client));
-    proto_client.sendMessage(MOVE_RIGHT_RELEASED_STR);
+    ClientMessage client_msg;
+    client_msg.cmd = MOVE_RIGHT_RELEASED_STR;
+    proto_client.sendMessage(client_msg);
 
     server_thread.join();
 }
@@ -54,10 +58,10 @@ TEST(ProtocolLocalhostTest, MultipleSequentialMessages) {
         Socket peer = listener.accept();
         Protocol proto_server(std::move(peer));
 
-        auto m1 = proto_server.receiveMessage();
+        auto m1 = proto_server.receiveClientMessage();
         EXPECT_EQ(m1.cmd, MOVE_DOWN_PRESSED_STR);
 
-        auto m2 = proto_server.receiveMessage();
+        auto m2 = proto_server.receiveClientMessage();
         EXPECT_EQ(m2.cmd, MOVE_LEFT_RELEASED_STR);
     });
 
@@ -66,8 +70,12 @@ TEST(ProtocolLocalhostTest, MultipleSequentialMessages) {
     Socket client("localhost", TEST_PORT);
     Protocol proto_client(std::move(client));
 
-    proto_client.sendMessage(MOVE_DOWN_PRESSED_STR);
-    proto_client.sendMessage(MOVE_LEFT_RELEASED_STR);
+    ClientMessage client_msg1;
+    client_msg1.cmd = MOVE_DOWN_PRESSED_STR;
+    proto_client.sendMessage(client_msg1);
+    ClientMessage client_msg2;
+    client_msg2.cmd = MOVE_LEFT_RELEASED_STR;
+    proto_client.sendMessage(client_msg2);
 
     server_thread.join();
 }
