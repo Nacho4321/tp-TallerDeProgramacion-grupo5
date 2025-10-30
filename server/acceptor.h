@@ -19,20 +19,20 @@
 class Acceptor : public Thread
 {
     Socket acceptor;
-    Queue<IncomingMessage> &global_inbox;
+    Queue<ClientMessage> &global_inbox;
     std::vector<std::unique_ptr<ClientHandler>> clients;
     Queue<int> &game_clients;
     OutboxMonitor &outbox_monitor;
     int next_id = 0;
 
 public:
-    explicit Acceptor(const char *port, Queue<IncomingMessage> &global_inbox, Queue<int> &clients, OutboxMonitor &outboxes);
-    explicit Acceptor(Socket &acc, Queue<IncomingMessage> &global_inbox, Queue<int> &client, OutboxMonitor &outboxes);
+    explicit Acceptor(const char *port, Queue<ClientMessage> &global_inbox, Queue<int> &clients, OutboxMonitor &outboxes);
+    explicit Acceptor(Socket &acc, Queue<ClientMessage> &global_inbox, Queue<int> &client, OutboxMonitor &outboxes);
 
     void run() override;
     void stop() override;
 
-    void broadcast(const OutgoingMessage &msg);
+    void broadcast(const ServerMessage &msg);
 
 private:
     void clear();

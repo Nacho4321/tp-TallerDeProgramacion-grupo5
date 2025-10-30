@@ -14,7 +14,7 @@ private:
     Queue<int> clientes;
     OutboxMonitor outboxes;
     Queue<Event> event_queue;
-    Queue<IncomingMessage> global_inbox;
+    Queue<ClientMessage> global_inbox;
     GameLoop need_for_speed;
     Acceptor acceptor;
     void process_input(const std::string &input, bool &connected);

@@ -17,12 +17,12 @@ private:
     EventLoop event_loop;
     Queue<int> &game_clients;
     bool started;
-    Queue<IncomingMessage> &global_inbox;
+    Queue<ClientMessage> &global_inbox;
     OutboxMonitor &outbox_moitor;
     void init_players();
 
 public:
-    explicit GameLoop(Queue<Event> &e_queue, Queue<int> &clientes, Queue<IncomingMessage> &global_q, OutboxMonitor &outboxes) : players_map_mutex(), players(), event_loop(players_map_mutex, players, e_queue), game_clients(clientes), started(false), global_inbox(global_q), outbox_moitor(outboxes) {}
+    explicit GameLoop(Queue<Event> &e_queue, Queue<int> &clientes, Queue<ClientMessage> &global_q, OutboxMonitor &outboxes) : players_map_mutex(), players(), event_loop(players_map_mutex, players, e_queue), game_clients(clientes), started(false), global_inbox(global_q), outbox_moitor(outboxes) {}
     void run() override;
     void start_game();
 };

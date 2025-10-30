@@ -9,7 +9,7 @@
 #include "../server/acceptor.h"
 #include "../server/client_handler.h"
 #include "../server/outbox_monitor.h"
-#include "../server/messages.h"
+#include "../common/messages.h"
 #include "../common/queue.h"
 
 static const char *TEST_PORT = "50100"; // usa un puerto distinto de los tests anteriores
@@ -19,7 +19,7 @@ static const char *TEST_PORT = "50100"; // usa un puerto distinto de los tests a
 // ================================================================
 TEST(AcceptorIntegrationTest, ClientConnectsAndSendsMessage)
 {
-    Queue<IncomingMessage> global_inbox;
+    Queue<ClientMessage> global_inbox;
     Queue<int> players;
     OutboxMonitor outbox_monitor;
     std::thread server_thread([&]()
@@ -29,7 +29,7 @@ TEST(AcceptorIntegrationTest, ClientConnectsAndSendsMessage)
         acceptor.start();
 
         // Esperamos a que llegue un mensaje desde el cliente
-        IncomingMessage msg = global_inbox.pop();
+        ClientMessage msg = global_inbox.pop();
         EXPECT_EQ(msg.cmd, MOVE_UP_PRESSED_STR);
 
         acceptor.stop();
@@ -51,7 +51,7 @@ TEST(AcceptorIntegrationTest, ClientConnectsAndSendsMessage)
 // ================================================================
 TEST(AcceptorIntegrationTest, BroadcastMessageToClient)
 {
-    Queue<IncomingMessage> global_inbox;
+    Queue<ClientMessage> global_inbox;
     Queue<int> players;
     OutboxMonitor outbox_monitor;
     std::thread server_thread([&]()
@@ -64,7 +64,7 @@ TEST(AcceptorIntegrationTest, BroadcastMessageToClient)
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
         // Enviamos un broadcast a todos los clientes
-        OutgoingMessage msg;
+        ServerMessage msg;
         msg.cmd = UPDATE_POSITIONS_STR;
         acceptor.broadcast(msg);
 
@@ -92,7 +92,7 @@ TEST(AcceptorIntegrationTest, BroadcastMessageToClient)
 // ================================================================
 TEST(AcceptorIntegrationTest, BroadcastToMultipleClients)
 {
-    Queue<IncomingMessage> global_inbox;
+    Queue<ClientMessage> global_inbox;
     Queue<int> players;
     OutboxMonitor outbox_monitor;
     Socket listener(TEST_PORT);
@@ -103,7 +103,7 @@ TEST(AcceptorIntegrationTest, BroadcastToMultipleClients)
         acceptor.start();
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
-        OutgoingMessage msg;
+        ServerMessage msg;
         msg.cmd = UPDATE_POSITIONS_STR;
         acceptor.broadcast(msg);
 

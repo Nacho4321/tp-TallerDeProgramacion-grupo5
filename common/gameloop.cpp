@@ -15,7 +15,7 @@ void GameLoop::run()
                     {
                         int id = player.first;
                         Position pos = player.second.position;
-                        OutgoingMessage msg = OutgoingMessage{
+                        ServerMessage msg = ServerMessage{
                             id, pos};
                         // outbox_moitor.broadcast(msg);
                         std::cout << id << pos.new_X << msg.player_id << std::endl;

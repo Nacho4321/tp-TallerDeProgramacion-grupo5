@@ -8,7 +8,7 @@
 #include "../common/queue.h"
 #include "../common/constants.h"
 #include "../server/acceptor.h"
-#include "../server/messages.h"
+#include "../common/messages.h"
 
 using namespace std; // Para los literales de chrono
 
@@ -16,7 +16,7 @@ static const char *TEST_PORT = "50200";
 
 TEST(FullIntegrationTest, CompleteClientServerCommunication)
 {
-    Queue<IncomingMessage> global_inbox;
+    Queue<ClientMessage> global_inbox;
     Queue<int> players;
     OutboxMonitor outbox_monitor;
     // Thread para el servidor con Acceptor
@@ -27,11 +27,11 @@ TEST(FullIntegrationTest, CompleteClientServerCommunication)
         acceptor.start();
 
         // Esperamos mensaje del cliente
-        IncomingMessage msg = global_inbox.pop();
+        ClientMessage msg = global_inbox.pop();
         EXPECT_EQ(msg.cmd, MOVE_UP_PRESSED_STR);
 
         // Enviamos respuesta por broadcast
-        OutgoingMessage response;
+        ServerMessage response;
         response.cmd = MOVE_DOWN_PRESSED_STR;
         acceptor.broadcast(response);
 

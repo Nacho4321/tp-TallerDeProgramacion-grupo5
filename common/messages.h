@@ -4,13 +4,13 @@
 #include <string>
 
 // Mensaje que el server va a manejar en su loop
-struct OutgoingMessage
+struct ServerMessage
 {
     int player_id;
     Position new_pos;
 };
 
-struct IncomingMessage
+struct ClientMessage
 {
     std::string cmd;
     int client_id;
