@@ -2,21 +2,33 @@
 
 void EventDispatcher::init_handlers()
 {
-    listeners[MOVE_UP_PRESSED] = [this](Event &e)
-    { move_forward(e); };
-    listeners[MOVE_UP_RELEASED] = [this](Event &e)
-    { move_released(e); };
+    listeners[MOVE_UP_PRESSED_STR] = [this](Event &e)
+    { move_up(e); };
+    listeners[MOVE_UP_RELEASED_STR] = [this](Event &e)
+    { move_up_released(e); };
 }
-void EventDispatcher::move_forward(Event &event)
+void EventDispatcher::move_up(Event &event)
 {
-    PlayerMovedEvent mover{event.client_id, event.action, 10.0, 20.0, forward, forward};
-    std::cout << "Jugador se movio para adelante" << std::endl;
+    Position actual_pos = players[event.client_id].position;
+    actual_pos.direction_y = up;
+    actual_pos.new_Y = actual_pos.new_Y + 14;
+    players[event.client_id].position = actual_pos;
+    players[event.client_id].state = event.action;
 }
 
-void EventDispatcher::move_released(Event &event)
+void EventDispatcher::move_up_released(Event &event)
 {
-    PlayerMovedEvent mover{event.client_id, event.action, 3.0, 0, forward, forward};
-    std::cout << "Jugador dejo de moverse para adelante" << std::endl;
+    Position actual_pos = players[event.client_id].position;
+    if (actual_pos.new_Y > 0)
+    {
+        actual_pos.new_Y = actual_pos.new_Y - 7;
+        if (actual_pos.new_Y < 0)
+        {
+            actual_pos.new_Y = 0;
+        }
+    }
+    players[event.client_id].position = actual_pos;
+    players[event.client_id].state = event.action;
 }
 
 void EventDispatcher::handle_event(Event &event)

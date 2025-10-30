@@ -2,10 +2,14 @@
 #define MAX_PLAYERS 8
 void GameLoop::run()
 {
-    init_players();
     event_loop.start();
     while (should_keep_running())
     {
+        if (!started)
+        {
+            init_players();
+        }
+
         // esperar a que den start
         // abrir taller
         // jugar primer carrera
@@ -24,17 +28,13 @@ void GameLoop::run()
 void GameLoop::init_players()
 {
     int id;
-    while (!started)
+
+    if (int(players.size()) < MAX_PLAYERS)
     {
-        if (int(player_data.size()) < MAX_PLAYERS)
+        bool popped = game_clients.try_pop(id);
+        if (popped)
         {
-            bool popped = game_clients.try_pop(id);
-            if (popped)
-            {
-                player_data_mutex.lock();
-                player_data[id] = Player{};
-                player_data_mutex.unlock();
-            }
+            players[id] = PlayerData{MOVE_UP_RELEASED_STR, CarInfo{"lambo", 15, 15, 15}, Position{960, 540, not_horizontal, not_vertical}};
         }
     }
 }
