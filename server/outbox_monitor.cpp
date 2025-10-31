@@ -23,9 +23,6 @@ void OutboxMonitor::broadcast(const ServerMessage &msg)
     std::lock_guard<std::mutex> lock(mtx);
     for (auto &q : outboxes)
     {
-        if (!q->try_push(msg))
-        {
-            // cliente desconectado o cola cerrada, ignorar
-        }
+        q->push(msg);
     }
 }

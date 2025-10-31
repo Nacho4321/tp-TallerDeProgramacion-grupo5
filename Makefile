@@ -954,6 +954,33 @@ server/server.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/taller_server.dir/build.make CMakeFiles/taller_server.dir/server/server.cpp.s
 .PHONY : server/server.cpp.s
 
+server/server_handler.o: server/server_handler.cpp.o
+.PHONY : server/server_handler.o
+
+# target to build an object file
+server/server_handler.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/taller_server.dir/build.make CMakeFiles/taller_server.dir/server/server_handler.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/taller_tests.dir/build.make CMakeFiles/taller_tests.dir/server/server_handler.cpp.o
+.PHONY : server/server_handler.cpp.o
+
+server/server_handler.i: server/server_handler.cpp.i
+.PHONY : server/server_handler.i
+
+# target to preprocess a source file
+server/server_handler.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/taller_server.dir/build.make CMakeFiles/taller_server.dir/server/server_handler.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/taller_tests.dir/build.make CMakeFiles/taller_tests.dir/server/server_handler.cpp.i
+.PHONY : server/server_handler.cpp.i
+
+server/server_handler.s: server/server_handler.cpp.s
+.PHONY : server/server_handler.s
+
+# target to generate assembly for a file
+server/server_handler.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/taller_server.dir/build.make CMakeFiles/taller_server.dir/server/server_handler.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/taller_tests.dir/build.make CMakeFiles/taller_tests.dir/server/server_handler.cpp.s
+.PHONY : server/server_handler.cpp.s
+
 tests/foo.o: tests/foo.cpp.o
 .PHONY : tests/foo.o
 
@@ -1171,6 +1198,9 @@ help:
 	@echo "... server/server.o"
 	@echo "... server/server.i"
 	@echo "... server/server.s"
+	@echo "... server/server_handler.o"
+	@echo "... server/server_handler.i"
+	@echo "... server/server_handler.s"
 	@echo "... tests/foo.o"
 	@echo "... tests/foo.i"
 	@echo "... tests/foo.s"

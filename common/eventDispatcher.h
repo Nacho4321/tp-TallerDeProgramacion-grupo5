@@ -15,6 +15,12 @@ private:
     void init_handlers();
     void move_up(Event &event);
     void move_up_released(Event &event);
+    void move_down(Event &event);
+    void move_down_released(Event &event);
+    void move_left(Event &event);
+    void move_left_released(Event &event);
+    void move_right(Event &event);
+    void move_right_released(Event &event);
 
 public:
     EventDispatcher(std::mutex &map_mutex, std::unordered_map<int, PlayerData> &map) : players_map_mutex(map_mutex), players(map)
