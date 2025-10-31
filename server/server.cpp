@@ -5,10 +5,6 @@
 
 void Server::start()
 {
-    Event e1 = Event(1, MOVE_UP_PRESSED_STR);
-    Event e2 = Event(1, MOVE_UP_RELEASED_STR);
-    event_queue.push(e1);
-    event_queue.push(e2);
     acceptor.start();
     need_for_speed.start();
     std::string input;

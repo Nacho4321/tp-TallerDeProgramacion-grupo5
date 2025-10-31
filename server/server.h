@@ -13,7 +13,6 @@ class Server
 private:
     Queue<int> clientes;
     OutboxMonitor outboxes;
-    Queue<Event> event_queue;
     Queue<ClientHandlerMessage> global_inbox;
     GameLoop need_for_speed;
     Acceptor acceptor;
@@ -21,7 +20,7 @@ private:
 
 public:
     explicit Server(const char *port)
-        : clientes(), outboxes(), global_inbox(), need_for_speed(event_queue, clientes, global_inbox, outboxes),
+        : clientes(), outboxes(), global_inbox(), need_for_speed(clientes, global_inbox, outboxes),
           acceptor(port, global_inbox, clientes, outboxes)
     {
     }

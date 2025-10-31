@@ -13,17 +13,16 @@ private:
     // int game_id;
     std::mutex players_map_mutex;
     std::unordered_map<int, PlayerData> players;
-    // unordered_map <player_id,Times> players;
     // std::list<Track> tracks limitar a tres;
+    Queue<ClientHandlerMessage> &global_inbox;
     EventLoop event_loop;
     Queue<int> &game_clients;
     bool started;
-    Queue<ClientHandlerMessage> &global_inbox;
     OutboxMonitor &outbox_moitor;
     void init_players();
 
 public:
-    explicit GameLoop(Queue<Event> &e_queue, Queue<int> &clientes, Queue<ClientHandlerMessage> &global_q, OutboxMonitor &outboxes) : players_map_mutex(), players(), event_loop(players_map_mutex, players, e_queue), game_clients(clientes), started(false), global_inbox(global_q), outbox_moitor(outboxes) {}
+    explicit GameLoop(Queue<int> &clientes, Queue<ClientHandlerMessage> &global_q, OutboxMonitor &outboxes) : players_map_mutex(), players(), global_inbox(global_q), event_loop(players_map_mutex, players, global_inbox), game_clients(clientes), started(false), outbox_moitor(outboxes) {}
     void run() override;
     void start_game();
 };

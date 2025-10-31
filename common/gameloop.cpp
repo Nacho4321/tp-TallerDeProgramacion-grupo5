@@ -9,18 +9,23 @@ void GameLoop::run()
         {
             init_players();
         }
-        /*         else
-                {
-                    for (auto &player : players)
-                    {
-                        int id = player.first;
-                        Position pos = player.second.position;
-                        ServerMessage msg = ServerMessage{
-                            id, pos};
-                        // outbox_moitor.broadcast(msg);
-                        std::cout << id << pos.new_X << msg.player_id << std::endl;
-                    }
-                } */
+        else
+        {
+            std::vector<PlayerPositionUpdate> broadcast;
+            players_map_mutex.lock();
+            for (auto &player : players)
+            {
+                int id = player.first;
+                Position pos = player.second.position;
+                PlayerPositionUpdate update = PlayerPositionUpdate{
+                    id, pos};
+                broadcast.push_back(update);
+            }
+            players_map_mutex.unlock();
+            ServerMessage msg = {broadcast};
+            outbox_moitor.broadcast(msg);
+        }
+
         // esperar a que den start
         // abrir taller
         // jugar primer carrera
