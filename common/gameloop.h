@@ -18,7 +18,6 @@ private:
     bool started;
     OutboxMonitor &outbox_moitor;
     void init_players();
-    void update_player_positions();
 
 public:
     explicit GameLoop(Queue<int> &clientes, Queue<ClientHandlerMessage> &global_q, OutboxMonitor &outboxes) : players_map_mutex(), players(), global_inbox(global_q), event_loop(players_map_mutex, players, global_inbox), game_clients(clientes), started(false), outbox_moitor(outboxes) {}
