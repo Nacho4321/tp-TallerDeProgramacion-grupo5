@@ -24,6 +24,9 @@ option(TALLER_MAKE_WARNINGS_AS_ERRORS "Enable / disable warnings as errors." ON)
 
 message(CMAKE_CXX_COMPILER_ID="${CMAKE_CXX_COMPILER_ID}")
 
+# Add Box2D as subdirectory
+add_subdirectory(box2d)
+
 # Define target: lib common between client, server and editor programs
 # HEY TODO XXX: change the name to something that you like
 add_library(taller_common STATIC)
@@ -41,6 +44,9 @@ set_project_warnings(taller_common ${TALLER_MAKE_WARNINGS_AS_ERRORS} FALSE)
 # Make this PUBLIC so any dependant linking lib will inherit this
 # location (so our dependants will not have to explicitly request this)
 target_include_directories(taller_common PUBLIC .)
+
+# Link Box2D to taller_common (así todos lo heredan)
+target_link_libraries(taller_common PUBLIC box2d)
 
 # HEY!! TODO XXX: you need to install some runtime and dev libraries *before*
 # compiling the client/editor code.

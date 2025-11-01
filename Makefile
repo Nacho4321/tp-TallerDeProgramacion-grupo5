@@ -227,6 +227,19 @@ taller_tests/fast:
 .PHONY : taller_tests/fast
 
 #=============================================================================
+# Target rules for targets named box2d
+
+# Build rule for target.
+box2d: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 box2d
+.PHONY : box2d
+
+# fast build rule for target.
+box2d/fast:
+	$(MAKE) $(MAKESILENT) -f box2d/src/CMakeFiles/box2d.dir/build.make box2d/src/CMakeFiles/box2d.dir/build
+.PHONY : box2d/fast
+
+#=============================================================================
 # Target rules for targets named sdl_headers_copy
 
 # Build rule for target.
@@ -1123,6 +1136,7 @@ help:
 	@echo "... SDL2_ttf"
 	@echo "... SDL2main"
 	@echo "... SDL2pp"
+	@echo "... box2d"
 	@echo "... gmock"
 	@echo "... gmock_main"
 	@echo "... gtest"
