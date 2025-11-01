@@ -236,7 +236,7 @@ box2d: cmake_check_build_system
 
 # fast build rule for target.
 box2d/fast:
-	$(MAKE) $(MAKESILENT) -f box2d/src/CMakeFiles/box2d.dir/build.make box2d/src/CMakeFiles/box2d.dir/build
+	$(MAKE) $(MAKESILENT) -f _deps/box2d-build/src/CMakeFiles/box2d.dir/build.make _deps/box2d-build/src/CMakeFiles/box2d.dir/build
 .PHONY : box2d/fast
 
 #=============================================================================

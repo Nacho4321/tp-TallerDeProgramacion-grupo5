@@ -24,8 +24,22 @@ option(TALLER_MAKE_WARNINGS_AS_ERRORS "Enable / disable warnings as errors." ON)
 
 message(CMAKE_CXX_COMPILER_ID="${CMAKE_CXX_COMPILER_ID}")
 
-# Add Box2D as subdirectory
-add_subdirectory(box2d)
+# Add Box2D with FetchContent
+include(FetchContent)
+
+FetchContent_Declare(
+    box2d
+    GIT_REPOSITORY https://github.com/erincatto/box2d.git
+    GIT_TAG v2.4.1
+    GIT_SHALLOW TRUE
+    GIT_PROGRESS TRUE
+)
+
+# Disable Box2D tests and examples
+set(BOX2D_BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
+set(BOX2D_BUILD_TESTBED OFF CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(box2d)
 
 # Define target: lib common between client, server and editor programs
 # HEY TODO XXX: change the name to something that you like
@@ -59,8 +73,6 @@ target_link_libraries(taller_common PUBLIC box2d)
 # Install libSDL2 and libSDL2pp (for client or editor)
 # HEY!! TODO XXX: add more dependendies (either for client, server or editor)
 if(TALLER_CLIENT OR TALLER_EDITOR)
-    include(FetchContent)
-    
     FetchContent_Declare(
         SDL2
         GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
@@ -189,7 +201,6 @@ endif()
 
 if(TALLER_TESTS)
     # Let's use google test
-    include(FetchContent)
     FetchContent_Declare(
         googletest
         URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
