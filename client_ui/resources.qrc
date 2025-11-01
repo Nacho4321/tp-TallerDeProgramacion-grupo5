@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="/img">
+    <file alias="mainMenu.jpg">img/mainMenu.jpg</file>
+    <file alias="connectionMenu.jpg">img/connectionMenu.jpg</file>
+  </qresource>
+</RCC>
