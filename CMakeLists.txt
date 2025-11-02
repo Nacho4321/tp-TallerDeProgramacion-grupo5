@@ -157,7 +157,7 @@ if(TALLER_CLIENT_UI)
     set_project_warnings(taller_client_ui ${TALLER_MAKE_WARNINGS_AS_ERRORS} FALSE)
     
     # Link common library and Qt6
-    target_link_libraries(taller_client_ui 
+    target_link_libraries(taller_client_ui PRIVATE
         taller_common 
         Qt6::Widgets
     )

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
+
 #include <QMainWindow>
 
 namespace Ui { 
@@ -19,4 +21,10 @@ class MainWindow : public QMainWindow {
 
     private:
     Ui::MainWindow* ui;
+    QString serverHost;
+    quint16 serverPort;
+    
+    void launchSDLClient();
 };
+
+#endif
