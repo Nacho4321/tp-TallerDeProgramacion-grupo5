@@ -1,20 +1,22 @@
-#include "ConnectDialog.h"
-#include "ui_ConnectDialog.h"
+#include "ConnectionMenu.h"
+#include "ui_ConnectionMenu.h"
 #include <QMessageBox>
 
-ConnectDialog::ConnectDialog(QWidget* parent)
-    : QDialog(parent), ui(new Ui::ConnectDialog) {
+ConnectionMenu::ConnectionMenu(QWidget* parent)
+    : QDialog(parent), ui(new Ui::ConnectionMenu) {
     ui->setupUi(this);
 
-    connect(ui->btnConnect, &QPushButton::clicked, this, &ConnectDialog::handleConnect);
+    ui->btnConnect->setDefault(true);
+    ui->btnConnect->setAutoDefault(true);
+    connect(ui->btnConnect, &QPushButton::clicked, this, &ConnectionMenu::handleConnect);
     connect(ui->btnExit,    &QPushButton::clicked, this, &QDialog::reject);
 }
 
-ConnectDialog::~ConnectDialog() { 
-    delete ui; 
+ConnectionMenu::~ConnectionMenu() {
+    delete ui;
 }
 
-void ConnectDialog::handleConnect() {
+void ConnectionMenu::handleConnect() {
     bool ok = false;
     const QString host = ui->lineHost->text().trimmed();
     const quint16 port = ui->linePort->text().toUShort(&ok);

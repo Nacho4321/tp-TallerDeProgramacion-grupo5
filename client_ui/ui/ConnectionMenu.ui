@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ConnectDialog</class>
- <widget class="QDialog" name="ConnectDialog">
+ <class>ConnectionMenu</class>
+ <widget class="QDialog" name="ConnectionMenu">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -27,7 +27,7 @@
   </property>
   <property name="styleSheet">
    <string>
-#ConnectDialog {
+#ConnectionMenu {
   border-image: url(:/img/connectionMenu.jpg) 0 0 0 0 stretch stretch;
   background-color: #121418;
 }

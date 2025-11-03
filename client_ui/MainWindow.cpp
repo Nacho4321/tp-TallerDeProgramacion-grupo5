@@ -1,6 +1,6 @@
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
-#include "ConnectDialog.h"
+#include "ConnectionMenu.h"
 #include <QMessageBox>
 #include <QtCore/qresource.h>
 #include <QApplication>
@@ -13,13 +13,13 @@
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow), serverPort(0) { 
     ui->setupUi(this);
     Q_INIT_RESOURCE(resources); 
-
+    
     connect(ui->btnNewGame, &QPushButton::clicked, this, &MainWindow::onNewGame);
     connect(ui->btnJoinGame, &QPushButton::clicked, this, &MainWindow::onJoinGame);
     connect(ui->btnExit, &QPushButton::clicked, this, &MainWindow::onExit);
 
-    ConnectDialog dlg(this);
-    connect(&dlg, &ConnectDialog::connectRequested, this, &MainWindow::onConnectRequested);
+    ConnectionMenu dlg(this);
+    connect(&dlg, &ConnectionMenu::connectRequested, this, &MainWindow::onConnectRequested);
     
     dlg.exec();
     if (dlg.result() != QDialog::Accepted) {  // Si se toco exit en la conexion
