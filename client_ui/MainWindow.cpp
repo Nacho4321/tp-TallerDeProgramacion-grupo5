@@ -4,6 +4,7 @@
 #include <QMessageBox>
 #include <QtCore/qresource.h>
 #include <QApplication>
+#include <QTimer>
 
 #include "../client/client.h"
 #include <exception>
@@ -19,7 +20,12 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     ConnectDialog dlg(this);
     connect(&dlg, &ConnectDialog::connectRequested, this, &MainWindow::onConnectRequested);
+    
     dlg.exec();
+    if (dlg.result() != QDialog::Accepted) {  // Si se toco exit en la conexion
+        QTimer::singleShot(0, qApp, &QCoreApplication::quit);
+        return;
+    }
 }
 
 
@@ -36,7 +42,7 @@ void MainWindow::onConnectRequested(const QString& host, quint16 port) {
     serverPort = port;
     
     QMessageBox::information(this, "Connected",
-        QString("Connected to %1:%2\n\n")
+        QString("Connected to %1:%2\n\n")  
             .arg(host).arg(port)
     );
 }
@@ -46,7 +52,6 @@ void MainWindow::onNewGame() {
         QMessageBox::warning(this, "Error", "Connect to server first");
         return;
     }
-    
     close();
     launchSDLClient();
 }
@@ -72,6 +77,7 @@ void MainWindow::launchSDLClient() {
         client.start();
     } catch (const std::exception& e) {
         std::cerr << "Error in SDL client: " << e.what() << std::endl;
-        QApplication::quit();
+        return;
     }
+    QApplication::quit();
 }

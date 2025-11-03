@@ -1,5 +1,6 @@
 #include "ConnectDialog.h"
 #include "ui_ConnectDialog.h"
+#include <QMessageBox>
 
 ConnectDialog::ConnectDialog(QWidget* parent)
     : QDialog(parent), ui(new Ui::ConnectDialog) {
@@ -15,8 +16,12 @@ ConnectDialog::~ConnectDialog() {
 
 void ConnectDialog::handleConnect() {
     bool ok = false;
-    quint16 port = ui->linePort->text().toUShort(&ok);
-    if (!ok) port = 0;
+    const QString host = ui->lineHost->text().trimmed();
+    const quint16 port = ui->linePort->text().toUShort(&ok);
+    if (!ok || port == 0 || host.isEmpty()) {
+        QMessageBox::warning(this, "Connection", "Please enter a valid host and port.");
+        return;
+    }
     emit connectRequested(ui->lineHost->text(), port);
     accept();
 }
