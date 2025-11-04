@@ -18,6 +18,7 @@ project(taller_tp
 
 option(TALLER_TESTS "Enable / disable tests." ON)
 option(TALLER_CLIENT "Enable / disable client program." ON)
+option(TALLER_CLIENT_UI "Enable / disable Qt UI client program." ON)
 option(TALLER_SERVER "Enable / disable server program." ON)
 option(TALLER_EDITOR "Enable / disable editor program." ON)
 option(TALLER_MAKE_WARNINGS_AS_ERRORS "Enable / disable warnings as errors." ON)
@@ -139,6 +140,15 @@ if(TALLER_CLIENT OR TALLER_EDITOR)
     target_link_libraries(SDL2pp PUBLIC SDL2_image::SDL2_image SDL2_mixer::SDL2_mixer SDL2_ttf::SDL2_ttf)
 endif()
 
+# Install Qt6 (for Qt UI client)
+if(TALLER_CLIENT_UI)
+    find_package(Qt6 REQUIRED COMPONENTS Widgets)
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTOUIC ON)
+    set(CMAKE_AUTORCC ON)
+    set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_SOURCE_DIR}/client_ui/ui)
+endif()
+
 # Program section
 # ---------------
 if(TALLER_CLIENT)
@@ -155,6 +165,19 @@ if(TALLER_CLIENT)
         SDL2_image::SDL2_image
         SDL2_mixer::SDL2_mixer
         SDL2_ttf::SDL2_ttf
+    )
+endif()
+
+if(TALLER_CLIENT_UI)
+    add_executable(taller_client_ui)
+    add_dependencies(taller_client_ui taller_common)
+    add_subdirectory(client_ui)
+    set_project_warnings(taller_client_ui ${TALLER_MAKE_WARNINGS_AS_ERRORS} FALSE)
+    
+    # Link common library and Qt6
+    target_link_libraries(taller_client_ui PRIVATE
+        taller_common 
+        Qt6::Widgets
     )
 endif()
 
