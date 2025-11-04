@@ -5,10 +5,6 @@
 
 void Server::start()
 {
-    Event e1 = Event(1, MOVE_UP_PRESSED);
-    Event e2 = Event(2, MOVE_UP_RELEASED);
-    event_queue.push(e1);
-    event_queue.push(e2);
     acceptor.start();
     need_for_speed.start();
     std::string input;
@@ -35,5 +31,9 @@ void Server::process_input(const std::string &input, bool &connected)
     if (input == CLOSE_SERVER)
     {
         connected = false;
+    }
+    if (input == "start")
+    {
+        need_for_speed.start_game();
     }
 }

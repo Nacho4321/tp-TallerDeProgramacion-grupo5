@@ -6,10 +6,8 @@
 #include "../common/socket.h"
 #include "../common/constants.h"
 
-#include "../server/acceptor.h"
-#include "../server/client_handler.h"
-#include "../server/outbox_monitor.h"
-#include "../server/messages.h"
+#include "../server/server_handler.h"
+#include "../common/messages.h"
 #include "../common/queue.h"
 
 static const char *TEST_PORT = "50100"; // usa un puerto distinto de los tests anteriores
@@ -19,20 +17,21 @@ static const char *TEST_PORT = "50100"; // usa un puerto distinto de los tests a
 // ================================================================
 TEST(AcceptorIntegrationTest, ClientConnectsAndSendsMessage)
 {
-    Queue<IncomingMessage> global_inbox;
-
-    std::thread server_thread([&]()
-                              {
-        Socket listener(TEST_PORT);  // crea socket servidor
-        Acceptor acceptor(listener, global_inbox);
-        acceptor.start();
-
-        // Esperamos a que llegue un mensaje desde el cliente
-        IncomingMessage msg = global_inbox.pop();
-        EXPECT_EQ(msg.cmd, MOVE_UP_PRESSED_STR);
-
-        acceptor.stop();
-        acceptor.join(); });
+    std::thread server_thread([&]() {
+        ServerHandler server(TEST_PORT);
+        server.start();
+        // Esperamos a que llegue el mensaje al server handler
+        ClientHandlerMessage ch_msg;
+        bool got = false;
+        for (int i = 0; i < 30 && !got; ++i) {
+            got = server.try_receive(ch_msg);
+            if (!got)
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        ASSERT_TRUE(got);
+        EXPECT_EQ(ch_msg.msg.cmd, MOVE_UP_PRESSED_STR);
+        server.stop();
+    });
 
     // Dejamos tiempo para que el servidor se levante
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -40,7 +39,9 @@ TEST(AcceptorIntegrationTest, ClientConnectsAndSendsMessage)
     // Cliente se conecta y envía mensaje
     Socket client("localhost", TEST_PORT);
     Protocol proto_client(std::move(client));
-    proto_client.sendMessage(MOVE_UP_PRESSED_STR);
+    ClientMessage client_msg;
+    client_msg.cmd = MOVE_UP_PRESSED_STR;
+    proto_client.sendMessage(client_msg);
 
     server_thread.join();
 }
@@ -50,39 +51,61 @@ TEST(AcceptorIntegrationTest, ClientConnectsAndSendsMessage)
 // ================================================================
 TEST(AcceptorIntegrationTest, BroadcastMessageToClient)
 {
-    Queue<IncomingMessage> global_inbox;
-
-    std::thread server_thread([&]()
-                              {
-        Socket listener(TEST_PORT);
-        Acceptor acceptor(listener, global_inbox);
-        acceptor.start();
-
+    std::thread server_thread2([&]() {
+        ServerHandler server(TEST_PORT);
+        server.start();
         // Esperamos un poco a que se conecte el cliente
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
         // Enviamos un broadcast a todos los clientes
-        OutgoingMessage msg;
-        msg.cmd = UPDATE_POSITIONS_STR;
-        acceptor.broadcast(msg);
+        ServerMessage msg;
 
-        // Esperamos a que el cliente reciba
+        Position pos1;
+        pos1.new_X = 50.0f;
+        pos1.new_Y = 75.0f;
+        pos1.direction_x = MovementDirectionX::left;
+        pos1.direction_y = MovementDirectionY::up;
+        PlayerPositionUpdate update1;
+        update1.player_id = 1;
+        update1.new_pos = pos1;
+        msg.positions.push_back(update1);
+
+        Position pos2;
+        pos2.new_X = 150.0f;
+        pos2.new_Y = 175.0f;
+        pos2.direction_x = MovementDirectionX::right;
+        pos2.direction_y = MovementDirectionY::down;
+        PlayerPositionUpdate update2;
+        update2.player_id = 2;
+        update2.new_pos = pos2;
+        msg.positions.push_back(update2);
+
+        server.broadcast(msg);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-        acceptor.stop();
-        acceptor.join(); });
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        server.stop();
+    });
 
     // Cliente
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     Socket client("localhost", TEST_PORT);
     Protocol proto_client(std::move(client));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     // Recibimos el mensaje broadcast
-    DecodedMessage received = proto_client.receiveMessage();
-    EXPECT_EQ(received.cmd, UPDATE_POSITIONS_STR);
+    ServerMessage received = proto_client.receiveServerMessage();
+    EXPECT_EQ(received.positions.size(), 2);
+    EXPECT_EQ(received.positions[0].player_id, 1);
+    EXPECT_FLOAT_EQ(received.positions[0].new_pos.new_X, 50.0f);
+    EXPECT_FLOAT_EQ(received.positions[0].new_pos.new_Y, 75.0f);
+    EXPECT_EQ(received.positions[0].new_pos.direction_x, MovementDirectionX::left);
+    EXPECT_EQ(received.positions[0].new_pos.direction_y, MovementDirectionY::up);
+    EXPECT_EQ(received.positions[1].player_id, 2);
+    EXPECT_FLOAT_EQ(received.positions[1].new_pos.new_X, 150.0f);
+    EXPECT_FLOAT_EQ(received.positions[1].new_pos.new_Y, 175.0f);
+    EXPECT_EQ(received.positions[1].new_pos.direction_x, MovementDirectionX::right);
+    EXPECT_EQ(received.positions[1].new_pos.direction_y, MovementDirectionY::down);
 
-    server_thread.join();
+    server_thread2.join();
 }
 
 // ================================================================
@@ -90,22 +113,37 @@ TEST(AcceptorIntegrationTest, BroadcastMessageToClient)
 // ================================================================
 TEST(AcceptorIntegrationTest, BroadcastToMultipleClients)
 {
-    Queue<IncomingMessage> global_inbox;
-    Socket listener(TEST_PORT);
-    Acceptor acceptor(listener, global_inbox);
-
-    std::thread server_thread([&]()
-                              {
-        acceptor.start();
+    std::thread server_thread3([&]() {
+        ServerHandler server(TEST_PORT);
+        server.start();
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
-        OutgoingMessage msg;
-        msg.cmd = UPDATE_POSITIONS_STR;
-        acceptor.broadcast(msg);
+        ServerMessage msg2;
 
+        Position pos1b;
+        pos1b.new_X = 50.0f;
+        pos1b.new_Y = 75.0f;
+        pos1b.direction_x = MovementDirectionX::left;
+        pos1b.direction_y = MovementDirectionY::up;
+        PlayerPositionUpdate update1b;
+        update1b.player_id = 1;
+        update1b.new_pos = pos1b;
+        msg2.positions.push_back(update1b);
+
+        Position pos2b;
+        pos2b.new_X = 150.0f;
+        pos2b.new_Y = 175.0f;
+        pos2b.direction_x = MovementDirectionX::right;
+        pos2b.direction_y = MovementDirectionY::down;
+        PlayerPositionUpdate update2b;
+        update2b.player_id = 2;
+        update2b.new_pos = pos2b;
+        msg2.positions.push_back(update2b);
+
+        server.broadcast(msg2);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
-        acceptor.stop();
-        acceptor.join(); });
+        server.stop();
+    });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
@@ -116,11 +154,31 @@ TEST(AcceptorIntegrationTest, BroadcastToMultipleClients)
     Protocol p1(std::move(c1));
     Protocol p2(std::move(c2));
 
-    auto m1 = p1.receiveMessage();
-    auto m2 = p2.receiveMessage();
+    auto m1 = p1.receiveServerMessage();
+    auto m2 = p2.receiveServerMessage();
 
-    EXPECT_EQ(m1.cmd, UPDATE_POSITIONS_STR);
-    EXPECT_EQ(m2.cmd, UPDATE_POSITIONS_STR);
+    EXPECT_EQ(m1.positions.size(), 2);
+    EXPECT_EQ(m2.positions.size(), 2);
+    EXPECT_EQ(m1.positions[0].player_id, 1);
+    EXPECT_EQ(m2.positions[0].player_id, 1);
+    EXPECT_FLOAT_EQ(m1.positions[0].new_pos.new_X, 50.0f);
+    EXPECT_FLOAT_EQ(m2.positions[0].new_pos.new_X, 50.0f);
+    EXPECT_FLOAT_EQ(m1.positions[0].new_pos.new_Y, 75.0f);
+    EXPECT_FLOAT_EQ(m2.positions[0].new_pos.new_Y, 75.0f);
+    EXPECT_EQ(m1.positions[0].new_pos.direction_x, MovementDirectionX::left);
+    EXPECT_EQ(m2.positions[0].new_pos.direction_x, MovementDirectionX::left);
+    EXPECT_EQ(m1.positions[0].new_pos.direction_y, MovementDirectionY::up);
+    EXPECT_EQ(m2.positions[0].new_pos.direction_y, MovementDirectionY::up);
+    EXPECT_EQ(m1.positions[1].player_id, 2);
+    EXPECT_EQ(m2.positions[1].player_id, 2);
+    EXPECT_FLOAT_EQ(m1.positions[1].new_pos.new_X, 150.0f);
+    EXPECT_FLOAT_EQ(m2.positions[1].new_pos.new_X, 150.0f);
+    EXPECT_FLOAT_EQ(m1.positions[1].new_pos.new_Y, 175.0f);
+    EXPECT_FLOAT_EQ(m2.positions[1].new_pos.new_Y, 175.0f);
+    EXPECT_EQ(m1.positions[1].new_pos.direction_x, MovementDirectionX::right);
+    EXPECT_EQ(m2.positions[1].new_pos.direction_x, MovementDirectionX::right);
+    EXPECT_EQ(m1.positions[1].new_pos.direction_y, MovementDirectionY::down);
+    EXPECT_EQ(m2.positions[1].new_pos.direction_y, MovementDirectionY::down);
 
-    server_thread.join();
+    server_thread3.join();
 }

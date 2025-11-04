@@ -26,6 +26,6 @@ void GameClientHandler::send(const std::string& msg) {
     outgoing.push(msg);
 }
 
-bool GameClientHandler::try_receive(DecodedMessage& out) {
+bool GameClientHandler::try_receive(ServerMessage& out) {
     return incoming.try_pop(out);
 }

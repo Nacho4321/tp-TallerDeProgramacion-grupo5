@@ -1,23 +1,20 @@
 #ifndef EVENTLOOP_EVENTLOOP_H
 #define EVENTLOOP_EVENTLOOP_H
-#include <list>
-#include <memory>
 #include <string>
-#include <unordered_map>
-#include <utility>
-#include <vector>
 #include "queue.h"
 #include "thread.h"
 #include "eventDispatcher.h"
-
+#include "../server/client_handler_msg.h"
 class EventLoop : public Thread
 {
 private:
-    Queue<Event> &event_queue;
+    std::mutex &players_map_mutex;
+    std::unordered_map<int, PlayerData> &players;
+    Queue<ClientHandlerMessage> &global_inbox;
     EventDispatcher dispatcher;
 
 public:
-    explicit EventLoop(Queue<Event> &e_queue) : event_queue(e_queue), dispatcher() {}
+    explicit EventLoop(std::mutex &map_mutex, std::unordered_map<int, PlayerData> &map, Queue<ClientHandlerMessage> &global_inb) : players_map_mutex(map_mutex), players(map), global_inbox(global_inb), dispatcher(players_map_mutex, players) {}
     void run() override;
     void stop() override;
     ~EventLoop() override = default;

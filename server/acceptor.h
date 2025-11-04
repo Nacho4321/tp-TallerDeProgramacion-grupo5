@@ -4,13 +4,14 @@
 #include <memory>
 #include <utility>
 #include <vector>
-
+#include <list>
 #include "../common/protocol.h"
 #include "../common/queue.h"
 #include "../common/socket.h"
 #include "../common/thread.h"
 
 #include "client_handler.h"
+#include "client_handler_msg.h"
 #include "outbox_monitor.h"
 
 // TODO: -Usar monitor y dejar de usar mutexes en el acceptor
@@ -19,19 +20,20 @@
 class Acceptor : public Thread
 {
     Socket acceptor;
-    Queue<IncomingMessage> &global_inbox;
+    Queue<ClientHandlerMessage> &global_inbox;
     std::vector<std::unique_ptr<ClientHandler>> clients;
-    OutboxMonitor outbox_monitor;
+    Queue<int> &game_clients;
+    OutboxMonitor &outbox_monitor;
     int next_id = 0;
 
 public:
-    explicit Acceptor(const char *port, Queue<IncomingMessage> &global_inbox);
-    explicit Acceptor(Socket &acc, Queue<IncomingMessage> &global_inbox);
+    explicit Acceptor(const char *port, Queue<ClientHandlerMessage> &global_inbox, Queue<int> &clients, OutboxMonitor &outboxes);
+    explicit Acceptor(Socket &acc, Queue<ClientHandlerMessage> &global_inbox, Queue<int> &client, OutboxMonitor &outboxes);
 
     void run() override;
     void stop() override;
 
-    void broadcast(const OutgoingMessage &msg);
+    void broadcast(const ServerMessage &msg);
 
 private:
     void clear();

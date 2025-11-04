@@ -7,7 +7,7 @@
 
 Protocol::Protocol(Socket&& socket) noexcept: skt(std::move(socket)), buffer() {}
 
-DecodedMessage Protocol::receiveMessage() {
+ClientMessage Protocol::receiveClientMessage() {
     uint8_t opcode;
     if (skt.recvall(&opcode, sizeof(opcode)) <= 0)
         return {};
@@ -29,15 +29,30 @@ DecodedMessage Protocol::receiveMessage() {
             return receiveRightPressed();
         case MOVE_RIGHT_RELEASED:
             return receiveRightReleased();
-        case UPDATE_POSITIONS:
-            return receivePositionsUpdate();
         default:
             return {};  // desconocido
     }
 }
 
-void Protocol::sendMessage(const std::string& cmd) {
-    auto msg = encodeCommand(cmd);
+ServerMessage Protocol::receiveServerMessage() {
+    uint8_t opcode;
+    if (skt.recvall(&opcode, sizeof(opcode)) <= 0)
+        return {};
+
+    if (opcode == UPDATE_POSITIONS) {
+        return receivePositionsUpdate();
+    } else {
+        return {};  // desconocido
+    }
+}
+
+void Protocol::sendMessage(ServerMessage& out) {
+    auto msg = encodeServerMessage(out);
+    skt.sendall(msg.data(), msg.size());
+}
+
+void Protocol::sendMessage(ClientMessage& out) {
+    auto msg = encodeCommand(out.cmd);
     skt.sendall(msg.data(), msg.size());
 }
 

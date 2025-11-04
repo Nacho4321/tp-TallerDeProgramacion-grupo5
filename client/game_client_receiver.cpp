@@ -1,14 +1,14 @@
 #include "game_client_receiver.h"
 #include <iostream>
 
-GameClientReceiver::GameClientReceiver(Protocol& proto, Queue<DecodedMessage>& messages) :
+GameClientReceiver::GameClientReceiver(Protocol& proto, Queue<ServerMessage>& messages) :
     protocol(proto), incoming_messages(messages) {}
 
 void GameClientReceiver::run() {
     try {
         while (should_keep_running()) {
-            DecodedMessage msg = protocol.receiveMessage();
-            if (msg.cmd.empty())
+            ServerMessage msg = protocol.receiveServerMessage();
+            if (msg.positions.empty())
                 break;  // EOF o desconexión
             incoming_messages.push(std::move(msg));
         }

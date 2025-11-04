@@ -15,7 +15,9 @@ void GameClientSender::run() {
                 break;
             }
             if (!should_keep_running()) break;  // Verificar antes de enviar
-            protocol.sendMessage(msg);
+            ClientMessage client_msg;
+            client_msg.cmd = msg;
+            protocol.sendMessage(client_msg);
         }
     } catch (const std::exception& e) {
         std::cerr << "[Game Client Sender] Exception: " << e.what() << std::endl;

@@ -5,18 +5,18 @@
 #include <vector>
 
 #include "../common/queue.h"
+#include "../common/messages.h"
 
-#include "messages.h"
-
-class OutboxMonitor {
+class OutboxMonitor
+{
 private:
-    std::vector<std::shared_ptr<Queue<OutgoingMessage>>> outboxes;
+    std::vector<std::shared_ptr<Queue<ServerMessage>>> outboxes;
     std::mutex mtx;
 
 public:
-    void add(std::shared_ptr<Queue<OutgoingMessage>> q);
-    void remove(std::shared_ptr<Queue<OutgoingMessage>> q);
-    void broadcast(const OutgoingMessage& msg);
+    void add(std::shared_ptr<Queue<ServerMessage>> q);
+    void remove(std::shared_ptr<Queue<ServerMessage>> q);
+    void broadcast(const ServerMessage &msg);
 };
 
 #endif

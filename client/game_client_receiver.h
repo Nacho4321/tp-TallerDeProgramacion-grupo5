@@ -11,10 +11,10 @@
 class GameClientReceiver : public Thread {
 private:
     Protocol& protocol;
-    Queue<DecodedMessage>& incoming_messages;
+    Queue<ServerMessage>& incoming_messages;
 
 public:
-    explicit GameClientReceiver(Protocol& proto, Queue<DecodedMessage>& messages);
+    explicit GameClientReceiver(Protocol& proto, Queue<ServerMessage>& messages);
     
     void run() override;
     void stop() override;  

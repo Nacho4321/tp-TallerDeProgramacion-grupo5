@@ -9,55 +9,55 @@
 #include "../common/queue.h"
 #include "../common/socket.h"
 #include "../common/thread.h"
+#include "../common/messages.h"
 
-#include "messages.h"
-
+#include "client_handler_msg.h"
 
 // ---------------- ClientReceiver ----------------
-class ClientReceiver: public Thread {
-    Protocol& protocol;
+class ClientReceiver : public Thread
+{
+    Protocol &protocol;
     int client_id;
-    Queue<IncomingMessage>& global_inbox;
+    Queue<ClientHandlerMessage> &global_inbox;
 
 public:
-    ClientReceiver(Protocol& proto, int id, Queue<IncomingMessage>& global_inbox);
+    ClientReceiver(Protocol &proto, int id, Queue<ClientHandlerMessage> &global_inbox);
 
     void run() override;
-
-private:
-    IncomingMessage make_message_from_decoded(const DecodedMessage& cmd);
 };
 
 // ---------------- ClientSender ----------------
-class ClientSender: public Thread {
-    Protocol& protocol;
-    Queue<OutgoingMessage>& outbox;
+class ClientSender : public Thread
+{
+    Protocol &protocol;
+    Queue<ServerMessage> &outbox;
 
 public:
-    ClientSender(Protocol& proto, Queue<OutgoingMessage>& ob);
+    ClientSender(Protocol &proto, Queue<ServerMessage> &ob);
 
     void run() override;
 };
 
 // ---------------- ClientHandler ----------------
-class ClientHandler {
+class ClientHandler
+{
     Protocol protocol;
-    std::shared_ptr<Queue<OutgoingMessage>> outbox;
-    Queue<IncomingMessage>& global_inbox;
+    std::shared_ptr<Queue<ServerMessage>> outbox;
+    Queue<ClientHandlerMessage> &global_inbox;
     ClientSender sender;
     int client_id;
     ClientReceiver receiver;
 
 public:
-    ClientHandler(Socket&& p, int id, Queue<IncomingMessage>& global_inbox);
+    ClientHandler(Socket &&p, int id, Queue<ClientHandlerMessage> &global_inbox);
 
     void start();
     void stop();
     bool is_alive();
     void join();
 
-    std::shared_ptr<Queue<OutgoingMessage>> get_outbox();
+    std::shared_ptr<Queue<ServerMessage>> get_outbox();
     int get_id();
 };
 
-#endif  // CLIENT_HANDLER_H
+#endif // CLIENT_HANDLER_H

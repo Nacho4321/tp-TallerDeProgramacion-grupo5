@@ -7,6 +7,7 @@
 #include "../common/thread.h"
 #include "../common/protocol.h"
 
+
 class GameClientSender : public Thread {
 private:
     Protocol& protocol;

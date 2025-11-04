@@ -1,32 +1,43 @@
-#include <memory>
+#ifndef EVENT_H
+#define EVENT_H
+#include <string>
 
 struct Event
 {
     int client_id;
-    uint8_t action;
-    explicit Event(int client, uint8_t act) : client_id(client), action(act) {}
+    std::string action;
+    explicit Event(int client, std::string act) : client_id(client), action(act) {}
     virtual ~Event() = default;
 };
 
-enum MovementDirection
+enum MovementDirectionX
 {
     left = -1,
-    forward = 0,
+    not_horizontal = 0,
     right = 1,
-    backwards = 2
+};
+enum MovementDirectionY
+{
+    up = -1,
+    not_vertical = 0,
+    down = 1,
 };
 
-struct PlayerMovedEvent : public Event
+struct Position
 {
     float new_X;
     float new_Y;
-    MovementDirection direction_x;
-    MovementDirection direction_y;
-    PlayerMovedEvent(int client_id, uint8_t action, float x, float y,
-                     MovementDirection dir_x, MovementDirection dir_y)
+    MovementDirectionX direction_x;
+    MovementDirectionY direction_y;
+};
+struct PlayerMovedEvent : public Event
+{
+    Position pos;
+    explicit PlayerMovedEvent(int client_id, std::string action, Position new_position)
         : Event(client_id, action),
-          new_X(x), new_Y(y),
-          direction_x(dir_x), direction_y(dir_y)
+          pos(new_position)
     {
     }
 };
+
+#endif

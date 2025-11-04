@@ -1,13 +1,16 @@
 #include "outbox_monitor.h"
 
-void OutboxMonitor::add(std::shared_ptr<Queue<OutgoingMessage>> q) {
+void OutboxMonitor::add(std::shared_ptr<Queue<ServerMessage>> q)
+{
     std::lock_guard<std::mutex> lock(mtx);
     outboxes.push_back(q);
 }
 
-void OutboxMonitor::remove(std::shared_ptr<Queue<OutgoingMessage>> q) {
+void OutboxMonitor::remove(std::shared_ptr<Queue<ServerMessage>> q)
+{
     std::lock_guard<std::mutex> lock(mtx);
-    for (auto it = outboxes.begin(); it != outboxes.end();) {
+    for (auto it = outboxes.begin(); it != outboxes.end();)
+    {
         if (*it == q)
             it = outboxes.erase(it);
         else
@@ -15,11 +18,11 @@ void OutboxMonitor::remove(std::shared_ptr<Queue<OutgoingMessage>> q) {
     }
 }
 
-void OutboxMonitor::broadcast(const OutgoingMessage& msg) {
+void OutboxMonitor::broadcast(const ServerMessage &msg)
+{
     std::lock_guard<std::mutex> lock(mtx);
-    for (auto& q: outboxes) {
-        if (!q->try_push(msg)) {
-            // cliente desconectado o cola cerrada, ignorar
-        }
+    for (auto &q : outboxes)
+    {
+        q->push(msg);
     }
 }

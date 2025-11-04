@@ -12,7 +12,7 @@
 class GameClientHandler {
 private:
     Protocol& protocol;
-    Queue<DecodedMessage> incoming;
+    Queue<ServerMessage> incoming;
     Queue<std::string> outgoing;
 
     GameClientSender sender;
@@ -35,7 +35,7 @@ public:
     // Interfaz simple
     void send(const std::string& msg);
     // try_receive devuelve true si obtuvo un mensaje no bloqueante
-    bool try_receive(DecodedMessage& out);
+    bool try_receive(ServerMessage& out);
 };
 
 #endif // GAME_CLIENT_HANDLER_H

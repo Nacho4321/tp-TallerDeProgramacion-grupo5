@@ -9,8 +9,9 @@ void EventLoop::run()
     {
         try
         {
-            auto event = event_queue.pop();
-            dispatcher.handle_event(event);
+            ClientHandlerMessage event = global_inbox.pop();
+            Event ev = Event{event.client_id, event.msg.cmd};
+            dispatcher.handle_event(ev);
         }
         catch (const ClosedQueue &)
         {
@@ -25,6 +26,6 @@ void EventLoop::run()
 
 void EventLoop::stop()
 {
-    event_queue.close();
+    global_inbox.close();
     Thread::stop();
 }
