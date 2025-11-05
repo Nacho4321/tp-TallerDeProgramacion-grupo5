@@ -2,7 +2,7 @@
 #define GAME_MONITOR_H
 #include <unordered_map>
 #include <memory>
-#include "gameloop.h"
+#include "../common/gameloop.h"
 #include <mutex>
 #define STARTING_ID 1
 class GameMonitor
@@ -13,6 +13,7 @@ private:
     int next_id;
 
 public:
+    ~GameMonitor();
     explicit GameMonitor() : games(), games_mutex(), next_id(STARTING_ID) {}
     void add_game(std::unique_ptr<GameLoop> game);
 };

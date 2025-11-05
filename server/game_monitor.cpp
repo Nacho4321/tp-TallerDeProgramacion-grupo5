@@ -5,4 +5,15 @@ void GameMonitor::add_game(std::unique_ptr<GameLoop> game)
     std::lock_guard<std::mutex> lock(games_mutex);
     int new_game_id = next_id++;
     games[new_game_id] = std::move(game);
+
+    games[new_game_id]->start();
+}
+
+GameMonitor::~GameMonitor()
+{
+    for (auto &[id, game] : games)
+    {
+        game->stop();
+        game->join();
+    }
 }

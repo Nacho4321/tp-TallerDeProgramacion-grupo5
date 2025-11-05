@@ -5,7 +5,7 @@
 #include <mutex>
 #include <string>
 #include "../common/queue.h"
-#include "../common/gameloop.h"
+#include "game_monitor.h"
 #include "acceptor.h"
 
 class Server
@@ -14,13 +14,13 @@ private:
     Queue<int> clientes;
     OutboxMonitor outboxes;
     Queue<ClientHandlerMessage> global_inbox;
-    GameLoop need_for_speed;
+    GameMonitor games_monitor;
     Acceptor acceptor;
     void process_input(const std::string &input, bool &connected);
 
 public:
     explicit Server(const char *port)
-        : clientes(), outboxes(), global_inbox(), need_for_speed(clientes, global_inbox, outboxes),
+        : clientes(), outboxes(), global_inbox(), games_monitor(),
           acceptor(port, global_inbox, clientes, outboxes)
     {
     }
