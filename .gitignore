@@ -1,7 +1,12 @@
 build/
 _deps/
 lib/
-
+taller_client_autogen/
+taller_client_ui_autogen/
+taller_editor_autogen/
+taller_server_autogen/
+taller_tests_autogen/
+.qt/
 # CMake generated files
 CMakeFiles/
 cmake_install.cmake
