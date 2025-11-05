@@ -7,20 +7,21 @@
 #include "../common/messages.h"
 #include "../server/outbox_monitor.h"
 #include "../server/client_handler_msg.h"
+#define INITIAL_ID 1
 class GameLoop : public Thread
 {
 private:
     std::mutex players_map_mutex;
     std::unordered_map<int, PlayerData> players;
-    Queue<ClientHandlerMessage> &global_inbox;
+    Queue<Event> event_queue;
     EventLoop event_loop;
-    Queue<int> &game_clients;
     bool started;
     OutboxMonitor &outbox_moitor;
     void init_players();
+    int next_id;
 
 public:
-    explicit GameLoop(Queue<int> &clientes, Queue<ClientHandlerMessage> &global_q, OutboxMonitor &outboxes) : players_map_mutex(), players(), global_inbox(global_q), event_loop(players_map_mutex, players, global_inbox), game_clients(clientes), started(false), outbox_moitor(outboxes) {}
+    explicit GameLoop(OutboxMonitor &outboxes) : players_map_mutex(), players(), event_queue(), event_loop(players_map_mutex, players, event_queue), started(false), outbox_moitor(outboxes), next_id(INITIAL_ID) {}
     void run() override;
     void start_game();
 };
