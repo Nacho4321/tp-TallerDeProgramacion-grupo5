@@ -1,32 +1,39 @@
 #include "server_handler.h"
 
-ServerHandler::ServerHandler(const char* port)
-    : inbox(), players(), outboxes(),
-      acceptor(port, inbox, players, outboxes) {}
+ServerHandler::ServerHandler(const char *port)
+    : inbox(), outboxes(),
+      acceptor(port, inbox, outboxes) {}
 
-ServerHandler::~ServerHandler() {
+ServerHandler::~ServerHandler()
+{
     stop();
 }
 
-void ServerHandler::start() {
-    if (!started) {
+void ServerHandler::start()
+{
+    if (!started)
+    {
         acceptor.start();
         started = true;
     }
 }
 
-void ServerHandler::stop() {
-    if (started) {
+void ServerHandler::stop()
+{
+    if (started)
+    {
         acceptor.stop();
         acceptor.join();
         started = false;
     }
 }
 
-bool ServerHandler::try_receive(ClientHandlerMessage& out) {
+bool ServerHandler::try_receive(ClientHandlerMessage &out)
+{
     return inbox.try_pop(out);
 }
 
-void ServerHandler::broadcast(const ServerMessage& msg) {
+void ServerHandler::broadcast(const ServerMessage &msg)
+{
     acceptor.broadcast(msg);
 }

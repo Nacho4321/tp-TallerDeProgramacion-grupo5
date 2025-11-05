@@ -11,7 +11,6 @@
 class Server
 {
 private:
-    Queue<int> clientes;
     OutboxMonitor outboxes;
     Queue<ClientHandlerMessage> global_inbox;
     GameMonitor games_monitor;
@@ -20,8 +19,8 @@ private:
 
 public:
     explicit Server(const char *port)
-        : clientes(), outboxes(), global_inbox(), games_monitor(),
-          acceptor(port, global_inbox, clientes, outboxes)
+        : outboxes(), global_inbox(), games_monitor(),
+          acceptor(port, global_inbox, outboxes)
     {
     }
     void start();

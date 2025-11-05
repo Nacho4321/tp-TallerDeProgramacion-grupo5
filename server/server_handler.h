@@ -12,24 +12,24 @@
 // - ~ServerHandler(): detiene y joinea automáticamente
 // - try_receive(): intenta obtener un mensaje del inbox global
 // - broadcast(): envía un ServerMessage a todos los clientes
-class ServerHandler {
+class ServerHandler
+{
 public:
-    explicit ServerHandler(const char* port);
+    explicit ServerHandler(const char *port);
     ~ServerHandler();
 
     // No copiable ni movable (simplifica ownership del hilo)
-    ServerHandler(const ServerHandler&) = delete;
-    ServerHandler& operator=(const ServerHandler&) = delete;
+    ServerHandler(const ServerHandler &) = delete;
+    ServerHandler &operator=(const ServerHandler &) = delete;
 
     void start();
     void stop();
 
-    bool try_receive(ClientHandlerMessage& out);
-    void broadcast(const ServerMessage& msg);
+    bool try_receive(ClientHandlerMessage &out);
+    void broadcast(const ServerMessage &msg);
 
 private:
     Queue<ClientHandlerMessage> inbox;
-    Queue<int> players;
     OutboxMonitor outboxes;
     Acceptor acceptor;
     bool started{false};

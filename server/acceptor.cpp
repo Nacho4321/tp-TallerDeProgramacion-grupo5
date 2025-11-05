@@ -1,8 +1,8 @@
 #include "acceptor.h"
 
-Acceptor::Acceptor(Socket &acc, Queue<ClientHandlerMessage> &global_inbox, Queue<int> &clients, OutboxMonitor &outboxes) : acceptor(std::move(acc)), global_inbox(global_inbox), game_clients(clients), outbox_monitor(outboxes) {}
+Acceptor::Acceptor(Socket &acc, Queue<ClientHandlerMessage> &global_inbox, OutboxMonitor &outboxes) : acceptor(std::move(acc)), global_inbox(global_inbox), outbox_monitor(outboxes) {}
 
-Acceptor::Acceptor(const char *port, Queue<ClientHandlerMessage> &global_inbox, Queue<int> &clients, OutboxMonitor &outboxes) : acceptor(Socket(port)), global_inbox(global_inbox), game_clients(clients), outbox_monitor(outboxes) {}
+Acceptor::Acceptor(const char *port, Queue<ClientHandlerMessage> &global_inbox, OutboxMonitor &outboxes) : acceptor(Socket(port)), global_inbox(global_inbox), outbox_monitor(outboxes) {}
 
 void Acceptor::run()
 {
@@ -13,7 +13,6 @@ void Acceptor::run()
             Socket peer = acceptor.accept(); // bloqueante, espera cliente
 
             int id = next_id++;
-            game_clients.push(id);
             auto c = std::make_unique<ClientHandler>(std::move(peer), id, global_inbox);
 
             reap(); // limpiar clientes muertos
@@ -82,7 +81,6 @@ void Acceptor::reap()
             outbox_monitor.remove(c->get_outbox());
             c->stop();
             c->join();
-            it = clients.erase(it); // se destruye automáticamente
         }
         else
         {
