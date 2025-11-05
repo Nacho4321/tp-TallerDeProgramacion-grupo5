@@ -18,3 +18,19 @@ tags.*
 *.o
 *.so
 *.a
+
+# Ejecutables generados en la carpeta raíz (útiles para builds que crean binarios en root)
+/taller_server
+/taller_client
+/taller_editor
+/taller_tests
+/taller_client_ui
+/*.out
+/*.run
+
+# Añadir variantes sin slash por si se listaron sin / al hacer commit
+taller_server
+taller_client
+taller_editor
+taller_tests
+taller_client_ui
