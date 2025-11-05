@@ -48,6 +48,27 @@ ClientMessage Protocol::receiveRightReleased() {
     return msg;
 }
 
+ClientMessage Protocol::receiveCreateGame() {
+    ClientMessage msg;
+    msg.cmd = CREATE_GAME_STR;
+    return msg;
+}
+
+ClientMessage Protocol::receiveJoinGame() {
+    // Leer game_id (uint32)
+    readBuffer.resize(sizeof(uint32_t));
+    if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0) {
+        return ClientMessage{"join_game 0"};
+    }
+    
+    size_t idx = 0;
+    uint32_t game_id = exportUint32(readBuffer, idx);
+    
+    ClientMessage msg;
+    msg.cmd = JOIN_GAME_STR + " " + std::to_string(game_id);
+    return msg;
+}
+
 ServerMessage Protocol::receivePositionsUpdate() {
     ServerMessage msg;
     
@@ -79,4 +100,26 @@ ServerMessage Protocol::receivePositionsUpdate() {
     }
     
     return msg;
+}
+
+GameJoinedResponse Protocol::receiveGameJoinedResponse() {
+    GameJoinedResponse resp;
+    
+    // Leer game_id (uint32) + player_id (uint32) + success (uint8)
+    readBuffer.resize(sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint8_t));
+    if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0) {
+        resp.success = false;
+        resp.game_id = 0;
+        resp.player_id = 0;
+        return resp;
+    }
+    
+    size_t idx = 0;
+    resp.game_id = exportUint32(readBuffer, idx);
+    resp.player_id = exportUint32(readBuffer, idx);
+    uint8_t success_byte;
+    std::memcpy(&success_byte, readBuffer.data() + idx, sizeof(uint8_t));
+    resp.success = (success_byte != 0);
+    
+    return resp;
 }

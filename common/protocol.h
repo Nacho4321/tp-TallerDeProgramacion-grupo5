@@ -56,6 +56,7 @@ private:
     // Traduce un comando a bytes
     std::vector<std::uint8_t> encodeCommand(const std::string &cmd);
     std::vector<std::uint8_t> encodeServerMessage(ServerMessage& out);
+    std::vector<std::uint8_t> encodeGameJoinedResponse(const GameJoinedResponse& response);
 
     // Helpers de encode
     std::vector<std::uint8_t> encodeClientMessage(std::uint8_t opcode);
@@ -69,8 +70,11 @@ private:
     ClientMessage receiveLeftReleased();
     ClientMessage receiveRightPressed();
     ClientMessage receiveRightReleased();
+    ClientMessage receiveCreateGame();
+    ClientMessage receiveJoinGame();
 
     ServerMessage receivePositionsUpdate();
+    GameJoinedResponse receiveGameJoinedResponse();
 
 public:
     explicit Protocol(Socket &&socket) noexcept; // constructor que toma ownership del socket
@@ -82,10 +86,14 @@ public:
     // Recibe mensaje del socket en formato DecodedMessage
     ClientMessage receiveClientMessage();
     ServerMessage receiveServerMessage();
+    
+    // Lobby methods (cliente recibe respuesta del servidor)
+    GameJoinedResponse receiveGameJoined();
 
     // Envía mensaje al socket
     void sendMessage(ServerMessage& out);
     void sendMessage(ClientMessage& out);
+    void sendMessage(const GameJoinedResponse& response);
 
     void shutdown();
 };

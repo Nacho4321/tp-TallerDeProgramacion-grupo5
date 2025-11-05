@@ -29,6 +29,10 @@ ClientMessage Protocol::receiveClientMessage() {
             return receiveRightPressed();
         case MOVE_RIGHT_RELEASED:
             return receiveRightReleased();
+        case CREATE_GAME:
+            return receiveCreateGame();
+        case JOIN_GAME:
+            return receiveJoinGame();
         default:
             return {};  // desconocido
     }
@@ -54,6 +58,25 @@ void Protocol::sendMessage(ServerMessage& out) {
 void Protocol::sendMessage(ClientMessage& out) {
     auto msg = encodeCommand(out.cmd);
     skt.sendall(msg.data(), msg.size());
+}
+
+void Protocol::sendMessage(const GameJoinedResponse& response) {
+    auto msg = encodeGameJoinedResponse(response);
+    skt.sendall(msg.data(), msg.size());
+}
+
+// Cliente recibe respuesta del servidor
+GameJoinedResponse Protocol::receiveGameJoined() {
+    uint8_t opcode;
+    if (skt.recvall(&opcode, sizeof(opcode)) <= 0) {
+        return {0, 0, false};
+    }
+    
+    if (opcode == GAME_JOINED) {
+        return receiveGameJoinedResponse();
+    }
+    
+    return {0, 0, false};
 }
 
 void Protocol::shutdown() {
