@@ -18,8 +18,10 @@ TEST(ClientCommunicationTest, SendAndReceiveMessage) {
         Protocol proto_server(std::move(peer));  // protocolo del servidor
 
         // Recibir mensaje y devolverlo
-        ClientMessage cl_msg = proto_server.receiveClientMessage();
-        ASSERT_EQ(cl_msg.cmd, MOVE_UP_PRESSED_STR);
+    ClientMessage cl_msg = proto_server.receiveClientMessage();
+    ASSERT_EQ(cl_msg.cmd, MOVE_UP_PRESSED_STR);
+    ASSERT_EQ(cl_msg.player_id, -1);
+    ASSERT_EQ(cl_msg.game_id, -1);
         // Enviar una respuesta con al menos una posición (si enviamos vacío,
         // el GameClientReceiver lo interpreta como EOF y cierra)
         ServerMessage msg;

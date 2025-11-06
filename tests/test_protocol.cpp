@@ -17,8 +17,10 @@ TEST(ProtocolLocalhostTest, SendAndReceiveUpPressed) {
         Socket listener(TEST_PORT);              // servidor escucha
         Socket peer = listener.accept();         // bloqueante
         Protocol proto_server(std::move(peer));  // protocolo del servidor
-        ClientMessage msg = proto_server.receiveClientMessage(); // bloqueante
-        EXPECT_EQ(msg.cmd, MOVE_UP_PRESSED_STR);
+    ClientMessage msg = proto_server.receiveClientMessage(); // bloqueante
+    EXPECT_EQ(msg.cmd, MOVE_UP_PRESSED_STR);
+    EXPECT_EQ(msg.player_id, -1);
+    EXPECT_EQ(msg.game_id, -1);
     });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100)); // da tiempo al server
@@ -37,8 +39,10 @@ TEST(ProtocolLocalhostTest, SendAndReceiveRightReleased) {
         Socket listener(TEST_PORT);
         Socket peer = listener.accept();
         Protocol proto_server(std::move(peer));
-        ClientMessage msg = proto_server.receiveClientMessage();
-        EXPECT_EQ(msg.cmd, MOVE_RIGHT_RELEASED_STR);
+    ClientMessage msg = proto_server.receiveClientMessage();
+    EXPECT_EQ(msg.cmd, MOVE_RIGHT_RELEASED_STR);
+    EXPECT_EQ(msg.player_id, -1);
+    EXPECT_EQ(msg.game_id, -1);
     });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -58,11 +62,15 @@ TEST(ProtocolLocalhostTest, MultipleSequentialMessages) {
         Socket peer = listener.accept();
         Protocol proto_server(std::move(peer));
 
-        auto m1 = proto_server.receiveClientMessage();
-        EXPECT_EQ(m1.cmd, MOVE_DOWN_PRESSED_STR);
+    auto m1 = proto_server.receiveClientMessage();
+    EXPECT_EQ(m1.cmd, MOVE_DOWN_PRESSED_STR);
+    EXPECT_EQ(m1.player_id, -1);
+    EXPECT_EQ(m1.game_id, -1);
 
-        auto m2 = proto_server.receiveClientMessage();
-        EXPECT_EQ(m2.cmd, MOVE_LEFT_RELEASED_STR);
+    auto m2 = proto_server.receiveClientMessage();
+    EXPECT_EQ(m2.cmd, MOVE_LEFT_RELEASED_STR);
+    EXPECT_EQ(m2.player_id, -1);
+    EXPECT_EQ(m2.game_id, -1);
     });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));

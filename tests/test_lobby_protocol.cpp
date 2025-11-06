@@ -62,11 +62,12 @@ TEST(LobbyProtocolTest, JoinGameFlow)
         Socket peer = acceptor.accept();
         Protocol proto(std::move(peer));
 
-        // Servidor recibe el mensaje de JOIN_GAME
-        ClientMessage msg = proto.receiveClientMessage();
+    // Servidor recibe el mensaje de JOIN_GAME
+    ClientMessage msg = proto.receiveClientMessage();
         
-        // Verificar que el comando es correcto y el ID es 42
-        EXPECT_EQ(msg.cmd, "join_game 42");
+    // Verificar que el comando es correcto y el ID es 42
+    EXPECT_EQ(msg.cmd, "join_game");
+    EXPECT_EQ(msg.game_id, 42);
         
         // Servidor responde con GAME_JOINED
         GameJoinedResponse response;
@@ -84,7 +85,8 @@ TEST(LobbyProtocolTest, JoinGameFlow)
     Protocol proto_client(std::move(client));
     
     ClientMessage join_msg;
-    join_msg.cmd = "join_game 42";
+    join_msg.cmd = "join_game";
+    join_msg.game_id = 42;
     proto_client.sendMessage(join_msg);
     
     // Cliente espera respuesta
@@ -170,9 +172,10 @@ TEST(LobbyProtocolTest, CreateAndJoinGame)
         Socket peer2 = acceptor.accept();
         Protocol proto2(std::move(peer2));
         
-        // Servidor recibe JOIN_GAME del segundo cliente
-        ClientMessage msg2 = proto2.receiveClientMessage();
-        EXPECT_EQ(msg2.cmd, "join_game 5");
+    // Servidor recibe JOIN_GAME del segundo cliente
+    ClientMessage msg2 = proto2.receiveClientMessage();
+    EXPECT_EQ(msg2.cmd, "join_game");
+    EXPECT_EQ(msg2.game_id, 5);
         
         // Servidor responde permitiendo el join
         GameJoinedResponse response2;
@@ -202,7 +205,8 @@ TEST(LobbyProtocolTest, CreateAndJoinGame)
     Protocol proto_client2(std::move(client2));
     
     ClientMessage join_msg;
-    join_msg.cmd = "join_game " + std::to_string(game_id);
+    join_msg.cmd = "join_game";
+    join_msg.game_id = static_cast<int32_t>(game_id);
     proto_client2.sendMessage(join_msg);
     
     GameJoinedResponse resp2 = proto_client2.receiveGameJoined();
