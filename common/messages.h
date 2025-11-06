@@ -8,10 +8,11 @@
 // Lobby responses (servidor -> cliente)
 // ============================================
 
-struct GameJoinedResponse {
+struct GameJoinedResponse
+{
     uint32_t game_id;
     uint32_t player_id;
-    bool success;  // true si se unió correctamente, false si hubo error
+    bool success; // true si se unió correctamente, false si hubo error
 };
 
 // ============================================
@@ -25,13 +26,13 @@ struct PlayerPositionUpdate
     Position new_pos;
 };
 
-struct ServerMessage 
+struct ServerMessage
 {
     std::vector<PlayerPositionUpdate> positions;
 };
 
-struct ClientMessage 
+struct ClientMessage
 {
-    std::string cmd;  // Puede ser: movimientos, "create_game", "join_game 42", etc.
+    std::string cmd; // Puede ser: movimientos, "create_game", "join_game 42", etc.
 };
 #endif

@@ -31,5 +31,4 @@ void OutboxMonitor::broadcast(const ServerMessage &msg)
     {
         q->push(msg);
     }
-    outboxes.clear();
 }

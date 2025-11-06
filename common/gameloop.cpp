@@ -34,6 +34,7 @@ void GameLoop::run()
 
 void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_outbox)
 {
+    std::vector<PlayerPositionUpdate> broadcast;
     if (int(players.size()) == 0)
     {
         players[id] = PlayerData{
@@ -42,8 +43,9 @@ void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_o
     }
     else if (int(players.size()) < MAX_PLAYERS)
     {
-        float dir_x = players[int(players.max_size())].position.new_X + 30;
-        float dir_y = players[int(players.max_size())].position.new_Y;
+        auto last_it = std::prev(players.end());
+        float dir_x = last_it->second.position.new_X + 30;
+        float dir_y = last_it->second.position.new_Y;
         players[id] = PlayerData{
             MOVE_UP_RELEASED_STR, CarInfo{"lambo", INITIAL_SPEED, INITIAL_SPEED, INITIAL_SPEED}, Position{dir_x, dir_y, not_horizontal, not_vertical}};
         players_messanger[id] = player_outbox;

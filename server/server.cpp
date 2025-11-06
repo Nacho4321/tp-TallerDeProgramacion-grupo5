@@ -5,6 +5,7 @@
 
 void Server::start()
 {
+    message_admin.start();
     acceptor.start();
     std::string input;
     bool connected = true;
@@ -17,6 +18,8 @@ void Server::start()
     {
         acceptor.stop();
         acceptor.join();
+        message_admin.stop();
+        message_admin.join();
     }
     catch (...)
     {

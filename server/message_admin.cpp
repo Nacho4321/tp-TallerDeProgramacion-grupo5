@@ -10,20 +10,18 @@ void MessageAdmin::run()
 }
 void MessageAdmin::handle_message()
 {
-    ClientHandlerMessage message;
-    bool popped = global_inbox.try_pop(message);
-    if (popped)
+    ClientHandlerMessage message = global_inbox.pop();
+    auto it = cli_comm_dispatch.find(message.msg.cmd);
+    std::cout << message.msg.cmd << std::endl;
+    if (it != cli_comm_dispatch.end())
     {
-
-        auto it = cli_comm_dispatch.find(message.msg.cmd);
-        if (it != cli_comm_dispatch.end())
-        {
-            it->second(message);
-        }
-        else
-        {
-            std::cout << "Evento desconocido: " << message.msg.cmd << std::endl;
-        }
+        it->second(message);
+    }
+    else
+    {
+        Event event = Event{message.client_id, message.msg.cmd};
+        // TODO: encontrar forma de saber como mandar eventos
+        game_queues[1]->push(event);
     }
 }
 
