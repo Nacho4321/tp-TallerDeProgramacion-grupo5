@@ -33,6 +33,12 @@ struct ServerMessage
 
 struct ClientMessage
 {
-    std::string cmd; // Puede ser: movimientos, "create_game", "join_game 42", etc.
+    // Comando textual (movimientos: move_up_pressed, lobby: create_game, join_game <id>, etc.)
+    std::string cmd;
+    // Identificador del jugador asignado por el servidor. Antes de recibir GameJoinedResponse -> -1
+    int32_t player_id = -1;
+    // Identificador de la partida. Antes de estar dentro de una partida -> -1.
+    // Para join_game se envía el ID objetivo aquí.
+    int32_t game_id = -1;
 };
 #endif

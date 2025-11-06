@@ -1,73 +1,37 @@
 #include "protocol.h"
 
-ClientMessage Protocol::receiveUpPressed() {
-    ClientMessage msg;
-    msg.cmd = MOVE_UP_PRESSED_STR;
-    return msg;
-}
-
-ClientMessage Protocol::receiveUpRealesed() {
-    ClientMessage msg;
-    msg.cmd = MOVE_UP_RELEASED_STR;
-    return msg;
-}
-
-ClientMessage Protocol::receiveDownPressed() {
-    ClientMessage msg;
-    msg.cmd = MOVE_DOWN_PRESSED_STR;
-    return msg;
-}
-
-ClientMessage Protocol::receiveDownReleased() {
-    ClientMessage msg;
-    msg.cmd = MOVE_DOWN_RELEASED_STR;
-    return msg;
-}
-
-ClientMessage Protocol::receiveLeftPressed() {
-    ClientMessage msg;
-    msg.cmd = MOVE_LEFT_PRESSED_STR;
-    return msg;
-}
-
-ClientMessage Protocol::receiveLeftReleased() {
-    ClientMessage msg;
-    msg.cmd = MOVE_LEFT_RELEASED_STR;
-    return msg;
-}
-
-ClientMessage Protocol::receiveRightPressed() {
-    ClientMessage msg;
-    msg.cmd = MOVE_RIGHT_PRESSED_STR;
-    return msg;
-}
-
-ClientMessage Protocol::receiveRightReleased() {
-    ClientMessage msg;
-    msg.cmd = MOVE_RIGHT_RELEASED_STR;
-    return msg;
-}
-
-ClientMessage Protocol::receiveCreateGame() {
-    ClientMessage msg;
-    msg.cmd = CREATE_GAME_STR;
-    return msg;
-}
-
-ClientMessage Protocol::receiveJoinGame() {
-    // Leer game_id (uint32)
-    readBuffer.resize(sizeof(uint32_t));
+void Protocol::readClientIds(ClientMessage& msg) {
+    readBuffer.resize(sizeof(uint32_t)*2);
     if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0) {
-        return ClientMessage{"join_game 0"};
+        msg.player_id = -1;
+        msg.game_id = -1;
+        return;
     }
-    
     size_t idx = 0;
-    uint32_t game_id = exportUint32(readBuffer, idx);
-    
-    ClientMessage msg;
-    msg.cmd = JOIN_GAME_STR + " " + std::to_string(game_id);
-    return msg;
+    msg.player_id = static_cast<int32_t>(exportUint32(readBuffer, idx));
+    msg.game_id = static_cast<int32_t>(exportUint32(readBuffer, idx));
 }
+
+ClientMessage Protocol::receiveUpPressed() {
+    ClientMessage msg; msg.cmd = MOVE_UP_PRESSED_STR; readClientIds(msg); return msg; }
+
+ClientMessage Protocol::receiveUpRealesed() { ClientMessage msg; msg.cmd = MOVE_UP_RELEASED_STR; readClientIds(msg); return msg; }
+
+ClientMessage Protocol::receiveDownPressed() { ClientMessage msg; msg.cmd = MOVE_DOWN_PRESSED_STR; readClientIds(msg); return msg; }
+
+ClientMessage Protocol::receiveDownReleased() { ClientMessage msg; msg.cmd = MOVE_DOWN_RELEASED_STR; readClientIds(msg); return msg; }
+
+ClientMessage Protocol::receiveLeftPressed() { ClientMessage msg; msg.cmd = MOVE_LEFT_PRESSED_STR; readClientIds(msg); return msg; }
+
+ClientMessage Protocol::receiveLeftReleased() { ClientMessage msg; msg.cmd = MOVE_LEFT_RELEASED_STR; readClientIds(msg); return msg; }
+
+ClientMessage Protocol::receiveRightPressed() { ClientMessage msg; msg.cmd = MOVE_RIGHT_PRESSED_STR; readClientIds(msg); return msg; }
+
+ClientMessage Protocol::receiveRightReleased() { ClientMessage msg; msg.cmd = MOVE_RIGHT_RELEASED_STR; readClientIds(msg); return msg; }
+
+ClientMessage Protocol::receiveCreateGame() { ClientMessage msg; msg.cmd = CREATE_GAME_STR; readClientIds(msg); return msg; }
+
+ClientMessage Protocol::receiveJoinGame() { ClientMessage msg; msg.cmd = JOIN_GAME_STR; readClientIds(msg); return msg; }
 
 ServerMessage Protocol::receivePositionsUpdate() {
     ServerMessage msg;

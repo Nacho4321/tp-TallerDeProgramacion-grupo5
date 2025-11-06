@@ -1,43 +1,31 @@
 #include "protocol.h"
 
-std::vector<std::uint8_t> Protocol::encodeCommand(const std::string& cmd) {
-
+std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage& msg) {
     buffer.clear();
-    if (cmd == MOVE_UP_PRESSED_STR) {
-        buffer = encodeClientMessage(MOVE_UP_PRESSED);
-    } else if (cmd == MOVE_UP_RELEASED_STR) {
-        buffer = encodeClientMessage(MOVE_UP_RELEASED);
-    } else if (cmd == MOVE_DOWN_PRESSED_STR) {
-        buffer = encodeClientMessage(MOVE_DOWN_PRESSED);
-    } else if (cmd == MOVE_DOWN_RELEASED_STR) {
-        buffer = encodeClientMessage(MOVE_DOWN_RELEASED);
-    } else if (cmd == MOVE_LEFT_PRESSED_STR) {
-        buffer = encodeClientMessage(MOVE_LEFT_PRESSED);
-    } else if (cmd == MOVE_LEFT_RELEASED_STR) {
-        buffer = encodeClientMessage(MOVE_LEFT_RELEASED);
-    } else if (cmd == MOVE_RIGHT_PRESSED_STR) {
-        buffer = encodeClientMessage(MOVE_RIGHT_PRESSED);
-    } else if (cmd == MOVE_RIGHT_RELEASED_STR) {
-        buffer = encodeClientMessage(MOVE_RIGHT_RELEASED);
-    } else if (cmd == CREATE_GAME_STR) {
-        buffer = encodeClientMessage(CREATE_GAME);
-    } else if (cmd.rfind(JOIN_GAME_STR, 0) == 0) {
-        // JOIN_GAME puede ser "join_game 42" - extraer el game_id
-        buffer.push_back(JOIN_GAME);
-        // Extraer el número después del espacio
-        size_t space_pos = cmd.find(' ');
-        if (space_pos != std::string::npos) {
-            uint32_t game_id = std::stoul(cmd.substr(space_pos + 1));
-            insertUint32(game_id);
-        } else {
-            // Sin ID, asumir 0
-            insertUint32(0);
-        }
-    }
+    uint8_t opcode = 0;
+    // Mapear el comando a opcode
+    const std::string& cmd = msg.cmd;
+    if (cmd == MOVE_UP_PRESSED_STR) opcode = MOVE_UP_PRESSED;
+    else if (cmd == MOVE_UP_RELEASED_STR) opcode = MOVE_UP_RELEASED;
+    else if (cmd == MOVE_DOWN_PRESSED_STR) opcode = MOVE_DOWN_PRESSED;
+    else if (cmd == MOVE_DOWN_RELEASED_STR) opcode = MOVE_DOWN_RELEASED;
+    else if (cmd == MOVE_LEFT_PRESSED_STR) opcode = MOVE_LEFT_PRESSED;
+    else if (cmd == MOVE_LEFT_RELEASED_STR) opcode = MOVE_LEFT_RELEASED;
+    else if (cmd == MOVE_RIGHT_PRESSED_STR) opcode = MOVE_RIGHT_PRESSED;
+    else if (cmd == MOVE_RIGHT_RELEASED_STR) opcode = MOVE_RIGHT_RELEASED;
+    else if (cmd == CREATE_GAME_STR) opcode = CREATE_GAME;
+    else if (cmd.rfind(JOIN_GAME_STR, 0) == 0) opcode = JOIN_GAME;
+    else opcode = 0; // desconocido
+
+    buffer.push_back(opcode);
+    // Siempre incluimos player_id y game_id (8 bytes)
+    insertUint32(static_cast<uint32_t>(msg.player_id));
+    insertUint32(static_cast<uint32_t>(msg.game_id));
+    // No hay payload adicional excepto para JOIN_GAME que ya reutiliza game_id
     return buffer;
 }
 
-std::vector<std::uint8_t> Protocol::encodeClientMessage(std::uint8_t opcode) {
+std::vector<std::uint8_t> Protocol::encodeOpcode(std::uint8_t opcode) {
     buffer.clear();
     buffer.push_back(opcode);
     return buffer;

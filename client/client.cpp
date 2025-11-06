@@ -37,6 +37,19 @@ void Client::start()
         else if (!input.empty())
         {
             std::cout << "[Client] Sending: " << input << std::endl;
+            if(input == "CREATE GAME"){
+                input = "create_game";
+            } else if(input.rfind("JOIN GAME", 0) == 0){
+                // Extraer el ID de la partida
+                size_t space_pos = input.find(' ');
+                if (space_pos != std::string::npos) {
+                    std::string game_id_str = input.substr(space_pos + 1);
+                    input = "join_game " + game_id_str;
+                } else {
+                    std::cerr << "[Client] Invalid JOIN GAME command format." << std::endl;
+                    continue; // Saltar este ciclo si el formato es inválido
+                }
+            }
             outgoing_messages.push(input);
         }
 

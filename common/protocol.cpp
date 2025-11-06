@@ -56,7 +56,7 @@ void Protocol::sendMessage(ServerMessage& out) {
 }
 
 void Protocol::sendMessage(ClientMessage& out) {
-    auto msg = encodeCommand(out.cmd);
+    auto msg = encodeClientMessage(out);
     skt.sendall(msg.data(), msg.size());
 }
 
