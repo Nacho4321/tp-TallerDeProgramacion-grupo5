@@ -5,8 +5,6 @@
 
 void Server::start()
 {
-    auto new_game = std::make_unique<GameLoop>(outboxes);
-    games_monitor.add_game(std::move(new_game));
     acceptor.start();
     std::string input;
     bool connected = true;

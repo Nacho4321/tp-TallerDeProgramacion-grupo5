@@ -13,7 +13,7 @@ class Server
 private:
     OutboxMonitor outboxes;
     Queue<ClientHandlerMessage> global_inbox;
-    std::unordered_map<int, Queue<Event>> game_queues;
+    std::unordered_map<int, std::shared_ptr<Queue<Event>>> game_queues;
     std::mutex games_queues_mutex;
     GameMonitor games_monitor;
     MessageAdmin message_admin;
@@ -22,8 +22,8 @@ private:
 
 public:
     explicit Server(const char *port)
-        : outboxes(), global_inbox(), game_queues(), games_queues_mutex(), games_monitor(game_queues, games_queues_mutex),
-          message_admin(global_inbox, game_queues, games_queues_mutex), acceptor(port, global_inbox, outboxes)
+        : outboxes(), global_inbox(), game_queues(), games_queues_mutex(), games_monitor(game_queues, games_queues_mutex, outboxes),
+          message_admin(global_inbox, game_queues, games_queues_mutex, games_monitor, outboxes), acceptor(port, global_inbox, outboxes)
     {
     }
     void start();

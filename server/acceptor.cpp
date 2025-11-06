@@ -17,7 +17,7 @@ void Acceptor::run()
 
             reap(); // limpiar clientes muertos
 
-            outbox_monitor.add(c->get_outbox());
+            outbox_monitor.add(c->get_id(), c->get_outbox());
             c->start();
 
             clients.push_back(std::move(c));
@@ -46,22 +46,12 @@ void Acceptor::stop()
 
 void Acceptor::clear()
 {
+    outbox_monitor.remove_all();
     for (auto &client : clients)
     {
         try
         {
-            outbox_monitor.remove(client->get_outbox());
             client->stop();
-        }
-        catch (...)
-        {
-        }
-    }
-
-    for (auto &client : clients)
-    {
-        try
-        {
             client->join();
         }
         catch (...)
@@ -78,7 +68,7 @@ void Acceptor::reap()
         auto &c = *it;
         if (!c->is_alive())
         {
-            outbox_monitor.remove(c->get_outbox());
+            outbox_monitor.remove(c->get_id());
             c->stop();
             c->join();
         }

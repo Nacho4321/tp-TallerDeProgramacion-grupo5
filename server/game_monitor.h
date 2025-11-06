@@ -9,15 +9,16 @@ class GameMonitor
 {
 private:
     std::unordered_map<int, std::unique_ptr<GameLoop>> games;
-    std::unordered_map<int, Queue<Event>> &game_queues;
     std::mutex games_mutex;
+    std::unordered_map<int, std::shared_ptr<Queue<Event>>> &games_queues;
     std::mutex &game_queues_mutex;
+    OutboxMonitor &outboxes;
     int next_id;
 
 public:
     ~GameMonitor();
-    explicit GameMonitor(std::unordered_map<int, Queue<Event>> &game_qs, std::mutex &game_qs_mutex) : games(), game_queues(game_qs), games_mutex(), game_queues_mutex(game_qs_mutex), next_id(STARTING_ID) {}
-    void add_game(std::unique_ptr<GameLoop> game);
+    explicit GameMonitor(std::unordered_map<int, std::shared_ptr<Queue<Event>>> &game_qs, std::mutex &game_qs_mutex, OutboxMonitor &outbox) : games(), games_mutex(), games_queues(game_qs), game_queues_mutex(game_qs_mutex), outboxes(outbox), next_id(STARTING_ID) {}
+    void add_game(int &client_id);
 };
 
 #endif

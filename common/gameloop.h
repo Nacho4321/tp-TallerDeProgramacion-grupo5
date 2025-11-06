@@ -13,16 +13,16 @@ class GameLoop : public Thread
 private:
     std::mutex players_map_mutex;
     std::unordered_map<int, PlayerData> players;
-    Queue<Event> event_queue;
+    std::unordered_map<int, std::shared_ptr<Queue<ServerMessage>>> players_messanger;
+    std::shared_ptr<Queue<Event>> event_queue;
     EventLoop event_loop;
     bool started;
-    OutboxMonitor &outbox_moitor;
-    void init_players();
     int next_id;
 
 public:
-    explicit GameLoop(OutboxMonitor &outboxes) : players_map_mutex(), players(), event_queue(), event_loop(players_map_mutex, players, event_queue), started(false), outbox_moitor(outboxes), next_id(INITIAL_ID) {}
+    explicit GameLoop(std::shared_ptr<Queue<Event>> events) : players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), next_id(INITIAL_ID) {}
     void run() override;
     void start_game();
+    void add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_outbox);
 };
 #endif

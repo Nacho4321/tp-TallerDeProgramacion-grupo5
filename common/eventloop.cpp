@@ -9,7 +9,7 @@ void EventLoop::run()
     {
         try
         {
-            Event ev = event_queue.pop();
+            Event ev = event_queue->pop();
             dispatcher.handle_event(ev);
         }
         catch (const ClosedQueue &)
@@ -25,6 +25,6 @@ void EventLoop::run()
 
 void EventLoop::stop()
 {
-    event_queue.close();
+    event_queue->close();
     Thread::stop();
 }

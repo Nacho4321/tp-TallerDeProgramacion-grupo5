@@ -1,12 +1,15 @@
 #include "game_monitor.h"
 
-void GameMonitor::add_game(std::unique_ptr<GameLoop> game)
+void GameMonitor::add_game(int &client_id)
 {
     std::lock_guard<std::mutex> lock(games_mutex);
-    int new_game_id = next_id++;
-    games[new_game_id] = std::move(game);
-
-    games[new_game_id]->start();
+    auto new_queue = std::make_shared<Queue<Event>>();
+    auto new_game = std::make_unique<GameLoop>(new_queue);
+    games[next_id] = std::move(new_game);
+    games[next_id]->start();
+    games_queues[next_id] = new_queue;
+    new_game->add_player(client_id, outboxes.get_cliente_queue(client_id));
+    next_id++;
 }
 
 GameMonitor::~GameMonitor()

@@ -9,7 +9,7 @@ void GameLoop::run()
     event_loop.start();
     while (should_keep_running())
     {
-        if (next_id != INITIAL_ID)
+        if (int(players.size()) > 0)
         {
             std::vector<PlayerPositionUpdate> broadcast;
             players_map_mutex.lock();
@@ -23,7 +23,6 @@ void GameLoop::run()
             }
             players_map_mutex.unlock();
             ServerMessage msg = {broadcast};
-            outbox_moitor.broadcast(msg);
         }
     }
 
@@ -31,19 +30,21 @@ void GameLoop::run()
     event_loop.join();
 }
 
-void GameLoop::init_players()
+void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_outbox)
 {
-    if (next_id == INITIAL_ID)
+    if (int(players.size()) == 0)
     {
-        players[next_id] = PlayerData{
+        players[id] = PlayerData{
             MOVE_UP_RELEASED_STR, CarInfo{"lambo", INITIAL_SPEED, INITIAL_SPEED, INITIAL_SPEED}, Position{INITIAL_X_POS, INITIAL_Y_POS, not_horizontal, not_vertical}};
+        players_messanger[id] = player_outbox;
     }
     else if (int(players.size()) < MAX_PLAYERS)
     {
-        float dir_x = players[next_id - 1].position.new_X + 30;
-        float dir_y = players[next_id - 1].position.new_Y;
-        players[next_id] = PlayerData{
+        float dir_x = players[int(players.max_size())].position.new_X + 30;
+        float dir_y = players[int(players.max_size())].position.new_Y;
+        players[id] = PlayerData{
             MOVE_UP_RELEASED_STR, CarInfo{"lambo", INITIAL_SPEED, INITIAL_SPEED, INITIAL_SPEED}, Position{dir_x, dir_y, not_horizontal, not_vertical}};
+        players_messanger[id] = player_outbox;
     }
     else
     {
