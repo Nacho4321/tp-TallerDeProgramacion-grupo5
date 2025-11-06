@@ -8,7 +8,7 @@ void GameMonitor::add_game(int &client_id)
     games[next_id] = std::move(new_game);
     games[next_id]->start();
     games_queues[next_id] = new_queue;
-    new_game->add_player(client_id, outboxes.get_cliente_queue(client_id));
+    join_player(client_id, next_id);
     next_id++;
 }
 

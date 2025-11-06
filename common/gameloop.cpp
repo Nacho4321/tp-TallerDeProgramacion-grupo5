@@ -23,6 +23,8 @@ void GameLoop::run()
             }
             players_map_mutex.unlock();
             ServerMessage msg = {broadcast};
+
+            broadcast_positions(msg);
         }
     }
 

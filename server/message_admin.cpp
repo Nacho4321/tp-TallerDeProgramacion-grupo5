@@ -2,6 +2,7 @@
 
 void MessageAdmin::run()
 {
+    init_dispatch();
     while (should_keep_running())
     {
         handle_message();
@@ -9,15 +10,20 @@ void MessageAdmin::run()
 }
 void MessageAdmin::handle_message()
 {
-    ClientHandlerMessage message = global_inbox.pop();
-    auto it = cli_comm_dispatch.find(message.msg.cmd);
-    if (it != cli_comm_dispatch.end())
+    ClientHandlerMessage message;
+    bool popped = global_inbox.try_pop(message);
+    if (popped)
     {
-        it->second(message);
-    }
-    else
-    {
-        std::cout << "Evento desconocido: " << message.msg.cmd << std::endl;
+
+        auto it = cli_comm_dispatch.find(message.msg.cmd);
+        if (it != cli_comm_dispatch.end())
+        {
+            it->second(message);
+        }
+        else
+        {
+            std::cout << "Evento desconocido: " << message.msg.cmd << std::endl;
+        }
     }
 }
 
