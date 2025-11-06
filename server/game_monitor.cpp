@@ -12,6 +12,10 @@ void GameMonitor::add_game(int &client_id)
     next_id++;
 }
 
+void GameMonitor::join_player(int &player_id, int &game_id)
+{
+    games[game_id]->add_player(player_id, outboxes.get_cliente_queue(player_id));
+}
 GameMonitor::~GameMonitor()
 {
     for (auto &[id, game] : games)

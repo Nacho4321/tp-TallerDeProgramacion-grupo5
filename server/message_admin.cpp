@@ -13,7 +13,7 @@ void MessageAdmin::handle_message()
     auto it = cli_comm_dispatch.find(message.msg.cmd);
     if (it != cli_comm_dispatch.end())
     {
-        it->second(message.client_id);
+        it->second(message);
     }
     else
     {
@@ -23,18 +23,18 @@ void MessageAdmin::handle_message()
 
 void MessageAdmin::init_dispatch()
 {
-    cli_comm_dispatch[CREATE_GAME_STR] = [this](int &id)
-    { create_game(id); };
-    cli_comm_dispatch[JOIN_GAME_STR] = [this](int &id)
-    { join_game(id); };
+    cli_comm_dispatch[CREATE_GAME_STR] = [this](ClientHandlerMessage &message)
+    { create_game(message); };
+    cli_comm_dispatch[JOIN_GAME_STR] = [this](ClientHandlerMessage &message)
+    { join_game(message); };
 }
 
-void MessageAdmin::create_game(int &client_id)
+void MessageAdmin::create_game(ClientHandlerMessage &message)
 {
-    games_monitor.add_game(client_id);
+    games_monitor.add_game(message.client_id);
 }
 
-void MessageAdmin::join_game(int &client_id)
+void MessageAdmin::join_game(ClientHandlerMessage &message)
 {
-    games_monitor.add_game(client_id);
+    games_monitor.join_player(message.client_id, message.game_id);
 }

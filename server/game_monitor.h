@@ -19,6 +19,7 @@ public:
     ~GameMonitor();
     explicit GameMonitor(std::unordered_map<int, std::shared_ptr<Queue<Event>>> &game_qs, std::mutex &game_qs_mutex, OutboxMonitor &outbox) : games(), games_mutex(), games_queues(game_qs), game_queues_mutex(game_qs_mutex), outboxes(outbox), next_id(STARTING_ID) {}
     void add_game(int &client_id);
+    void join_player(int &client_id, int &game_id);
 };
 
 #endif
