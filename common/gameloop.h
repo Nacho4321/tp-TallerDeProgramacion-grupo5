@@ -19,6 +19,8 @@ private:
     bool started;
     int next_id;
 
+    void broadcast_positions(ServerMessage &msg);
+
 public:
     explicit GameLoop(std::shared_ptr<Queue<Event>> events) : players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), next_id(INITIAL_ID) {}
     void run() override;

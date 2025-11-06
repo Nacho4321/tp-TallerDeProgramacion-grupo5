@@ -56,3 +56,11 @@ void GameLoop::start_game()
 {
     started = true;
 }
+
+void GameLoop::broadcast_positions(ServerMessage &msg)
+{
+    for (auto &[id, queue] : players_messanger)
+    {
+        queue->push(msg);
+    }
+}
