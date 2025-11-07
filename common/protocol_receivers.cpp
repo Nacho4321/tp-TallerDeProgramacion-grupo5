@@ -35,6 +35,7 @@ ClientMessage Protocol::receiveJoinGame() { ClientMessage msg; msg.cmd = JOIN_GA
 
 ServerMessage Protocol::receivePositionsUpdate() {
     ServerMessage msg;
+    msg.opcode = UPDATE_POSITIONS;
     
     // Leer cantidad de posiciones
     uint8_t count;

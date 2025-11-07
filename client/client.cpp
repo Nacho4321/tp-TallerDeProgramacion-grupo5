@@ -52,9 +52,9 @@ void Client::start()
                         uint32_t pid=0;
                         bool ok = handler_core.join_game_blocking(gid, pid);
                         if (ok) {
-                            std::cout << "[Client] Joined game successfully. player_id=" << pid << std::endl;
+                            std::cout << "[Client] Joined game successfully. game_id=" << gid << " player_id=" << pid << std::endl;
                         } else {
-                            std::cout << "[Client] Failed to join game." << std::endl;
+                            std::cout << "[Client] Failed to join game " << gid << ". ¿Existe esa partida? (Los IDs empiezan en 1)" << std::endl;
                         }
                     } catch (...) {
                         std::cerr << "[Client] Invalid game id in command: " << input << std::endl;

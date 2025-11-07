@@ -1,9 +1,11 @@
 #ifndef MESSAGES_H
 #define MESSAGES_H
 #include "Event.h"
+#include "constants.h"
 #include <string>
 #include <cstdint>
 #include <variant>
+#include <vector>
 
 // ============================================
 // Lobby responses (servidor -> cliente)
@@ -27,13 +29,21 @@ struct PlayerPositionUpdate
     Position new_pos;
 };
 
+// Mensaje unificado del servidor: puede ser una actualización de posiciones
+// o una respuesta de lobby (por ejemplo, GAME_JOINED). Se indica con opcode.
 struct ServerMessage
 {
-    std::vector<PlayerPositionUpdate> positions;
-};
+    // Debe coincidir con los opcodes definidos en constants.h (p.ej. UPDATE_POSITIONS, GAME_JOINED)
+    uint8_t opcode = UPDATE_POSITIONS;
 
-// Wrapper que unifica los diferentes tipos de respuestas del servidor
-using ServerResponse = std::variant<ServerMessage, GameJoinedResponse>;
+    // Payload para UPDATE_POSITIONS
+    std::vector<PlayerPositionUpdate> positions;
+
+    // Payload para GAME_JOINED (lobby)
+    uint32_t game_id = 0;
+    uint32_t player_id = 0;
+    bool success = false;
+};
 
 struct ClientMessage
 {

@@ -14,7 +14,7 @@ private:
     Protocol& protocol;
     Queue<ServerMessage> incoming;
     Queue<std::string> outgoing;
-    Queue<GameJoinedResponse> join_results;
+    Queue<ServerMessage> join_results;
 
     GameClientSender sender;
     GameClientReceiver receiver;

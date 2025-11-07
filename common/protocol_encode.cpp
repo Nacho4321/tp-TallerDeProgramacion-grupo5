@@ -40,16 +40,30 @@ std::vector<std::uint8_t> Protocol::encodeOpcode(std::uint8_t opcode) {
 
 std::vector<std::uint8_t> Protocol::encodeServerMessage(ServerMessage& out) {
     buffer.clear();
-    buffer.push_back(UPDATE_POSITIONS);
-    buffer.push_back(static_cast<std::uint8_t>(out.positions.size()));
-    for (auto & pos_update : out.positions) {
-        insertInt(pos_update.player_id);
-        insertFloat(pos_update.new_pos.new_X);
-        insertFloat(pos_update.new_pos.new_Y);
-        insertInt(static_cast<int>(pos_update.new_pos.direction_x));
-        insertInt(static_cast<int>(pos_update.new_pos.direction_y));
-    }    
-    return buffer;
+    // Decidir qué payload serializar según opcode
+    if (out.opcode == UPDATE_POSITIONS) {
+        buffer.push_back(UPDATE_POSITIONS);
+        buffer.push_back(static_cast<std::uint8_t>(out.positions.size()));
+        for (auto & pos_update : out.positions) {
+            insertInt(pos_update.player_id);
+            insertFloat(pos_update.new_pos.new_X);
+            insertFloat(pos_update.new_pos.new_Y);
+            insertInt(static_cast<int>(pos_update.new_pos.direction_x));
+            insertInt(static_cast<int>(pos_update.new_pos.direction_y));
+        }
+        return buffer;
+    } else if (out.opcode == GAME_JOINED) {
+        // Reusar formato existente de GameJoinedResponse para compatibilidad en el cliente
+        buffer.push_back(GAME_JOINED);
+        insertUint32(out.game_id);
+        insertUint32(out.player_id);
+        buffer.push_back(out.success ? 1 : 0);
+        return buffer;
+    } else {
+        // Desconocido: no serializar payload, solo opcode
+        buffer.push_back(out.opcode);
+        return buffer;
+    }
 }
 
 std::vector<std::uint8_t> Protocol::encodeGameJoinedResponse(const GameJoinedResponse& response) {

@@ -52,7 +52,8 @@ void MessageAdmin::create_game(ClientHandlerMessage &message)
     int game_id = games_monitor.add_game(message.client_id);
     
     // Enviar respuesta al cliente con los IDs asignados
-    GameJoinedResponse response;
+    ServerMessage response;
+    response.opcode = GAME_JOINED;
     response.game_id = static_cast<uint32_t>(game_id);
     response.player_id = static_cast<uint32_t>(message.client_id);
     response.success = true;
@@ -63,8 +64,8 @@ void MessageAdmin::create_game(ClientHandlerMessage &message)
     auto client_queue = outboxes.get_cliente_queue(message.client_id);
     if (client_queue) {
         try {
-            std::cout << "[MessageAdmin] Pushing GameJoinedResponse al outbox del cliente " << message.client_id << std::endl;
-            client_queue->push(ServerResponse{response});
+            std::cout << "[MessageAdmin] Pushing GameJoined (ServerMessage) al outbox del cliente " << message.client_id << std::endl;
+            client_queue->push(response);
             std::cout << "[MessageAdmin] Respuesta enviada a la cola del cliente" << std::endl;
         } catch (const ClosedQueue&) {
             std::cerr << "[MessageAdmin] Cola cerrada para cliente " << message.client_id << ", descartando respuesta" << std::endl;
@@ -78,14 +79,16 @@ void MessageAdmin::create_game(ClientHandlerMessage &message)
 void MessageAdmin::join_game(ClientHandlerMessage &message)
 {
     // Validar que el juego existe antes de intentar unirse
-    GameJoinedResponse response;
+    ServerMessage response;
     try {
         games_monitor.join_player(message.client_id, message.msg.game_id);
+        response.opcode = GAME_JOINED;
         response.game_id = static_cast<uint32_t>(message.msg.game_id);
         response.player_id = static_cast<uint32_t>(message.client_id);
         response.success = true;
     } catch (...) {
         // Fallo al unirse (juego no existe u otro error)
+        response.opcode = GAME_JOINED;
         response.game_id = 0;
         response.player_id = 0;
         response.success = false;
@@ -94,8 +97,12 @@ void MessageAdmin::join_game(ClientHandlerMessage &message)
     auto client_queue = outboxes.get_cliente_queue(message.client_id);
     if (client_queue) {
         try {
-            std::cout << "[MessageAdmin] Pushing JoinGame response al outbox del cliente " << message.client_id << std::endl;
-            client_queue->push(ServerResponse{response});
+            std::cout << "[MessageAdmin] JoinGame resp para cliente " << message.client_id
+                      << ": success=" << std::boolalpha << response.success
+                      << " game_id=" << response.game_id
+                      << " player_id=" << response.player_id << std::endl;
+            std::cout << "[MessageAdmin] Pushing JoinGame (ServerMessage) al outbox del cliente " << message.client_id << std::endl;
+            client_queue->push(response);
         } catch (const ClosedQueue&) {
             outboxes.remove(message.client_id);
         }

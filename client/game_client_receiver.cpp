@@ -1,7 +1,7 @@
 #include "game_client_receiver.h"
 #include <iostream>
 
-GameClientReceiver::GameClientReceiver(Protocol& proto, Queue<ServerMessage>& messages, Queue<GameJoinedResponse>& joins) :
+GameClientReceiver::GameClientReceiver(Protocol& proto, Queue<ServerMessage>& messages, Queue<ServerMessage>& joins) :
     protocol(proto), incoming_messages(messages), join_results(joins) {}
 
 void GameClientReceiver::run() {
@@ -17,7 +17,8 @@ void GameClientReceiver::run() {
                 break;  // EOF o desconexión o paquete inválido
             }
             if (opcode == GAME_JOINED) {
-                join_results.push(std::move(joinResp));
+                ServerMessage m; m.opcode = GAME_JOINED; m.game_id = joinResp.game_id; m.player_id = joinResp.player_id; m.success = joinResp.success;
+                join_results.push(std::move(m));
             } else if (opcode == UPDATE_POSITIONS) {
                 if (!positionsMsg.positions.empty()) {
                     incoming_messages.push(std::move(positionsMsg));

@@ -30,7 +30,7 @@ void ClientReceiver::run()
 }
 
 // ---------------- ClientSender ----------------
-ClientSender::ClientSender(Protocol &proto, Queue<ServerResponse> &ob) : protocol(proto), outbox(ob) {}
+ClientSender::ClientSender(Protocol &proto, Queue<ServerMessage> &ob) : protocol(proto), outbox(ob) {}
 
 void ClientSender::run()
 {
@@ -38,7 +38,7 @@ void ClientSender::run()
     {
         while (should_keep_running())
         {
-            ServerResponse response;
+            ServerMessage response;
             try
             {
                 response = outbox.pop(); // bloqueante
@@ -49,15 +49,8 @@ void ClientSender::run()
                 break;
             }
             
-            // Dispatch según el tipo de respuesta
-            std::visit([this](auto&& msg) {
-                using T = std::decay_t<decltype(msg)>;
-                if constexpr (std::is_same_v<T, ServerMessage>) {
-                    protocol.sendMessage(msg);
-                } else if constexpr (std::is_same_v<T, GameJoinedResponse>) {
-                    protocol.sendMessage(msg);
-                }
-            }, response);
+            // Enviar directamente el mensaje unificado
+            protocol.sendMessage(response);
         }
     }
     catch (const std::exception &e)
@@ -68,7 +61,7 @@ void ClientSender::run()
 
 // ---------------- ClientHandler ----------------
 ClientHandler::ClientHandler(Socket &&p, int id, Queue<ClientHandlerMessage> &global_inbox) : protocol(std::move(p)),
-                                                                                       outbox(std::make_shared<Queue<ServerResponse>>(100)), // bounded queue tamaño 100
+                                                                                       outbox(std::make_shared<Queue<ServerMessage>>(100)), // bounded queue tamaño 100
                                                                                        global_inbox(global_inbox),
                                                                                        sender(protocol, *outbox),
                                                                                        client_id(id),
@@ -116,6 +109,6 @@ void ClientHandler::join()
     outbox.reset();
 }
 
-std::shared_ptr<Queue<ServerResponse>> ClientHandler::get_outbox() { return outbox; }
+std::shared_ptr<Queue<ServerMessage>> ClientHandler::get_outbox() { return outbox; }
 
 int ClientHandler::get_id() { return client_id; }
