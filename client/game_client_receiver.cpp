@@ -1,16 +1,30 @@
 #include "game_client_receiver.h"
 #include <iostream>
 
-GameClientReceiver::GameClientReceiver(Protocol& proto, Queue<ServerMessage>& messages) :
-    protocol(proto), incoming_messages(messages) {}
+GameClientReceiver::GameClientReceiver(Protocol& proto, Queue<ServerMessage>& messages, Queue<GameJoinedResponse>& joins) :
+    protocol(proto), incoming_messages(messages), join_results(joins) {}
 
 void GameClientReceiver::run() {
     try {
+        std::cout << "[ClientReceiver] Thread iniciado" << std::endl;
         while (should_keep_running()) {
-            ServerMessage msg = protocol.receiveServerMessage();
-            if (msg.positions.empty())
-                break;  // EOF o desconexión
-            incoming_messages.push(std::move(msg));
+            ServerMessage positionsMsg;
+            GameJoinedResponse joinResp{};
+            uint8_t opcode = 0;
+            bool ok = protocol.receiveAnyServerPacket(positionsMsg, joinResp, opcode);
+            if (!ok) {
+                std::cout << "[ClientReceiver] Conexión cerrada o error" << std::endl;
+                break;  // EOF o desconexión o paquete inválido
+            }
+            if (opcode == GAME_JOINED) {
+                join_results.push(std::move(joinResp));
+            } else if (opcode == UPDATE_POSITIONS) {
+                if (!positionsMsg.positions.empty()) {
+                    incoming_messages.push(std::move(positionsMsg));
+                }
+            } else {
+                // Paquete desconocido: ignorar
+            }
         }
     } catch (const std::exception& e) {
         std::cerr << "[Game Client Receiver] Exception: " << e.what() << std::endl;
@@ -18,6 +32,10 @@ void GameClientReceiver::run() {
             throw;  // Solo propagamos el error si no estábamos parando el hilo
         }
     }
+    std::cout << "[ClientReceiver] Cerrando colas..." << std::endl;
+    // cerramos colas al salir del loop
+    join_results.close();
+    incoming_messages.close();
 }
 
 void GameClientReceiver::stop() {

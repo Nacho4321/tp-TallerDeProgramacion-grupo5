@@ -3,8 +3,7 @@
 #include "../common/protocol.h"
 #include "../common/queue.h"
 #include "input_handler.h"
-#include "game_client_sender.h"
-#include "game_client_receiver.h"
+#include "game_client_handler.h"
 #include "renderer.h"
 #include <SDL2pp/SDL2pp.hh>
 
@@ -20,13 +19,8 @@ private:
     bool connected;
     InputHandler handler;
     
-    // Message queue and sender thread
-    Queue<std::string> outgoing_messages;
-    GameClientSender sender;
-
-    // Message queue and receiver thread
-    Queue<ServerMessage> incoming_messages;
-    GameClientReceiver receiver;
+    // Handler que encapsula sender/receiver y colas
+    GameClientHandler handler_core;
 
     CarRenderer car_renderer;
 
