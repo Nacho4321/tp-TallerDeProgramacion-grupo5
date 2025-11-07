@@ -16,6 +16,8 @@ project(taller_tp
     LANGUAGES CXX
     )
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 option(TALLER_TESTS "Enable / disable tests." ON)
 option(TALLER_CLIENT "Enable / disable client program." ON)
 option(TALLER_CLIENT_UI "Enable / disable Qt UI client program." ON)

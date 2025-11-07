@@ -23,8 +23,6 @@ class MainWindow : public QMainWindow {
     Ui::MainWindow* ui;
     QString serverHost;
     quint16 serverPort;
-    
-    void launchSDLClient();
 };
 
 #endif

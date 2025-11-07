@@ -4,10 +4,12 @@ target_sources(taller_client_ui
     main.cpp
     ConnectionMenu.cpp
     MainWindow.cpp
+    NewGameWindow.cpp
 
     # Designer
     ui/MainWindow.ui
     ui/ConnectionMenu.ui
+    ui/NewGameWindow.ui
 
     # Recursos
     resources.qrc
@@ -15,6 +17,7 @@ target_sources(taller_client_ui
     PUBLIC
     MainWindow.h
     ConnectionMenu.h
+    NewGameWindow.h
     )
 
 target_sources(taller_client_ui PRIVATE

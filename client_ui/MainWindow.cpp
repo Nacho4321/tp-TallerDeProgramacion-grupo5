@@ -1,6 +1,8 @@
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 #include "ConnectionMenu.h"
+#include "NewGameWindow.h" 
+
 #include <QMessageBox>
 #include <QtCore/qresource.h>
 #include <QApplication>
@@ -52,32 +54,32 @@ void MainWindow::onNewGame() {
         QMessageBox::warning(this, "Error", "Connect to server first");
         return;
     }
-    close();
-    launchSDLClient();
+
+    this->hide(); 
+
+    NewGameWindow dlg(this);
+    
+    // Para volver a mostrar eld Main Window
+    QObject::connect(&dlg, &NewGameWindow::backRequested,
+                     this, [this]{ this->show(); });
+
+    QObject::connect(&dlg, &NewGameWindow::createGameRequested,
+                     this, [this](const QString& room, int players, const QString& map){
+        QMessageBox::information(this, "New Game",
+            QString("Room: %1\nPlayers: %2\nMap: %3").arg(room).arg(players).arg(map));
+    });
+
+    const int res = dlg.exec();         
+    if (res != QDialog::Accepted) {
+        this->show();
+    }
 }
 
 void MainWindow::onJoinGame() {
+    // TODO
     if (serverHost.isEmpty()) {
         QMessageBox::warning(this, "Error", "Connect to server first");
         return;
     }
-    
-    // Por ahora lo mismo q en New Game
     close();
-    launchSDLClient();
-}
-
-void MainWindow::launchSDLClient() {
-    try {
-        std::string hostStr = serverHost.toStdString();
-        std::string portStr = QString::number(serverPort).toStdString();
-        
-        // Crear y ejecutar el cliente SDL, se deberia realizar desde aca??
-        Client client(hostStr.c_str(), portStr.c_str());
-        client.start();
-    } catch (const std::exception& e) {
-        std::cerr << "Error in SDL client: " << e.what() << std::endl;
-        return;
-    }
-    QApplication::quit();
 }
