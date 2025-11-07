@@ -55,8 +55,7 @@ public:
             Car newCar(pos);          
             otherCars.push_back(newCar); 
         }
-    }
-    
+            otherCars.emplace_back(pos); // Construct Car directly in the vector
     void render() {
         camera.setScreenSize(renderer.GetOutputWidth(), renderer.GetOutputHeight());
         camera.update(mainCar->getPosition());
