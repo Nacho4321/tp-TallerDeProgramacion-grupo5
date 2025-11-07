@@ -52,10 +52,10 @@ public:
         otherCars.clear();
         
         for (const auto& pos : positions) {
-            Car newCar(pos);          
-            otherCars.push_back(newCar); 
+            otherCars.emplace_back(pos); 
         }
-            otherCars.emplace_back(pos); // Construct Car directly in the vector
+    }
+
     void render() {
         camera.setScreenSize(renderer.GetOutputWidth(), renderer.GetOutputHeight());
         camera.update(mainCar->getPosition());
