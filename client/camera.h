@@ -2,6 +2,7 @@
 #define CAMERA_H
 
 #include <cmath>
+#include "car.h"
 
 struct Vector2 {
     float x;
@@ -9,13 +10,6 @@ struct Vector2 {
     
     Vector2() : x(0), y(0) {}
     Vector2(float x, float y) : x(x), y(y) {}
-};
-
-struct CarPosition {
-    float x;
-    float y;
-    float directionX;  // -1 (left), 0 (no horizontal), 1 (right)
-    float directionY;  // -1 (up), 0 (no vertical), 1 (down)
 };
 
 class Camera {

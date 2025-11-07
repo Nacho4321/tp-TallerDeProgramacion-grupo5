@@ -10,10 +10,10 @@ Client::Client(const char *address, const char *port)
       outgoing_messages(),
       sender(protocol, outgoing_messages),
       receiver(protocol, incoming_messages),
-      car_renderer("Game Renderer", 640, 480)
+      game_renderer("Game Renderer", 640, 480)  
 {
-    sender.start();   // Start the sender thread
-    receiver.start(); // Start the receiver thread
+    sender.start();  
+    receiver.start();
 }
 
 Client::~Client()
@@ -29,7 +29,6 @@ void Client::start()
     while (connected)
     {
         std::string input = handler.receive();
-
         if (input == "QUIT")
         {
             connected = false;
@@ -49,17 +48,30 @@ void Client::start()
             latest_message = message;
             got_message = true;
         }
+
         if (got_message && !latest_message.positions.empty())
         {
-            PlayerPositionUpdate pos_updated = latest_message.positions.front();
+            PlayerPositionUpdate main_pos = latest_message.positions.front();
+            CarPosition mainCarPosition = CarPosition{
+                main_pos.new_pos.new_X,
+                main_pos.new_pos.new_Y,
+                float(main_pos.new_pos.direction_x),
+                float(main_pos.new_pos.direction_y)
+            };
 
-            CarPosition position = CarPosition{
-                pos_updated.new_pos.new_X,
-                pos_updated.new_pos.new_Y,
-                float(pos_updated.new_pos.direction_x),
-                float(pos_updated.new_pos.direction_y)};
+            std::vector<CarPosition> otherCars;
+            for (size_t i = 1; i < latest_message.positions.size(); ++i)
+            {
+                PlayerPositionUpdate& pos = latest_message.positions[i];
+                otherCars.push_back(CarPosition{
+                    pos.new_pos.new_X,
+                    pos.new_pos.new_Y,
+                    float(pos.new_pos.direction_x),
+                    float(pos.new_pos.direction_y)
+                });
+            }
 
-            car_renderer.render(position);
+            game_renderer.render(mainCarPosition, otherCars);
         }
 
         SDL_Delay(16);

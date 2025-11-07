@@ -12,4 +12,11 @@ Makefile
 tags.*
 *.o
 *.so
-*.a
+*_autogen
+libtaller_common.a
+Makefile
+taller_client
+taller_client_ui
+taller_editor
+taller_server
+taller_tests
