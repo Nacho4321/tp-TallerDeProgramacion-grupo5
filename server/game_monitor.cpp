@@ -1,6 +1,6 @@
 #include "game_monitor.h"
 
-void GameMonitor::add_game(int &client_id)
+int GameMonitor::add_game(int &client_id)
 {
     std::lock_guard<std::mutex> lock1(games_mutex);
     std::lock_guard<std::mutex> lock2(game_queues_mutex);
@@ -18,12 +18,18 @@ void GameMonitor::add_game(int &client_id)
     games[game_id] = std::move(new_game);
 
     std::cout << "GameMonitor: juego " << game_id << " creado para cliente " << client_id << std::endl;
+    
+    return game_id; // Devolver el game_id asignado
 }
 
 void GameMonitor::join_player(int &player_id, int &game_id)
 {
     std::lock_guard<std::mutex> lock1(games_mutex);
-    games[game_id]->add_player(player_id, outboxes.get_cliente_queue(player_id));
+    auto it = games.find(game_id);
+    if (it == games.end() || !it->second) {
+        throw std::runtime_error("Game not found");
+    }
+    it->second->add_player(player_id, outboxes.get_cliente_queue(player_id));
 }
 GameMonitor::~GameMonitor()
 {

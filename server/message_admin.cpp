@@ -5,12 +5,21 @@ void MessageAdmin::run()
     init_dispatch();
     while (should_keep_running())
     {
-        handle_message();
+        try {
+            handle_message();
+        } catch (const ClosedQueue&) {
+            // Alguna cola se cerró (por ejemplo, de un juego terminado). Continuamos atendiendo otros mensajes.
+            continue;
+        } catch (const std::exception& e) {
+            std::cerr << "[MessageAdmin] Unexpected exception: " << e.what() << std::endl;
+        }
     }
 }
 void MessageAdmin::handle_message()
 {
-    ClientHandlerMessage message = global_inbox.pop();
+    ClientHandlerMessage message;
+    // pop puede lanzar ClosedQueue si la cola fue cerrada al apagar el servidor
+    message = global_inbox.pop();
     auto it = cli_comm_dispatch.find(message.msg.cmd);
     std::cout << message.msg.cmd << std::endl;
     if (it != cli_comm_dispatch.end())
@@ -21,7 +30,11 @@ void MessageAdmin::handle_message()
     {
         Event event = Event{message.client_id, message.msg.cmd};
         // TODO: encontrar forma de saber como mandar eventos
-        game_queues[1]->push(event);
+        try {
+            game_queues[1]->push(event);
+        } catch (const ClosedQueue&) {
+            // La cola del juego pudo haberse cerrado: ignoramos este evento desconocido
+        }
     }
 }
 
@@ -35,10 +48,56 @@ void MessageAdmin::init_dispatch()
 
 void MessageAdmin::create_game(ClientHandlerMessage &message)
 {
-    games_monitor.add_game(message.client_id);
+    std::cout << "[MessageAdmin] Cliente " << message.client_id << " solicita crear partida" << std::endl;
+    int game_id = games_monitor.add_game(message.client_id);
+    
+    // Enviar respuesta al cliente con los IDs asignados
+    GameJoinedResponse response;
+    response.game_id = static_cast<uint32_t>(game_id);
+    response.player_id = static_cast<uint32_t>(message.client_id);
+    response.success = true;
+    
+    std::cout << "[MessageAdmin] Enviando respuesta: game_id=" << game_id 
+              << " player_id=" << message.client_id << std::endl;
+    
+    auto client_queue = outboxes.get_cliente_queue(message.client_id);
+    if (client_queue) {
+        try {
+            std::cout << "[MessageAdmin] Pushing GameJoinedResponse al outbox del cliente " << message.client_id << std::endl;
+            client_queue->push(ServerResponse{response});
+            std::cout << "[MessageAdmin] Respuesta enviada a la cola del cliente" << std::endl;
+        } catch (const ClosedQueue&) {
+            std::cerr << "[MessageAdmin] Cola cerrada para cliente " << message.client_id << ", descartando respuesta" << std::endl;
+            outboxes.remove(message.client_id);
+        }
+    } else {
+        std::cerr << "[MessageAdmin] ERROR: No se encontró cola para cliente " << message.client_id << std::endl;
+    }
 }
 
 void MessageAdmin::join_game(ClientHandlerMessage &message)
 {
-    games_monitor.join_player(message.client_id, message.game_id);
+    // Validar que el juego existe antes de intentar unirse
+    GameJoinedResponse response;
+    try {
+        games_monitor.join_player(message.client_id, message.msg.game_id);
+        response.game_id = static_cast<uint32_t>(message.msg.game_id);
+        response.player_id = static_cast<uint32_t>(message.client_id);
+        response.success = true;
+    } catch (...) {
+        // Fallo al unirse (juego no existe u otro error)
+        response.game_id = 0;
+        response.player_id = 0;
+        response.success = false;
+    }
+    
+    auto client_queue = outboxes.get_cliente_queue(message.client_id);
+    if (client_queue) {
+        try {
+            std::cout << "[MessageAdmin] Pushing JoinGame response al outbox del cliente " << message.client_id << std::endl;
+            client_queue->push(ServerResponse{response});
+        } catch (const ClosedQueue&) {
+            outboxes.remove(message.client_id);
+        }
+    }
 }

@@ -7,6 +7,7 @@ void ClientReceiver::run()
 {
     try
     {
+        std::cout << "[ClientReceiver(Server)] Hilo receiver iniciado para cliente " << client_id << std::endl;
         while (should_keep_running())
         {
             ClientMessage client_msg = protocol.receiveClientMessage();
@@ -25,10 +26,11 @@ void ClientReceiver::run()
     {
         std::cerr << "[Receiver] Exception: " << e.what() << std::endl;
     }
+    std::cout << "[ClientReceiver(Server)] Terminando receiver de cliente " << client_id << std::endl;
 }
 
 // ---------------- ClientSender ----------------
-ClientSender::ClientSender(Protocol &proto, Queue<ServerMessage> &ob) : protocol(proto), outbox(ob) {}
+ClientSender::ClientSender(Protocol &proto, Queue<ServerResponse> &ob) : protocol(proto), outbox(ob) {}
 
 void ClientSender::run()
 {
@@ -36,17 +38,26 @@ void ClientSender::run()
     {
         while (should_keep_running())
         {
-            ServerMessage msg;
+            ServerResponse response;
             try
             {
-                msg = outbox.pop(); // bloqueante
+                response = outbox.pop(); // bloqueante
             }
             catch (const ClosedQueue &)
             {
                 // La cola fue cerrada: salimos del loop
                 break;
             }
-            protocol.sendMessage(msg);
+            
+            // Dispatch según el tipo de respuesta
+            std::visit([this](auto&& msg) {
+                using T = std::decay_t<decltype(msg)>;
+                if constexpr (std::is_same_v<T, ServerMessage>) {
+                    protocol.sendMessage(msg);
+                } else if constexpr (std::is_same_v<T, GameJoinedResponse>) {
+                    protocol.sendMessage(msg);
+                }
+            }, response);
         }
     }
     catch (const std::exception &e)
@@ -57,7 +68,7 @@ void ClientSender::run()
 
 // ---------------- ClientHandler ----------------
 ClientHandler::ClientHandler(Socket &&p, int id, Queue<ClientHandlerMessage> &global_inbox) : protocol(std::move(p)),
-                                                                                       outbox(std::make_shared<Queue<ServerMessage>>(100)), // bounded queue tamaño 100
+                                                                                       outbox(std::make_shared<Queue<ServerResponse>>(100)), // bounded queue tamaño 100
                                                                                        global_inbox(global_inbox),
                                                                                        sender(protocol, *outbox),
                                                                                        client_id(id),
@@ -83,7 +94,9 @@ void ClientHandler::stop()
 
     try
     {
-        outbox->close();
+        if (outbox) {
+            try { outbox->close(); } catch (...) {}
+        }
     }
     catch (...)
     {
@@ -99,8 +112,10 @@ void ClientHandler::join()
 {
     sender.join();
     receiver.join();
+    // liberar la outbox para que GameLoop ya no la use
+    outbox.reset();
 }
 
-std::shared_ptr<Queue<ServerMessage>> ClientHandler::get_outbox() { return outbox; }
+std::shared_ptr<Queue<ServerResponse>> ClientHandler::get_outbox() { return outbox; }
 
 int ClientHandler::get_id() { return client_id; }

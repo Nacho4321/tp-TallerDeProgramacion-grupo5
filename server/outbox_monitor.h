@@ -10,14 +10,14 @@
 class OutboxMonitor
 {
 private:
-    std::unordered_map<int, std::shared_ptr<Queue<ServerMessage>>> outboxes;
+    std::unordered_map<int, std::shared_ptr<Queue<ServerResponse>>> outboxes;
     std::mutex mtx;
 
 public:
-    void add(int client_id, std::shared_ptr<Queue<ServerMessage>> q);
+    void add(int client_id, std::shared_ptr<Queue<ServerResponse>> q);
     void remove(int client_id);
     void broadcast(const ServerMessage &msg);
-    std::shared_ptr<Queue<ServerMessage>> get_cliente_queue(int id);
+    std::shared_ptr<Queue<ServerResponse>> get_cliente_queue(int id);
     void remove_all();
 };
 

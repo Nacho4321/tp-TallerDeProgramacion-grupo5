@@ -30,10 +30,10 @@ public:
 class ClientSender : public Thread
 {
     Protocol &protocol;
-    Queue<ServerMessage> &outbox;
+    Queue<ServerResponse> &outbox;
 
 public:
-    ClientSender(Protocol &proto, Queue<ServerMessage> &ob);
+    ClientSender(Protocol &proto, Queue<ServerResponse> &ob);
 
     void run() override;
 };
@@ -42,7 +42,7 @@ public:
 class ClientHandler
 {
     Protocol protocol;
-    std::shared_ptr<Queue<ServerMessage>> outbox;
+    std::shared_ptr<Queue<ServerResponse>> outbox;
     Queue<ClientHandlerMessage> &global_inbox;
     ClientSender sender;
     int client_id;
@@ -56,7 +56,7 @@ public:
     bool is_alive();
     void join();
 
-    std::shared_ptr<Queue<ServerMessage>> get_outbox();
+    std::shared_ptr<Queue<ServerResponse>> get_outbox();
     int get_id();
 };
 

@@ -10,15 +10,18 @@ void Acceptor::run()
     {
         try
         {
+            std::cout << "[Acceptor] Esperando conexiones en el puerto..." << std::endl;
             Socket peer = acceptor.accept(); // bloqueante, espera cliente
 
             int id = next_id++;
+            std::cout << "[Acceptor] Cliente conectado con ID: " << id << std::endl;
             auto c = std::make_unique<ClientHandler>(std::move(peer), id, global_inbox);
 
             reap(); // limpiar clientes muertos
 
             outbox_monitor.add(c->get_id(), c->get_outbox());
             c->start();
+            std::cout << "[Acceptor] ClientHandler iniciado para cliente " << id << std::endl;
 
             clients.push_back(std::move(c));
         }
@@ -71,6 +74,8 @@ void Acceptor::reap()
             outbox_monitor.remove(c->get_id());
             c->stop();
             c->join();
+            // Eliminar del vector y continuar sin incrementar el iterador
+            it = clients.erase(it);
         }
         else
         {
