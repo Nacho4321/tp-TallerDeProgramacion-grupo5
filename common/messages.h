@@ -3,6 +3,7 @@
 #include "Event.h"
 #include <string>
 #include <cstdint>
+#include <variant>
 
 // ============================================
 // Lobby responses (servidor -> cliente)
@@ -30,6 +31,9 @@ struct ServerMessage
 {
     std::vector<PlayerPositionUpdate> positions;
 };
+
+// Wrapper que unifica los diferentes tipos de respuestas del servidor
+using ServerResponse = std::variant<ServerMessage, GameJoinedResponse>;
 
 struct ClientMessage
 {

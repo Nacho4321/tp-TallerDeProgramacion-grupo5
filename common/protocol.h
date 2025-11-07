@@ -89,6 +89,11 @@ public:
     // Recibe mensaje del socket en formato DecodedMessage
     ClientMessage receiveClientMessage();
     ServerMessage receiveServerMessage();
+    // Lee el próximo paquete del servidor y devuelve true si pudo decodificar alguno.
+    // outOpcode indicará el tipo (p.ej. UPDATE_POSITIONS o GAME_JOINED).
+    bool receiveAnyServerPacket(ServerMessage& outServer,
+                                GameJoinedResponse& outJoined,
+                                uint8_t& outOpcode);
     
     // Lobby methods (cliente recibe respuesta del servidor)
     GameJoinedResponse receiveGameJoined();

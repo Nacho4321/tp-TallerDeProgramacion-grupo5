@@ -11,6 +11,8 @@ ClientMessage Protocol::receiveClientMessage() {
     uint8_t opcode;
     if (skt.recvall(&opcode, sizeof(opcode)) <= 0)
         return {};
+    // DEBUG: log opcode crudo recibido
+    std::cout << "[Protocol(Server)] Raw opcode recibido=" << int(opcode) << std::endl;
 
     switch (opcode) {
         case MOVE_UP_PRESSED:
@@ -30,9 +32,19 @@ ClientMessage Protocol::receiveClientMessage() {
         case MOVE_RIGHT_RELEASED:
             return receiveRightReleased();
         case CREATE_GAME:
-            return receiveCreateGame();
+            {
+                auto msg = receiveCreateGame();
+                std::cout << "[Protocol(Server)] Decodificado CREATE_GAME player_id=" << msg.player_id
+                          << " game_id=" << msg.game_id << std::endl;
+                return msg;
+            }
         case JOIN_GAME:
-            return receiveJoinGame();
+            {
+                auto msg = receiveJoinGame();
+                std::cout << "[Protocol(Server)] Decodificado JOIN_GAME player_id=" << msg.player_id
+                          << " game_id=" << msg.game_id << std::endl;
+                return msg;
+            }
         default:
             return {};  // desconocido
     }
@@ -50,6 +62,21 @@ ServerMessage Protocol::receiveServerMessage() {
     }
 }
 
+bool Protocol::receiveAnyServerPacket(ServerMessage& outServer,
+                                      GameJoinedResponse& outJoined,
+                                      uint8_t& outOpcode) {
+    if (skt.recvall(&outOpcode, sizeof(outOpcode)) <= 0) return false;
+    if (outOpcode == UPDATE_POSITIONS) {
+        outServer = receivePositionsUpdate();
+        return true;
+    }
+    if (outOpcode == GAME_JOINED) {
+        outJoined = receiveGameJoinedResponse();
+        return true;
+    }
+    return false;
+}
+
 void Protocol::sendMessage(ServerMessage& out) {
     auto msg = encodeServerMessage(out);
     skt.sendall(msg.data(), msg.size());
@@ -57,6 +84,9 @@ void Protocol::sendMessage(ServerMessage& out) {
 
 void Protocol::sendMessage(ClientMessage& out) {
     auto msg = encodeClientMessage(out);
+    std::cout << "[Protocol(Client)] sendMessage cmd='" << out.cmd << "' bytes=" << msg.size()
+              << " opcode_first=" << (msg.empty()? -1 : int(msg[0]))
+              << " player_id=" << out.player_id << " game_id=" << out.game_id << std::endl;
     skt.sendall(msg.data(), msg.size());
 }
 

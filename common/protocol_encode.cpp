@@ -1,4 +1,5 @@
 #include "protocol.h"
+#include <iostream>
 
 std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage& msg) {
     buffer.clear();
@@ -13,8 +14,14 @@ std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage& msg
     else if (cmd == MOVE_LEFT_RELEASED_STR) opcode = MOVE_LEFT_RELEASED;
     else if (cmd == MOVE_RIGHT_PRESSED_STR) opcode = MOVE_RIGHT_PRESSED;
     else if (cmd == MOVE_RIGHT_RELEASED_STR) opcode = MOVE_RIGHT_RELEASED;
-    else if (cmd == CREATE_GAME_STR) opcode = CREATE_GAME;
-    else if (cmd.rfind(JOIN_GAME_STR, 0) == 0) opcode = JOIN_GAME;
+    else if (cmd == CREATE_GAME_STR) {
+        opcode = CREATE_GAME;
+        std::cout << "[Protocol(Client)] Encoding CREATE_GAME with ids p=" << msg.player_id << " g=" << msg.game_id << std::endl;
+    }
+    else if (cmd.rfind(JOIN_GAME_STR, 0) == 0) {
+        opcode = JOIN_GAME;
+        std::cout << "[Protocol(Client)] Encoding JOIN_GAME with ids p=" << msg.player_id << " g=" << msg.game_id << std::endl;
+    }
     else opcode = 0; // desconocido
 
     buffer.push_back(opcode);
