@@ -4,7 +4,6 @@
 #include <SDL2/SDL.h>
 #include <cmath>
 
-// Array of car sprite rectangles
 static SDL_Rect CAR_SPRITES[] = {
     { 2, 5, 28, 22}, { 32, 3, 31, 25}, { 65, 2, 29, 29},
     { 99, 1, 25, 30}, { 133, 2, 22, 28}, { 164, 1, 25, 30},

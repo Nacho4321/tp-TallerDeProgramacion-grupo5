@@ -10,10 +10,10 @@ Client::Client(const char *address, const char *port)
       outgoing_messages(),
       sender(protocol, outgoing_messages),
       receiver(protocol, incoming_messages),
-      game_renderer("Game Renderer", 640, 480)  // Changed from car_renderer to game_renderer
+      game_renderer("Game Renderer", 640, 480)  
 {
-    sender.start();   // Start the sender thread
-    receiver.start(); // Start the receiver thread
+    sender.start();  
+    receiver.start();
 }
 
 Client::~Client()
@@ -51,7 +51,6 @@ void Client::start()
 
         if (got_message && !latest_message.positions.empty())
         {
-            // Convert the first position (main car)
             PlayerPositionUpdate main_pos = latest_message.positions.front();
             CarPosition mainCarPosition = CarPosition{
                 main_pos.new_pos.new_X,
@@ -60,7 +59,6 @@ void Client::start()
                 float(main_pos.new_pos.direction_y)
             };
 
-            // Convert the rest of the positions (other cars)
             std::vector<CarPosition> otherCars;
             for (size_t i = 1; i < latest_message.positions.size(); ++i)
             {
@@ -73,7 +71,6 @@ void Client::start()
                 });
             }
 
-            // Render main car and all other cars
             game_renderer.render(mainCarPosition, otherCars);
         }
 
