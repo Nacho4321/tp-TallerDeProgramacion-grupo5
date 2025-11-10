@@ -1,60 +1,57 @@
 #include "NewGameWindow.h"
 #include "ui_NewGameWindow.h"
+#include "GameLauncher.h"
 
 #include <QMessageBox>
+#include <iostream>
 
-NewGameWindow::NewGameWindow(QWidget* parent)
-    : QDialog(parent),
-      ui(new Ui::NewGameWindow) {
+NewGameWindow::NewGameWindow(std::shared_ptr<ClientConnection> conn, QWidget* parent)
+    : QDialog(parent), ui(new Ui::NewGameWindow), connection_(std::move(conn)) {
     ui->setupUi(this);
+    ui->gameNameLineEdit->setText("Lobby");
+    ui->maxPlayersSpinBox->setMinimum(1);
+    ui->maxPlayersSpinBox->setMaximum(8);
+    ui->maxPlayersSpinBox->setValue(2);
 
-    // Defaults tempoarles
-    ui->lineRoomName->setText("lobby-1");
-    ui->cmbPlayers->addItems({"2", "3", "4"});
-    ui->cmbPlayers->setCurrentIndex(0);
-    ui->cmbMap->addItems({"map1", "map2", "map3"});
-    ui->cmbMap->setCurrentText("map1");
-
-    connect(ui->btnCreate, &QPushButton::clicked, this, &NewGameWindow::onCreate);
-    connect(ui->btnBack,   &QPushButton::clicked, this, &NewGameWindow::onBack);
-
-    ui->btnCreate->setDefault(true);
-    setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
+    connect(ui->createButton, &QPushButton::clicked, this, &NewGameWindow::onCreate);
+    connect(ui->cancelButton, &QPushButton::clicked, this, &NewGameWindow::onBack);
 }
 
-NewGameWindow::~NewGameWindow() {
-    delete ui;
+NewGameWindow::~NewGameWindow() { 
+    delete ui; 
 }
 
 void NewGameWindow::onCreate() {
-    const QString room = ui->lineRoomName->text().trimmed();
-    const int players  = playersFromCombo();
-    const QString map  = ui->cmbMap->currentText().trimmed();
+    if (!connection_) {
+        QMessageBox::warning(this, "New Game", "There is no connection information.");
+        return;
+    }
+    
+    const QString gameName = ui->gameNameLineEdit->text().trimmed();
+    const int maxPlayers = ui->maxPlayersSpinBox->value();
 
-    if (room.isEmpty()) {
-        QMessageBox::warning(this, "New Game", "Room name required.");
-        return;
-    }
-    if (players < 2 || players > 4) {
-        QMessageBox::warning(this, "New Game", "Players must be 2–4.");
-        return;
-    }
-    if (map.isEmpty()) {
-        QMessageBox::warning(this, "New Game", "Select a map.");
+    if (gameName.isEmpty()) {
+        QMessageBox::warning(this, "New Game", "Game name is missing.");
         return;
     }
 
-    emit createGameRequested(room, players, map);
+    std::string host = connection_->getAddress();
+    std::string port = connection_->getPort();
+    
+    if (host.empty() || port.empty()) {
+        QMessageBox::warning(this, "Error", "No server information configured.");
+        return;
+    }
+    
     accept();
+
+    std::cout << "Creating new game: " << gameName.toStdString()
+              << " with max players: " << maxPlayers << std::endl;
+              
+    // Lanzar el cliente SDL
+    GameLauncher::launchGame(host, port);
 }
 
-void NewGameWindow::onBack() {
-    emit backRequested();
-    reject();
-}
-
-int NewGameWindow::playersFromCombo() const {
-    bool ok = false;
-    const int n = ui->cmbPlayers->currentText().toInt(&ok);
-    return ok ? n : 2;
+void NewGameWindow::onBack() { 
+    reject(); 
 }

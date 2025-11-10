@@ -2,26 +2,28 @@
 #define NEWGAMEWINDOW_H
 
 #include <QDialog>
+#include <memory>
+#include "ClientConnection.h"
 
-namespace Ui { class NewGameWindow; }
+namespace Ui {
+class NewGameWindow;
+}
 
 class NewGameWindow : public QDialog {
     Q_OBJECT
-public:
-    explicit NewGameWindow(QWidget* parent = nullptr);
-    ~NewGameWindow();
 
-signals:
-    void createGameRequested(const QString& roomName, int maxPlayers, const QString& mapId);
-    void backRequested();
+public:
+    explicit NewGameWindow(std::shared_ptr<ClientConnection> conn, QWidget* parent = nullptr);
+    ~NewGameWindow();
 
 private slots:
     void onCreate();
     void onBack();
-
+    
 private:
     Ui::NewGameWindow* ui;
-    int playersFromCombo() const;
+    std::shared_ptr<ClientConnection> connection_;
 };
 
-#endif
+
+#endif // NEWGAMEWINDOW_H

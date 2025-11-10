@@ -4,7 +4,9 @@ target_sources(taller_client_ui
     main.cpp
     ConnectionMenu.cpp
     MainWindow.cpp
+    ClientConnection.cpp
     NewGameWindow.cpp
+    GameLauncher.cpp
 
     # Designer
     ui/MainWindow.ui
@@ -17,7 +19,9 @@ target_sources(taller_client_ui
     PUBLIC
     MainWindow.h
     ConnectionMenu.h
+    ClientConnection.h
     NewGameWindow.h
+    GameLauncher.h
     )
 
 target_sources(taller_client_ui PRIVATE
