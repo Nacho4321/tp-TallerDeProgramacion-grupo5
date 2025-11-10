@@ -1,83 +1,55 @@
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 #include "ConnectionMenu.h"
+#include "NewGameWindow.h"
+
 #include <QMessageBox>
-#include <QtCore/qresource.h>
-#include <QApplication>
-#include <QTimer>
 
-#include "../client/client.h"
-#include <exception>
-#include <iostream>
-
-MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow), serverPort(0) { 
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+    , connection(nullptr)
+{
     ui->setupUi(this);
-    Q_INIT_RESOURCE(resources); 
     
-    connect(ui->btnNewGame, &QPushButton::clicked, this, &MainWindow::onNewGame);
-    connect(ui->btnJoinGame, &QPushButton::clicked, this, &MainWindow::onJoinGame);
-    connect(ui->btnExit, &QPushButton::clicked, this, &MainWindow::onExit);
+    connect(ui->btnNewGame, &QPushButton::clicked, this, &MainWindow::onNewGameClicked);
+    connect(ui->btnJoinGame, &QPushButton::clicked, this, &MainWindow::onJoinGameClicked);
+    
+    showConnectionDialog();
+}
 
-    ConnectionMenu dlg(this);
-    connect(&dlg, &ConnectionMenu::connectRequested, this, &MainWindow::onConnectRequested);
+MainWindow::~MainWindow() {
+    delete ui;
+}
+
+void MainWindow::showConnectionDialog() {
+    ConnectionMenu dialog(this);
     
-    dlg.exec();
-    if (dlg.result() != QDialog::Accepted) {  // Si se toco exit en la conexion
-        QTimer::singleShot(0, qApp, &QCoreApplication::quit);
-        return;
+    if (dialog.exec() == QDialog::Accepted) {
+        connection = dialog.connection();
+    } else {
+        QMessageBox::information(this, "Information", "You must connect to the server to continue");
+        close();
     }
 }
 
-
-MainWindow::~MainWindow() { 
-    delete ui; 
-}
-
-void MainWindow::onExit() {
-    close();
-}
-
-void MainWindow::onConnectRequested(const QString& host, quint16 port) {
-    serverHost = host;
-    serverPort = port;
-    
-    QMessageBox::information(this, "Connected",
-        QString("Connected to %1:%2\n\n")  
-            .arg(host).arg(port)
-    );
-}
-
-void MainWindow::onNewGame() {
-    if (serverHost.isEmpty()) {
-        QMessageBox::warning(this, "Error", "Connect to server first");
+void MainWindow::onNewGameClicked() {
+    if (!connection || !connection->isConnected()) {
+        QMessageBox::warning(this, "Error", "No server connection");
+        showConnectionDialog();
         return;
     }
-    close();
-    launchSDLClient();
+    this->hide();
+    NewGameWindow dlg(connection, this);
+    const int r = dlg.exec();
+    if (r != QDialog::Accepted) {
+        this->show();
+    } else {
+        close();
+    }
 }
 
-void MainWindow::onJoinGame() {
-    if (serverHost.isEmpty()) {
-        QMessageBox::warning(this, "Error", "Connect to server first");
-        return;
-    }
-    
-    // Por ahora lo mismo q en New Game
-    close();
-    launchSDLClient();
-}
-
-void MainWindow::launchSDLClient() {
-    try {
-        std::string hostStr = serverHost.toStdString();
-        std::string portStr = QString::number(serverPort).toStdString();
-        
-        // Crear y ejecutar el cliente SDL, se deberia realizar desde aca??
-        Client client(hostStr.c_str(), portStr.c_str());
-        client.start();
-    } catch (const std::exception& e) {
-        std::cerr << "Error in SDL client: " << e.what() << std::endl;
-        return;
-    }
-    QApplication::quit();
+void MainWindow::onJoinGameClicked() {
+    // TODO: Implementar mas adelante
+    QMessageBox::information(this, "TODO", "Falta implementar");
 }
