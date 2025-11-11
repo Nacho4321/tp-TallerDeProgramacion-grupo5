@@ -15,5 +15,6 @@ target_sources(taller_client
     input_handler.h            
     client.h
     camera.h
-    renderer.h
+    game_renderer.h
+    car.h
 )

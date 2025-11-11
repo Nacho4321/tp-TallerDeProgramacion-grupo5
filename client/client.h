@@ -4,7 +4,7 @@
 #include "../common/queue.h"
 #include "input_handler.h"
 #include "game_client_handler.h"
-#include "renderer.h"
+#include "game_renderer.h"
 #include <SDL2pp/SDL2pp.hh>
 
 class Client
@@ -22,7 +22,7 @@ private:
     // Handler que encapsula sender/receiver y colas
     GameClientHandler handler_core;
 
-    CarRenderer car_renderer;
+    GameRenderer game_renderer;
 
 public:
     explicit Client(const char *address, const char *port);
