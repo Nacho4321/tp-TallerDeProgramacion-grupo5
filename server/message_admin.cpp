@@ -28,12 +28,31 @@ void MessageAdmin::handle_message()
     }
     else
     {
+        // Eventos de juego (movimientos, etc.)
         Event event = Event{message.client_id, message.msg.cmd};
-        // TODO: encontrar forma de saber como mandar eventos
-        try {
-            game_queues[1]->push(event);
-        } catch (const ClosedQueue&) {
-            // La cola del juego pudo haberse cerrado: ignoramos este evento desconocido
+        int target_gid = message.msg.game_id;
+        std::shared_ptr<Queue<Event>> target_q;
+        {
+            std::lock_guard<std::mutex> lk(game_queues_mutex);
+            if (target_gid > 0) {
+                auto itq = game_queues.find(target_gid);
+                if (itq != game_queues.end()) target_q = itq->second;
+            }
+            // Fallback: si no vino game_id o no existe, y hay exactamente 1 juego, usar ese
+            if (!target_q && game_queues.size() == 1) {
+                target_q = game_queues.begin()->second;
+            }
+        }
+        if (target_q) {
+            try {
+                target_q->push(event);
+            } catch (const ClosedQueue&) {
+                // La cola del juego pudo haberse cerrado: ignoramos este evento
+            }
+        } else {
+            std::cerr << "[MessageAdmin] WARNING: No se encontró cola para game_id="
+                      << target_gid << ", evento='" << message.msg.cmd
+                      << "' desde client=" << message.client_id << std::endl;
         }
     }
 }

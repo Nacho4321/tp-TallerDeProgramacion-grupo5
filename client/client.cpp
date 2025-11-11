@@ -4,11 +4,11 @@
 #include <SDL2/SDL.h>
 
 Client::Client(const char *address, const char *port)
-    : protocol(ini_protocol(address, port)),
-      connected(true),
-      handler(),
-      handler_core(protocol),
-      game_renderer("Game Renderer", 640, 480)
+        : protocol(ini_protocol(address, port)),
+            connected(true),
+            handler(),
+            handler_core(protocol),
+            game_renderer("Game Renderer", 640, 480)
 {
     handler_core.start(); // iniciar handler (sender+receiver)
     
@@ -37,6 +37,9 @@ void Client::start()
                 bool ok = handler_core.create_game_blocking(gid, pid);
                 if (ok) {
                     std::cout << "[Client] Game created. game_id=" << gid << " player_id=" << pid << std::endl;
+                    // Guardar mis IDs actuales
+                    my_game_id = gid;
+                    my_player_id = static_cast<int32_t>(pid);
                 } else {
                     std::cout << "[Client] Failed to create game." << std::endl;
                 }
@@ -52,6 +55,9 @@ void Client::start()
                         bool ok = handler_core.join_game_blocking(gid, pid);
                         if (ok) {
                             std::cout << "[Client] Joined game successfully. game_id=" << gid << " player_id=" << pid << std::endl;
+                            // Guardar mis IDs actuales
+                            my_game_id = static_cast<uint32_t>(gid);
+                            my_player_id = static_cast<int32_t>(pid);
                         } else {
                             std::cout << "[Client] Failed to join game " << gid << ". ¿Existe esa partida? (Los IDs empiezan en 1)" << std::endl;
                         }
@@ -80,7 +86,18 @@ void Client::start()
 
         if (got_message && !latest_message.positions.empty())
         {
-            PlayerPositionUpdate main_pos = latest_message.positions.front();
+            // Elegir como "auto principal" el correspondiente a mi player_id (si lo tengo asignado)
+            size_t idx_main = 0;
+            if (my_player_id >= 0) {
+                for (size_t i = 0; i < latest_message.positions.size(); ++i) {
+                    if (latest_message.positions[i].player_id == my_player_id) {
+                        idx_main = i;
+                        break;
+                    }
+                }
+            }
+
+            const PlayerPositionUpdate& main_pos = latest_message.positions[idx_main];
             CarPosition mainCarPosition = CarPosition{
                 main_pos.new_pos.new_X,
                 main_pos.new_pos.new_Y,
@@ -89,9 +106,10 @@ void Client::start()
             };
 
             std::vector<CarPosition> otherCars;
-            for (size_t i = 1; i < latest_message.positions.size(); ++i)
+            for (size_t i = 0; i < latest_message.positions.size(); ++i)
             {
-                PlayerPositionUpdate& pos = latest_message.positions[i];
+                if (i == idx_main) continue;
+                const PlayerPositionUpdate& pos = latest_message.positions[i];
                 otherCars.push_back(CarPosition{
                     pos.new_pos.new_X,
                     pos.new_pos.new_Y,

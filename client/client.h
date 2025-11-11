@@ -24,6 +24,10 @@ private:
 
     GameRenderer game_renderer;
 
+    // IDs asignados por el servidor para identificar mi partida/jugador actuales
+    uint32_t my_game_id = 0;     // 0 => no asignado aún
+    int32_t my_player_id = -1;   // -1 => no asignado aún
+
 public:
     explicit Client(const char *address, const char *port);
     ~Client();
