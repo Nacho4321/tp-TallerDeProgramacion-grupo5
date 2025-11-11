@@ -29,7 +29,9 @@ TEST(AcceptorIntegrationTest, ClientConnectsAndSendsMessage)
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
         ASSERT_TRUE(got);
-        EXPECT_EQ(ch_msg.msg.cmd, MOVE_UP_PRESSED_STR);
+    EXPECT_EQ(ch_msg.msg.cmd, MOVE_UP_PRESSED_STR);
+    EXPECT_EQ(ch_msg.msg.player_id, -1);
+    EXPECT_EQ(ch_msg.msg.game_id, -1);
         server.stop();
     });
 

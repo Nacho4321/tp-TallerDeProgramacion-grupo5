@@ -7,21 +7,17 @@ Client::Client(const char *address, const char *port)
     : protocol(ini_protocol(address, port)),
       connected(true),
       handler(),
-      outgoing_messages(),
-      sender(protocol, outgoing_messages),
-      receiver(protocol, incoming_messages),
-      game_renderer("Game Renderer", 640, 480)  
+      handler_core(protocol),
+      game_renderer("Game Renderer", 640, 480)
 {
-    sender.start();  
-    receiver.start();
+    handler_core.start(); // iniciar handler (sender+receiver)
+    
 }
 
 Client::~Client()
 {
-    sender.stop();
-    sender.join();
-    receiver.stop();
-    receiver.join();
+    handler_core.stop();
+    handler_core.join();
 }
 
 void Client::start()
@@ -35,15 +31,48 @@ void Client::start()
         }
         else if (!input.empty())
         {
-            std::cout << "[Client] Sending: " << input << std::endl;
-            outgoing_messages.push(input);
+            if (input == CREATE_GAME_STR) {
+                std::cout << "[Client] Creating game..." << std::endl;
+                uint32_t gid=0, pid=0;
+                bool ok = handler_core.create_game_blocking(gid, pid);
+                if (ok) {
+                    std::cout << "[Client] Game created. game_id=" << gid << " player_id=" << pid << std::endl;
+                } else {
+                    std::cout << "[Client] Failed to create game." << std::endl;
+                }
+            } else if (input.rfind(JOIN_GAME_STR, 0) == 0) {
+                // formato: JOIN GAME <id>
+                size_t last_space = input.find_last_of(' ');
+                if (last_space != std::string::npos && last_space + 1 < input.size()) {
+                    std::string game_id_str = input.substr(last_space + 1);
+                    try {
+                        int gid = std::stoi(game_id_str);
+                        std::cout << "[Client] Joining game " << gid << "..." << std::endl;
+                        uint32_t pid=0;
+                        bool ok = handler_core.join_game_blocking(gid, pid);
+                        if (ok) {
+                            std::cout << "[Client] Joined game successfully. game_id=" << gid << " player_id=" << pid << std::endl;
+                        } else {
+                            std::cout << "[Client] Failed to join game " << gid << ". ¿Existe esa partida? (Los IDs empiezan en 1)" << std::endl;
+                        }
+                    } catch (...) {
+                        std::cerr << "[Client] Invalid game id in command: " << input << std::endl;
+                    }
+                } else {
+                    std::cerr << "[Client] Invalid JOIN GAME command format. Use: JOIN GAME <id>" << std::endl;
+                }
+            } else {
+                // comandos de movimiento u otros
+                std::cout << "[Client] Sending: " << input << std::endl;
+                handler_core.send(input);
+            }
         }
 
         ServerMessage message;
         ServerMessage latest_message;
         bool got_message = false;
 
-        while (incoming_messages.try_pop(message))
+        while (handler_core.try_receive(message))
         {
             latest_message = message;
             got_message = true;

@@ -7,6 +7,7 @@ struct ClientHandlerMessage
 {
     int client_id;
     ClientMessage msg;
+    int game_id;
 };
 
 #endif

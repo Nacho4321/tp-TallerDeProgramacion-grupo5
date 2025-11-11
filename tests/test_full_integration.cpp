@@ -28,7 +28,9 @@ TEST(FullIntegrationTest, CompleteClientServerCommunication)
             if (!got) std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
         ASSERT_TRUE(got);
-        EXPECT_EQ(in.msg.cmd, MOVE_UP_PRESSED_STR);
+    EXPECT_EQ(in.msg.cmd, MOVE_UP_PRESSED_STR);
+    EXPECT_EQ(in.msg.player_id, -1);
+    EXPECT_EQ(in.msg.game_id, -1);
 
         // Enviamos respuesta por broadcast con posiciones
         ServerMessage response_srv;

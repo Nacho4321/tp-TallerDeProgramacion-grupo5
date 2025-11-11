@@ -1,8 +1,8 @@
 #include "acceptor.h"
 
-Acceptor::Acceptor(Socket &acc, Queue<ClientHandlerMessage> &global_inbox, Queue<int> &clients, OutboxMonitor &outboxes) : acceptor(std::move(acc)), global_inbox(global_inbox), game_clients(clients), outbox_monitor(outboxes) {}
+Acceptor::Acceptor(Socket &acc, Queue<ClientHandlerMessage> &global_inbox, OutboxMonitor &outboxes) : acceptor(std::move(acc)), global_inbox(global_inbox), outbox_monitor(outboxes) {}
 
-Acceptor::Acceptor(const char *port, Queue<ClientHandlerMessage> &global_inbox, Queue<int> &clients, OutboxMonitor &outboxes) : acceptor(Socket(port)), global_inbox(global_inbox), game_clients(clients), outbox_monitor(outboxes) {}
+Acceptor::Acceptor(const char *port, Queue<ClientHandlerMessage> &global_inbox, OutboxMonitor &outboxes) : acceptor(Socket(port)), global_inbox(global_inbox), outbox_monitor(outboxes) {}
 
 void Acceptor::run()
 {
@@ -10,16 +10,18 @@ void Acceptor::run()
     {
         try
         {
+            std::cout << "[Acceptor] Esperando conexiones en el puerto..." << std::endl;
             Socket peer = acceptor.accept(); // bloqueante, espera cliente
 
             int id = next_id++;
-            game_clients.push(id);
+            std::cout << "[Acceptor] Cliente conectado con ID: " << id << std::endl;
             auto c = std::make_unique<ClientHandler>(std::move(peer), id, global_inbox);
 
             reap(); // limpiar clientes muertos
 
-            outbox_monitor.add(c->get_outbox());
+            outbox_monitor.add(c->get_id(), c->get_outbox());
             c->start();
+            std::cout << "[Acceptor] ClientHandler iniciado para cliente " << id << std::endl;
 
             clients.push_back(std::move(c));
         }
@@ -47,22 +49,12 @@ void Acceptor::stop()
 
 void Acceptor::clear()
 {
+    outbox_monitor.remove_all();
     for (auto &client : clients)
     {
         try
         {
-            outbox_monitor.remove(client->get_outbox());
             client->stop();
-        }
-        catch (...)
-        {
-        }
-    }
-
-    for (auto &client : clients)
-    {
-        try
-        {
             client->join();
         }
         catch (...)
@@ -79,10 +71,11 @@ void Acceptor::reap()
         auto &c = *it;
         if (!c->is_alive())
         {
-            outbox_monitor.remove(c->get_outbox());
+            outbox_monitor.remove(c->get_id());
             c->stop();
             c->join();
-            it = clients.erase(it); // se destruye automáticamente
+            // Eliminar del vector y continuar sin incrementar el iterador
+            it = clients.erase(it);
         }
         else
         {

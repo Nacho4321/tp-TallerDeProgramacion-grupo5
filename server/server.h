@@ -4,24 +4,26 @@
 #include <list>
 #include <mutex>
 #include <string>
-#include "../common/queue.h"
-#include "../common/gameloop.h"
+#include "game_monitor.h"
 #include "acceptor.h"
+#include "message_admin.h"
 
 class Server
 {
 private:
-    Queue<int> clientes;
     OutboxMonitor outboxes;
     Queue<ClientHandlerMessage> global_inbox;
-    GameLoop need_for_speed;
+    std::unordered_map<int, std::shared_ptr<Queue<Event>>> game_queues;
+    std::mutex games_queues_mutex;
+    GameMonitor games_monitor;
+    MessageAdmin message_admin;
     Acceptor acceptor;
     void process_input(const std::string &input, bool &connected);
 
 public:
     explicit Server(const char *port)
-        : clientes(), outboxes(), global_inbox(), need_for_speed(clientes, global_inbox, outboxes),
-          acceptor(port, global_inbox, clientes, outboxes)
+        : outboxes(), global_inbox(), game_queues(), games_queues_mutex(), games_monitor(game_queues, games_queues_mutex, outboxes),
+          message_admin(global_inbox, game_queues, games_queues_mutex, games_monitor, outboxes), acceptor(port, global_inbox, outboxes)
     {
     }
     void start();

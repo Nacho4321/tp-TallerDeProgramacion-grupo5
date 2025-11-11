@@ -7,6 +7,7 @@ void ClientReceiver::run()
 {
     try
     {
+        std::cout << "[ClientReceiver(Server)] Hilo receiver iniciado para cliente " << client_id << std::endl;
         while (should_keep_running())
         {
             ClientMessage client_msg = protocol.receiveClientMessage();
@@ -25,6 +26,7 @@ void ClientReceiver::run()
     {
         std::cerr << "[Receiver] Exception: " << e.what() << std::endl;
     }
+    std::cout << "[ClientReceiver(Server)] Terminando receiver de cliente " << client_id << std::endl;
 }
 
 // ---------------- ClientSender ----------------
@@ -36,17 +38,19 @@ void ClientSender::run()
     {
         while (should_keep_running())
         {
-            ServerMessage msg;
+            ServerMessage response;
             try
             {
-                msg = outbox.pop(); // bloqueante
+                response = outbox.pop(); // bloqueante
             }
             catch (const ClosedQueue &)
             {
                 // La cola fue cerrada: salimos del loop
                 break;
             }
-            protocol.sendMessage(msg);
+            
+            // Enviar directamente el mensaje unificado
+            protocol.sendMessage(response);
         }
     }
     catch (const std::exception &e)
@@ -83,7 +87,9 @@ void ClientHandler::stop()
 
     try
     {
-        outbox->close();
+        if (outbox) {
+            try { outbox->close(); } catch (...) {}
+        }
     }
     catch (...)
     {
@@ -99,6 +105,8 @@ void ClientHandler::join()
 {
     sender.join();
     receiver.join();
+    // liberar la outbox para que GameLoop ya no la use
+    outbox.reset();
 }
 
 std::shared_ptr<Queue<ServerMessage>> ClientHandler::get_outbox() { return outbox; }

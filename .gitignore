@@ -1,22 +1,44 @@
 build/
+$(BUILD_DIR)/
 _deps/
 lib/
 
-# CMake generated files
+# Qt/CMake autogen dirs
+taller_client_autogen/
+taller_client_ui_autogen/
+taller_editor_autogen/
+taller_server_autogen/
+taller_tests_autogen/
+*_autogen/
+.qt/
+
+# CMake generated files (ensure out-of-source builds keep these out)
 CMakeFiles/
 cmake_install.cmake
 CMakeCache.txt
-Makefile
 
-# Archivos generados por el compilador/IDE
-tags.*
+# Generic build artifacts
 *.o
 *.so
-*_autogen
+*.a
+*.out
+*.run
+tags.*
 libtaller_common.a
-Makefile
-taller_client
-taller_client_ui
-taller_editor
+
+# Executables (root-level if someone configured in-source)
+/taller_server
+/taller_client
+/taller_editor
+/taller_tests
+/taller_client_ui
 taller_server
+taller_client
+taller_editor
 taller_tests
+taller_client_ui
+
+# Generated wrapper Makefile should be tracked; ignore any old CMake one in build dir
+/CMakeFiles/
+/CMakeCache.txt
+/cmake_install.cmake

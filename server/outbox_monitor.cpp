@@ -1,27 +1,33 @@
 #include "outbox_monitor.h"
 
-void OutboxMonitor::add(std::shared_ptr<Queue<ServerMessage>> q)
+void OutboxMonitor::add(int client_id, std::shared_ptr<Queue<ServerMessage>> q)
 {
     std::lock_guard<std::mutex> lock(mtx);
-    outboxes.push_back(q);
+    outboxes[client_id] = q;
 }
 
-void OutboxMonitor::remove(std::shared_ptr<Queue<ServerMessage>> q)
+void OutboxMonitor::remove(int client_id)
 {
     std::lock_guard<std::mutex> lock(mtx);
-    for (auto it = outboxes.begin(); it != outboxes.end();)
-    {
-        if (*it == q)
-            it = outboxes.erase(it);
-        else
-            ++it;
-    }
+    outboxes.erase(client_id);
+}
+
+void OutboxMonitor::remove_all()
+{
+    std::lock_guard<std::mutex> lock(mtx);
+    outboxes.clear();
+}
+
+std::shared_ptr<Queue<ServerMessage>> OutboxMonitor::get_cliente_queue(int id)
+{
+    std::lock_guard<std::mutex> lock(mtx);
+    return outboxes[id];
 }
 
 void OutboxMonitor::broadcast(const ServerMessage &msg)
 {
     std::lock_guard<std::mutex> lock(mtx);
-    for (auto &q : outboxes)
+    for (auto &[id, q] : outboxes)
     {
         q->push(msg);
     }
