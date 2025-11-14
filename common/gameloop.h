@@ -11,6 +11,7 @@
 class GameLoop : public Thread
 {
 private:
+    b2World world{b2Vec2(0.0f, 0.0f)};
     std::mutex players_map_mutex;
     std::unordered_map<int, PlayerData> players;
     std::unordered_map<int, std::shared_ptr<Queue<ServerMessage>>> players_messanger;
@@ -19,6 +20,7 @@ private:
     bool started;
     int next_id;
 
+    b2Body *create_player_body(float x, float y);
     void broadcast_positions(ServerMessage &msg);
 
 public:
