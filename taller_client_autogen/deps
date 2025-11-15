@@ -3,6 +3,7 @@ taller_client_autogen/timestamp: \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/CMakeFiles/3.31.6/CMakeSystem.cmake \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/CMakeLists.txt \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/camera.h \
+	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/car.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/client.cpp \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/client.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/game_client_handler.cpp \
@@ -11,10 +12,10 @@ taller_client_autogen/timestamp: \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/game_client_receiver.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/game_client_sender.cpp \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/game_client_sender.h \
+	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/game_renderer.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/input_handler.cpp \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/input_handler.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/main.cpp \
-	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/renderer.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client_ui/resources.qrc \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/cmake/CompilerWarnings.cmake \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/Event.h \
