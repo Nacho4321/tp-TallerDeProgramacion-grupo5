@@ -24,6 +24,7 @@ taller_client_autogen/timestamp: \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/eventloop.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/gameloop.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/liberror.h \
+	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/map_layout.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/messages.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/protocol.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/queue.h \

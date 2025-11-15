@@ -11,6 +11,7 @@ target_sources(taller_common
     protocol_utils.cpp
     resolver.cpp
     socket.cpp
+    map_layout.cpp
     PUBLIC
     # .h files
     gameloop.h
@@ -27,4 +28,5 @@ target_sources(taller_common
     socket.h
     thread.h
     messages.h
+    map_layout.h
     )

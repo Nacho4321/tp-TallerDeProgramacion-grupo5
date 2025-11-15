@@ -17,7 +17,7 @@ void GameLoop::run()
     event_loop.start();
     auto last_tick = std::chrono::steady_clock::now();
     float acum = 0.0f;
-
+    map_layout.create_walls();
     while (should_keep_running())
     {
         try
