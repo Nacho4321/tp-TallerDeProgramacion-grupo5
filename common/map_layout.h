@@ -8,8 +8,11 @@ class MapLayout
 private:
     b2World &world;
 
-public:
     void create_walls();
+    void create_square_layout(const float &x, const float &y, const float &width, const float &height);
+
+public:
+    void create_map_layout();
     MapLayout(b2World &world_map) : world(world_map) {}
 };
 #endif
