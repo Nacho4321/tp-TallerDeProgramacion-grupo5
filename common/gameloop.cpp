@@ -7,37 +7,51 @@
 // Velocidad base en pixeles por segundo (antes era 0.0008 por tick, casi imperceptible)
 #define INITIAL_SPEED 200.0f
 #define FULL_LOBBY_MSG "can't join lobby, maximum players reached"
+#define SCALE 32.0f
+#define FPS (1.0f / 60.0f)
+#define VELOCITY_ITERS 8
+#define COLLISION_ITERS 3
+
 void GameLoop::run()
 {
     event_loop.start();
     auto last_tick = std::chrono::steady_clock::now();
+    float acum = 0.0f;
+    map_layout.create_map_layout("data/cities/liberty_city.json");
     while (should_keep_running())
     {
-        try {
+        try
+        {
             auto now = std::chrono::steady_clock::now();
             float dt = std::chrono::duration<float>(now - last_tick).count(); // segundos
             last_tick = now;
-            if (int(players.size()) > 0)
+            acum += dt;
+            if (!players.empty())
             {
-                std::vector<PlayerPositionUpdate> broadcast;
-                players_map_mutex.lock();
-                for (auto &[id, player_data] : players)
+                // Actualiza las propiedades de los bodies de los jugadores según su Position
+                update_body_positions();
+                // Step del mundo (Hace el cálculo de las físicas y demás, no es nuestra incumbencia como lo hace)
+                while (acum >= FPS)
                 {
-                    Position &pos = player_data.position;
-                    // Movimiento en función del tiempo: pixeles/segundo * segundos
-                    pos.new_X += float(pos.direction_x) * player_data.car.speed * dt;
-                    pos.new_Y += float(pos.direction_y) * player_data.car.speed * dt;
-                    PlayerPositionUpdate update = PlayerPositionUpdate{id, pos};
-                    broadcast.push_back(update);
+                    world.Step(FPS, VELOCITY_ITERS, COLLISION_ITERS);
+                    acum -= FPS;
                 }
-                players_map_mutex.unlock();
-                ServerMessage msg; msg.opcode = UPDATE_POSITIONS; msg.positions = broadcast;
+                std::vector<PlayerPositionUpdate> broadcast;
+                // Actulza las posiciones de los jugadores según los bodies y reescala para enviar a clientes
+                update_player_positions(broadcast);
+                ServerMessage msg;
+                msg.opcode = UPDATE_POSITIONS;
+                msg.positions = broadcast;
 
                 broadcast_positions(msg);
             }
-        } catch (const ClosedQueue&) {
+        }
+        catch (const ClosedQueue &)
+        {
             // Ignorar: alguna cola de cliente cerrada; ya se limpia en broadcast_positions
-        } catch (const std::exception& e) {
+        }
+        catch (const std::exception &e)
+        {
             std::cerr << "[GameLoop] Unexpected exception: " << e.what() << std::endl;
         }
 
@@ -59,8 +73,10 @@ void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_o
     std::vector<PlayerPositionUpdate> broadcast;
     if (int(players.size()) == 0)
     {
-        players[id] = PlayerData{
-            MOVE_UP_RELEASED_STR, CarInfo{"lambo", INITIAL_SPEED, INITIAL_SPEED, INITIAL_SPEED}, Position{INITIAL_X_POS, INITIAL_Y_POS, not_horizontal, not_vertical}};
+        Position pos = Position{INITIAL_X_POS, INITIAL_Y_POS, not_horizontal, not_vertical};
+        players[id] = PlayerData{create_player_body(INITIAL_X_POS, INITIAL_Y_POS, pos),
+                                 MOVE_UP_RELEASED_STR,
+                                 CarInfo{"lambo", INITIAL_SPEED, INITIAL_SPEED, INITIAL_SPEED}, pos};
         players_messanger[id] = player_outbox;
     }
     else if (int(players.size()) < MAX_PLAYERS)
@@ -69,14 +85,16 @@ void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_o
         auto anchor_it = players.begin();
         float dir_x = INITIAL_X_POS;
         float dir_y = INITIAL_Y_POS;
-        if (anchor_it != players.end()) {
+        if (anchor_it != players.end())
+        {
             std::cout << "[GameLoop] add_player: anchor id=" << anchor_it->first << std::endl;
             dir_x = anchor_it->second.position.new_X + 30.0f * static_cast<float>(players.size());
             dir_y = anchor_it->second.position.new_Y;
         }
         std::cout << "[GameLoop] add_player: spawn at (" << dir_x << "," << dir_y << ")" << std::endl;
-        players[id] = PlayerData{
-            MOVE_UP_RELEASED_STR, CarInfo{"lambo", INITIAL_SPEED, INITIAL_SPEED, INITIAL_SPEED}, Position{dir_x, dir_y, not_horizontal, not_vertical}};
+        Position pos = Position{dir_x, dir_y, not_horizontal, not_vertical};
+        players[id] = PlayerData{create_player_body(dir_x, dir_y, pos),
+                                 MOVE_UP_RELEASED_STR, CarInfo{"lambo", INITIAL_SPEED, INITIAL_SPEED, INITIAL_SPEED}, pos};
         std::cout << "[GameLoop] add_player: player data inserted" << std::endl;
         players_messanger[id] = player_outbox;
         std::cout << "[GameLoop] add_player: messenger inserted" << std::endl;
@@ -101,7 +119,8 @@ void GameLoop::broadcast_positions(ServerMessage &msg)
     {
         std::lock_guard<std::mutex> lk(players_map_mutex);
         recipients.reserve(players_messanger.size());
-        for (auto &entry : players_messanger) {
+        for (auto &entry : players_messanger)
+        {
             recipients.emplace_back(entry.first, entry.second);
         }
     }
@@ -111,20 +130,112 @@ void GameLoop::broadcast_positions(ServerMessage &msg)
     {
         int id = p.first;
         auto &queue = p.second;
-        if (!queue) { to_remove.push_back(id); continue; }
-        try {
+        if (!queue)
+        {
+            to_remove.push_back(id);
+            continue;
+        }
+        try
+        {
             queue->push(msg);
-        } catch (const ClosedQueue&) {
+        }
+        catch (const ClosedQueue &)
+        {
             // El cliente cerró su outbox: marcar para remover
             to_remove.push_back(id);
         }
     }
-    if (!to_remove.empty()) {
+    if (!to_remove.empty())
+    {
         // Remover jugadores desconectados
         std::lock_guard<std::mutex> lk(players_map_mutex);
-        for (int id : to_remove) {
+        for (int id : to_remove)
+        {
             players_messanger.erase(id);
             players.erase(id);
+        }
+    }
+}
+
+b2Body *GameLoop::create_player_body(float x_px, float y_px, Position &pos)
+{
+    // Crecion del body
+    b2BodyDef bd;
+    bd.type = b2_dynamicBody;
+    bd.position.Set(x_px / SCALE, y_px / SCALE);
+
+    // Rotacion del body
+    float dy = float(pos.direction_y);
+    float dx = float(pos.direction_x);
+    float angleRad = std::atan2(dy, dx);
+    bd.angle = angleRad;
+
+    // Lo creamos en el world
+    b2Body *b = world.CreateBody(&bd);
+
+    // Tamaño del sprite en metros (En teoría segun vi en renderer es 28x22 px)
+    float halfWidth = 22.0f / (2.0f * SCALE);
+    float halfHeight = 28.0f / (2.0f * SCALE);
+
+    b2PolygonShape shape;
+    shape.SetAsBox(halfWidth, halfHeight);
+
+    // Fixture son las propiedades físicas del body
+    b2FixtureDef fd;
+    fd.shape = &shape;
+    fd.density = 1.0f;
+    fd.friction = 0.3f;
+    fd.restitution = 0.1f;
+
+    b->CreateFixture(&fd);
+
+    b->SetBullet(true);        // mejora CCD para objetos rápidos
+    b->SetLinearDamping(1.0f); // frena un poco naturalmente
+    b->SetAngularDamping(1.0f);
+
+    return b;
+}
+
+void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadcast)
+{
+    std::lock_guard<std::mutex> lk(players_map_mutex);
+    for (auto &[id, player_data] : players)
+    {
+        b2Body *body = player_data.body;
+        b2Vec2 p = body->GetPosition();
+        player_data.position.new_X = p.x * SCALE; // reconvertir a píxeles
+        player_data.position.new_Y = p.y * SCALE;
+
+        PlayerPositionUpdate update{id, player_data.position};
+        broadcast.push_back(update);
+    }
+}
+
+void GameLoop::update_body_positions()
+{
+    // Velocidad del body (en metros/seg)
+    std::lock_guard<std::mutex> lk(players_map_mutex);
+    for (auto &[id, player_data] : players)
+    {
+        Position &pos = player_data.position;
+        float dirX = float(pos.direction_x);
+        float dirY = float(pos.direction_y);
+
+        if (dirX != 0 || dirY != 0)
+        {
+            float angle = std::atan2(dirY, dirX);
+            player_data.body->SetTransform(
+                player_data.body->GetPosition(),
+                angle);
+        }
+
+        // convertimos velocidad (px/s) a m/s para que funcione en box2d como queremos
+        float vx = dirX * (player_data.car.speed / SCALE);
+        float vy = dirY * (player_data.car.speed / SCALE);
+
+        if (player_data.body)
+        {
+            player_data.body->SetLinearVelocity(b2Vec2(vx, vy));
         }
     }
 }

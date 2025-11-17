@@ -30,8 +30,11 @@ void EventDispatcher::move_up(Event &event)
 void EventDispatcher::move_up_released(Event &event)
 {
     std::lock_guard<std::mutex> lock(players_map_mutex);
-    players[event.client_id].position.direction_y = not_vertical;
-    players[event.client_id].state = event.action;
+    if (players[event.client_id].state != MOVE_DOWN_PRESSED_STR)
+    {
+        players[event.client_id].position.direction_y = not_vertical;
+        players[event.client_id].state = event.action;
+    }
 }
 
 void EventDispatcher::move_down(Event &event)
@@ -44,8 +47,11 @@ void EventDispatcher::move_down(Event &event)
 void EventDispatcher::move_down_released(Event &event)
 {
     std::lock_guard<std::mutex> lock(players_map_mutex);
-    players[event.client_id].position.direction_y = not_vertical;
-    players[event.client_id].state = event.action;
+    if (players[event.client_id].state != MOVE_UP_PRESSED_STR)
+    {
+        players[event.client_id].position.direction_y = not_vertical;
+        players[event.client_id].state = event.action;
+    }
 }
 
 void EventDispatcher::move_left(Event &event)
@@ -58,8 +64,11 @@ void EventDispatcher::move_left(Event &event)
 void EventDispatcher::move_left_released(Event &event)
 {
     std::lock_guard<std::mutex> lock(players_map_mutex);
-    players[event.client_id].position.direction_x = not_horizontal;
-    players[event.client_id].state = event.action;
+    if (players[event.client_id].state != MOVE_RIGHT_PRESSED_STR)
+    {
+        players[event.client_id].position.direction_x = not_horizontal;
+        players[event.client_id].state = event.action;
+    }
 }
 
 void EventDispatcher::move_right(Event &event)
@@ -72,8 +81,11 @@ void EventDispatcher::move_right(Event &event)
 void EventDispatcher::move_right_released(Event &event)
 {
     std::lock_guard<std::mutex> lock(players_map_mutex);
-    players[event.client_id].position.direction_x = not_horizontal;
-    players[event.client_id].state = event.action;
+    if (players[event.client_id].state != MOVE_LEFT_PRESSED_STR)
+    {
+        players[event.client_id].position.direction_x = not_horizontal;
+        players[event.client_id].state = event.action;
+    }
 }
 void EventDispatcher::handle_event(Event &event)
 {
