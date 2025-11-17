@@ -181,6 +181,8 @@ if(TALLER_CLIENT_UI)
         taller_common 
         Qt6::Widgets
     )
+    
+    file(WRITE ${CMAKE_BINARY_DIR}/qt.conf "[Platforms]\nPlatforms = xcb\n")
 endif()
 
 if(TALLER_SERVER)
