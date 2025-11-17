@@ -17,6 +17,9 @@ const std::uint8_t MOVE_RIGHT_RELEASED = 0x08;
 const std::uint8_t CREATE_GAME = 0x10;
 const std::uint8_t JOIN_GAME = 0x11;
 const std::uint8_t GAME_JOINED = 0x12;
+// Listar partidas existentes
+const std::uint8_t GET_GAMES = 0x13;
+const std::uint8_t GAMES_LIST = 0x14;
 
 // Game opcodes
 const std::uint8_t UPDATE_POSITIONS = 0x20;
@@ -36,6 +39,7 @@ const std::string MOVE_RIGHT_RELEASED_STR = "move_right_released";        // NOL
 // Lobby commands
 const std::string CREATE_GAME_STR = "create_game";                        // NOLINT
 const std::string JOIN_GAME_STR = "join_game";                            // NOLINT
+const std::string GET_GAMES_STR = "get_games";                            // NOLINT
 
 
 #endif

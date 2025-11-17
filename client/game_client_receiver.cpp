@@ -23,6 +23,13 @@ void GameClientReceiver::run() {
                 if (!positionsMsg.positions.empty()) {
                     incoming_messages.push(std::move(positionsMsg));
                 }
+            } else if (opcode == GAMES_LIST) {
+                // Imprimir listado de partidas
+                std::cout << "[ClientReceiver] Lista de partidas:" << std::endl;
+                for (auto &g : positionsMsg.games) {
+                    std::cout << "  id=" << g.game_id << " name='" << g.name << "' players=" << g.player_count << std::endl;
+                }
+                // también se podría enviar a una cola específica si se requiere
             } else {
                 // Paquete desconocido: ignorar
             }

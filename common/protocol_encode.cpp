@@ -16,11 +16,15 @@ std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage& msg
     else if (cmd == MOVE_RIGHT_RELEASED_STR) opcode = MOVE_RIGHT_RELEASED;
     else if (cmd == CREATE_GAME_STR) {
         opcode = CREATE_GAME;
-        std::cout << "[Protocol(Client)] Encoding CREATE_GAME with ids p=" << msg.player_id << " g=" << msg.game_id << std::endl;
+        std::cout << "[Protocol(Client)] Encoding CREATE_GAME name='" << msg.game_name << "' p=" << msg.player_id << " g=" << msg.game_id << std::endl;
     }
     else if (cmd.rfind(JOIN_GAME_STR, 0) == 0) {
         opcode = JOIN_GAME;
         std::cout << "[Protocol(Client)] Encoding JOIN_GAME with ids p=" << msg.player_id << " g=" << msg.game_id << std::endl;
+    }
+    else if (cmd == GET_GAMES_STR) {
+        opcode = GET_GAMES;
+        std::cout << "[Protocol(Client)] Encoding GET_GAMES" << std::endl;
     }
     else opcode = 0; // desconocido
 
@@ -28,7 +32,12 @@ std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage& msg
     // Siempre incluimos player_id y game_id (8 bytes)
     insertUint32(static_cast<uint32_t>(msg.player_id));
     insertUint32(static_cast<uint32_t>(msg.game_id));
-    // No hay payload adicional excepto para JOIN_GAME que ya reutiliza game_id
+    // Payload adicional para CREATE_GAME: nombre de la partida
+    if (opcode == CREATE_GAME) {
+        uint16_t len = static_cast<uint16_t>(msg.game_name.size());
+        insertUint16(len);
+        for (char c : msg.game_name) buffer.push_back(static_cast<uint8_t>(c));
+    }
     return buffer;
 }
 
@@ -58,6 +67,17 @@ std::vector<std::uint8_t> Protocol::encodeServerMessage(ServerMessage& out) {
         insertUint32(out.game_id);
         insertUint32(out.player_id);
         buffer.push_back(out.success ? 1 : 0);
+        return buffer;
+    } else if (out.opcode == GAMES_LIST) {
+        buffer.push_back(GAMES_LIST);
+        insertUint32(static_cast<uint32_t>(out.games.size()));
+        for (auto &g : out.games) {
+            insertUint32(g.game_id);
+            insertUint32(g.player_count);
+            uint16_t len = static_cast<uint16_t>(g.name.size());
+            insertUint16(len);
+            for (char c : g.name) buffer.push_back(static_cast<uint8_t>(c));
+        }
         return buffer;
     } else {
         // Desconocido: no serializar payload, solo opcode

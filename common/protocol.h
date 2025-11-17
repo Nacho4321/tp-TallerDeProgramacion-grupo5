@@ -75,9 +75,11 @@ private:
     ClientMessage receiveRightReleased();
     ClientMessage receiveCreateGame();
     ClientMessage receiveJoinGame();
+    ClientMessage receiveGetGames();
 
     ServerMessage receivePositionsUpdate();
     GameJoinedResponse receiveGameJoinedResponse();
+    ServerMessage receiveGamesList();
 
 public:
     explicit Protocol(Socket &&socket) noexcept; // constructor que toma ownership del socket

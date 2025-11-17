@@ -16,7 +16,7 @@ class GameLoop : public Thread
 {
 private:
     b2World world{b2Vec2(0.0f, 0.0f)};
-    std::mutex players_map_mutex;
+    mutable std::mutex players_map_mutex;
     std::unordered_map<int, PlayerData> players;
     std::unordered_map<int, std::shared_ptr<Queue<ServerMessage>>> players_messanger;
     std::shared_ptr<Queue<Event>> event_queue;
@@ -35,5 +35,6 @@ public:
     void run() override;
     void start_game();
     void add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_outbox);
+    size_t get_player_count() const;
 };
 #endif

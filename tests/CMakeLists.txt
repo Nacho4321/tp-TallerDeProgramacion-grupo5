@@ -6,6 +6,7 @@ target_sources(taller_tests
     test_client_communication.cpp
     test_full_integration.cpp
     test_lobby_protocol.cpp
+    test_get_games.cpp
     foo.cpp
     ${CMAKE_SOURCE_DIR}/server/acceptor.cpp
     ${CMAKE_SOURCE_DIR}/server/client_handler.cpp

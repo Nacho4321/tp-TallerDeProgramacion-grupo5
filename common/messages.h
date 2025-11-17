@@ -43,6 +43,14 @@ struct ServerMessage
     uint32_t game_id = 0;
     uint32_t player_id = 0;
     bool success = false;
+
+    // Payload para listado de partidas (GAMES_LIST)
+    struct GameSummary {
+        uint32_t game_id;
+        std::string name;
+        uint32_t player_count;
+    };
+    std::vector<GameSummary> games; // sólo usado si opcode == GAMES_LIST
 };
 
 struct ClientMessage
@@ -54,5 +62,7 @@ struct ClientMessage
     // Identificador de la partida. Antes de estar dentro de una partida -> -1.
     // Para join_game se envía el ID objetivo aquí.
     int32_t game_id = -1;
+    // Nombre de la partida (para create_game) u otro payload textual
+    std::string game_name;
 };
 #endif

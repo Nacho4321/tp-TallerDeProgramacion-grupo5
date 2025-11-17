@@ -239,3 +239,8 @@ void GameLoop::update_body_positions()
         }
     }
 }
+
+size_t GameLoop::get_player_count() const {
+    std::lock_guard<std::mutex> lk(players_map_mutex);
+    return players.size();
+}
