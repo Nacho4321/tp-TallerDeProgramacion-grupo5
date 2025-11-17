@@ -1,7 +1,7 @@
 #include "map_layout.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
-
+#include <iostream>
 #define MAP_WIDTH (4640.0f / 32.0f)
 #define MAP_HEIGHT (4672.0f / 32.0f)
 #define SCALE 32.0f
@@ -27,23 +27,58 @@ void MapLayout::create_map_layout(const std::string &jsonPath)
 
         for (auto &obj : layer["objects"])
         {
-            if (!obj.contains("polygon"))
-                continue;
+            // CASO 1: POLÍGONO
 
-            float baseX = obj["x"].get<float>();
-            float baseY = obj["y"].get<float>();
-
-            std::vector<b2Vec2> verts;
-
-            for (auto &pt : obj["polygon"])
+            if (obj.contains("polygon"))
             {
-                float px = baseX + pt["x"].get<float>() + OFFSET_X;
-                float py = baseY + pt["y"].get<float>() + OFFSET_Y;
+                float baseX = obj["x"].get<float>();
+                float baseY = obj["y"].get<float>();
 
-                verts.emplace_back(px / SCALE, py / SCALE);
+                std::cout << "Polygon RAW coords:\n";
+                std::vector<b2Vec2> verts;
+
+                for (auto &pt : obj["polygon"])
+                {
+                    float raw_px = baseX + pt["x"].get<float>();
+                    float raw_py = baseY + pt["y"].get<float>();
+
+                    std::cout << raw_px << ", " << raw_py << "\n";
+
+                    float px = raw_px + OFFSET_X;
+                    float py = raw_py + OFFSET_Y;
+
+                    verts.emplace_back(px / SCALE, py / SCALE);
+                }
+
+                std::cout << "----\n";
+
+                create_polygon_layout(verts);
+                continue;
             }
 
-            create_polygon_layout(verts);
+            // CASO 2: RECTÁNGULO
+            if (obj.contains("width") && obj.contains("height"))
+            {
+                float x = obj["x"].get<float>();
+                float y = obj["y"].get<float>();
+                float w = obj["width"].get<float>();
+                float h = obj["height"].get<float>();
+
+                std::cout << "Square RAW coords:\n";
+                std::cout << x << ", " << y << "\n";
+                std::cout << x + w << ", " << y << "\n";
+                std::cout << x + w << ", " << y + h << "\n";
+                std::cout << x << ", " << y + h << "\n";
+                std::cout << "----\n";
+
+                std::vector<b2Vec2> verts;
+                verts.emplace_back((x + OFFSET_X) / SCALE, (y + OFFSET_Y) / SCALE);
+                verts.emplace_back((x + w + OFFSET_X) / SCALE, (y + OFFSET_Y) / SCALE);
+                verts.emplace_back((x + w + OFFSET_X) / SCALE, (y + h + OFFSET_Y) / SCALE);
+                verts.emplace_back((x + OFFSET_X) / SCALE, (y + h + OFFSET_Y) / SCALE);
+
+                create_polygon_layout(verts);
+            }
         }
     }
 }
