@@ -11,6 +11,8 @@
 #define FPS (1.0f / 60.0f)
 #define VELOCITY_ITERS 8
 #define COLLISION_ITERS 3
+// Radio de los checkpoints en pixeles
+#define CHECKPOINT_RADIUS_PX 40.0f
 
 void GameLoop::run()
 {
@@ -18,6 +20,36 @@ void GameLoop::run()
     auto last_tick = std::chrono::steady_clock::now();
     float acum = 0.0f;
     map_layout.create_map_layout("data/cities/liberty_city.json");
+
+    // Extraigo checkpoints del archivo JSON dedicado
+    std::vector<b2Vec2> checkpoints;
+    map_layout.extract_checkpoints("data/cities/base_liberty_city_checkpoints.json", checkpoints);
+    
+    if (!checkpoints.empty())
+    {
+        // store centers in the member vector for lookup/logging
+        checkpoint_centers = checkpoints;
+        for (size_t i = 0; i < checkpoint_centers.size(); ++i)
+        {
+            b2BodyDef bd;
+            bd.type = b2_staticBody;
+            bd.position = checkpoint_centers[i];
+            b2Body *body = world.CreateBody(&bd);
+
+            b2CircleShape shape;
+            shape.m_p.Set(0.0f, 0.0f);
+            shape.m_radius = CHECKPOINT_RADIUS_PX / SCALE;
+
+            b2FixtureDef fd;
+            fd.shape = &shape;
+            fd.isSensor = true;
+
+            b2Fixture *fix = body->CreateFixture(&fd);
+            // Mapeo el fixture al índice del checkpoint
+            checkpoint_fixtures[fix] = static_cast<int>(i);
+        }
+        std::cout << "[GameLoop] Created " << checkpoint_centers.size() << " checkpoint sensors (from base_liberty_city_checkpoints.json)." << std::endl;
+    }
     while (should_keep_running())
     {
         try
@@ -61,6 +93,78 @@ void GameLoop::run()
 
     event_loop.stop();
     event_loop.join();
+}
+
+// Constructor: defined out-of-line so we can set the world's contact listener
+GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events)
+    : players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), next_id(INITIAL_ID), map_layout(world)
+{
+    // set the contact listener owner and register it with the world
+    contact_listener.set_owner(this);
+    world.SetContactListener(&contact_listener);
+}
+
+void GameLoop::CheckpointContactListener::BeginContact(b2Contact *contact)
+{
+    if (!owner)
+        return;
+    b2Fixture *a = contact->GetFixtureA();
+    b2Fixture *b = contact->GetFixtureB();
+    owner->handle_begin_contact(a, b);
+}
+
+int GameLoop::find_player_by_body(b2Body *body)
+{
+    for (auto &entry : players)
+    {
+        if (entry.second.body == body)
+            return entry.first; // player id
+    }
+    return -1;
+}
+
+void GameLoop::process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpointFix)
+{
+    if (!maybePlayerFix || !maybeCheckpointFix)
+        return;
+    b2Body *playerBody = maybePlayerFix->GetBody();
+    // Veo si el body pertenece a un jugador
+    int playerId = find_player_by_body(playerBody);
+    if (playerId < 0)
+        return;
+    // Veo si el otro fixture es un checkpoint
+    auto it = checkpoint_fixtures.find(maybeCheckpointFix);
+    if (it == checkpoint_fixtures.end())
+        return;
+    
+    int checkpointIndex = it->second;
+    PlayerData &pd = players[playerId];
+    // Si el checkpoint que acaba de tocar es el siguiente que debe pasar
+    if (pd.next_checkpoint == checkpointIndex)
+    {
+        int total = static_cast<int>(checkpoint_centers.size());
+        int new_next = pd.next_checkpoint + 1;
+        if (total > 0 && new_next >= total)
+        {
+            // Jugador completó todos los checkpoints en la lista
+            pd.laps_completed += 1;
+            pd.next_checkpoint = 0; // reseteo al primer checkpoint
+            std::cout << "[GameLoop] Player " << playerId << " completed all checkpoints! laps=" << pd.laps_completed << std::endl;
+        }
+        else
+        {
+            pd.next_checkpoint = new_next;
+            std::cout << "[GameLoop] Player " << playerId << " passed checkpoint " << checkpointIndex << " next=" << pd.next_checkpoint << std::endl;
+        }
+    }
+}
+
+void GameLoop::handle_begin_contact(b2Fixture *a, b2Fixture *b)
+{
+    // Delegate to helper methods to keep this function small and readable.
+    std::lock_guard<std::mutex> lk(players_map_mutex);
+    process_pair(a, b);
+    process_pair(b, a);
 }
 
 void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_outbox)
@@ -208,6 +312,17 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
 
         PlayerPositionUpdate update{id, player_data.position};
         broadcast.push_back(update);
+
+        // Proveer retroalimentación: registrar la posición del jugador y la posición del siguiente checkpoint (en píxeles)
+        int next_idx = player_data.next_checkpoint;
+        if (next_idx >= 0 && next_idx < static_cast<int>(checkpoint_centers.size()))
+        {
+            b2Vec2 c = checkpoint_centers[next_idx];
+            float cx_px = c.x * SCALE;
+            float cy_px = c.y * SCALE;
+            std::cout << "[GameLoop] Player " << id << " pos=(" << player_data.position.new_X << "," << player_data.position.new_Y << ") "
+                      << "next_checkpoint=(" << cx_px << "," << cy_px << ") idx=" << next_idx << std::endl;
+        }
     }
 }
 
@@ -238,4 +353,9 @@ void GameLoop::update_body_positions()
             player_data.body->SetLinearVelocity(b2Vec2(vx, vy));
         }
     }
+}
+
+size_t GameLoop::get_player_count() const {
+    std::lock_guard<std::mutex> lk(const_cast<std::mutex&>(players_map_mutex));
+    return players.size();
 }

@@ -15,5 +15,9 @@ struct PlayerData
     std::string state;
     CarInfo car;
     Position position;
+    // Indice del próximo checkpoint que el jugador debe pasar (0-based)
+    int next_checkpoint = 0;
+    // Cuántas vueltas completas (listas de checkpoints) el jugador ha completado
+    int laps_completed = 0;
 };
 #endif

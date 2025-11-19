@@ -83,6 +83,35 @@ void MapLayout::create_map_layout(const std::string &jsonPath)
     }
 }
 
+void MapLayout::extract_checkpoints(const std::string &jsonPath, std::vector<b2Vec2> &out)
+{
+    std::ifstream file(jsonPath);
+    if (!file)
+    {
+        std::cerr << "[MapLayout] Could not open JSON: " << jsonPath << std::endl;
+        return;
+    }
+    json data;
+    file >> data;
+    
+    if (!data.contains("checkpoints") || !data["checkpoints"].is_array())
+    {
+        std::cerr << "[MapLayout] extract_checkpoints: missing or invalid 'checkpoints' array in " << jsonPath << std::endl;
+        return;
+    }
+
+    for (auto &obj : data["checkpoints"])
+    {
+        if (!obj.contains("x") || !obj.contains("y"))
+            continue;
+        float raw_x = obj["x"].get<float>();
+        float raw_y = obj["y"].get<float>();
+        float px = raw_x + OFFSET_X;
+        float py = raw_y + OFFSET_Y;
+        out.emplace_back(px / SCALE, py / SCALE);
+    }
+}
+
 void MapLayout::create_polygon_layout(const std::vector<b2Vec2> &vertices)
 {
     if (vertices.size() < 3)
