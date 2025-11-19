@@ -1,4 +1,5 @@
 #include "gameloop.h"
+#include "constants.h"
 #include <thread>
 #include <chrono>
 #define MAX_PLAYERS 8
@@ -11,8 +12,7 @@
 #define FPS (1.0f / 60.0f)
 #define VELOCITY_ITERS 8
 #define COLLISION_ITERS 3
-// Radio de los checkpoints en pixeles
-#define CHECKPOINT_RADIUS_PX 40.0f
+
 
 void GameLoop::run()
 {
@@ -27,7 +27,6 @@ void GameLoop::run()
     
     if (!checkpoints.empty())
     {
-        // store centers in the member vector for lookup/logging
         checkpoint_centers = checkpoints;
         for (size_t i = 0; i < checkpoint_centers.size(); ++i)
         {
@@ -50,6 +49,7 @@ void GameLoop::run()
         }
         std::cout << "[GameLoop] Created " << checkpoint_centers.size() << " checkpoint sensors (from base_liberty_city_checkpoints.json)." << std::endl;
     }
+
     while (should_keep_running())
     {
         try
@@ -95,11 +95,11 @@ void GameLoop::run()
     event_loop.join();
 }
 
-// Constructor: defined out-of-line so we can set the world's contact listener
+// Constructor para poder setear el contact listener del world
 GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events)
     : players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), next_id(INITIAL_ID), map_layout(world)
 {
-    // set the contact listener owner and register it with the world
+    // seteo el contact listener owner y lo registro con el world
     contact_listener.set_owner(this);
     world.SetContactListener(&contact_listener);
 }
@@ -161,7 +161,6 @@ void GameLoop::process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpoin
 
 void GameLoop::handle_begin_contact(b2Fixture *a, b2Fixture *b)
 {
-    // Delegate to helper methods to keep this function small and readable.
     std::lock_guard<std::mutex> lk(players_map_mutex);
     process_pair(a, b);
     process_pair(b, a);
@@ -310,10 +309,27 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
         player_data.position.new_X = p.x * SCALE; // reconvertir a píxeles
         player_data.position.new_Y = p.y * SCALE;
 
-        PlayerPositionUpdate update{id, player_data.position};
+        PlayerPositionUpdate update;
+        update.player_id = id;
+        update.new_pos = player_data.position;
+
+        // Envio los 3 proximos checkpoints
+        const int LOOKAHEAD = 3;
+        if (!checkpoint_centers.empty())
+        {
+            int total = static_cast<int>(checkpoint_centers.size());
+            for (int k = 0; k < LOOKAHEAD; ++k)
+            {
+                int idx = (player_data.next_checkpoint + k) % total;
+                b2Vec2 c = checkpoint_centers[idx];
+                Position cp_pos{c.x * SCALE, c.y * SCALE, not_horizontal, not_vertical};
+                update.next_checkpoints.push_back(cp_pos);
+            }
+        }
+
         broadcast.push_back(update);
 
-        // Proveer retroalimentación: registrar la posición del jugador y la posición del siguiente checkpoint (en píxeles)
+        // Printeo la posición del jugador y su próximo checkpoint
         int next_idx = player_data.next_checkpoint;
         if (next_idx >= 0 && next_idx < static_cast<int>(checkpoint_centers.size()))
         {
