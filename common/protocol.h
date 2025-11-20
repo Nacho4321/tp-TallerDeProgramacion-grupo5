@@ -75,8 +75,10 @@ private:
     ClientMessage receiveRightReleased();
     ClientMessage receiveCreateGame();
     ClientMessage receiveJoinGame();
+    ClientMessage receiveGetGames();
 
     ServerMessage receivePositionsUpdate();
+    ServerMessage receiveGamesList();
     GameJoinedResponse receiveGameJoinedResponse();
 
 public:

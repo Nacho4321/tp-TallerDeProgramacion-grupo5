@@ -6,6 +6,8 @@
 #include "camera.h"
 #include "car.h"
 #include "minimap.h"  
+#include "../common/Event.h"
+#include "../common/constants.h"
 using namespace SDL2pp;
 
 class GameRenderer {
@@ -66,10 +68,26 @@ public:
         renderer.Present();
     }
 
-    void render(const CarPosition& mainCarPos, const std::vector<CarPosition>& otherCarPositions) {
+    // New render that also takes next checkpoint positions (in pixels)
+    void render(const CarPosition& mainCarPos, const std::vector<CarPosition>& otherCarPositions,
+                const std::vector<Position>& next_checkpoints) {
         updateMainCar(mainCarPos);
         updateOtherCars(otherCarPositions);
-        render();
+        // draw world + cars
+        camera.setScreenSize(renderer.GetOutputWidth(), renderer.GetOutputHeight());
+        camera.update(mainCar->getPosition());
+        renderer.Clear();
+        renderBackground();
+        renderCar(*mainCar);
+        for (const auto& car : otherCars) {
+            renderCar(car);
+        }
+
+        // Draw checkpoints as circles on the main view (positions are in pixels)
+        drawCheckpoints(next_checkpoints);
+
+        minimap.render(renderer, *mainCar, otherCars);
+        renderer.Present();
     }
 
     int getBackgroundWidth() const {
@@ -103,6 +121,30 @@ private:
             Rect(sprite.x, sprite.y, sprite.w, sprite.h),
             Rect(carScreenX, carScreenY, sprite.w, sprite.h)
         );
+    }
+
+    // Draw filled circle(s) for checkpoints. Uses horizontal-line fill for efficiency.
+    void drawCheckpoints(const std::vector<Position>& cps) {
+        Vector2 camPos = camera.getPosition();
+        // checkpoint color: yellow, semi-transparent
+        renderer.SetDrawBlendMode(SDL_BLENDMODE_BLEND);
+        renderer.SetDrawColor(255, 200, 0, 200);
+
+        int r = static_cast<int>(std::round(CHECKPOINT_RADIUS_PX));
+        for (const auto &p : cps) {
+            int cx = static_cast<int>(std::round(p.new_X - camPos.x));
+            int cy = static_cast<int>(std::round(p.new_Y - camPos.y));
+            // scanline fill
+            for (int dy = -r; dy <= r; ++dy) {
+                int yy = cy + dy;
+                int span = static_cast<int>(std::floor(std::sqrt((double)r*r - (double)dy*dy)));
+                int xx = cx - span;
+                int w = span * 2;
+                renderer.FillRect(Rect(xx, yy, w, 1));
+            }
+        }
+        // restore opaque drawing color (white) to be safe
+        renderer.SetDrawColor(255, 255, 255, 255);
     }
 };
 #endif // GAME_RENDERER_H

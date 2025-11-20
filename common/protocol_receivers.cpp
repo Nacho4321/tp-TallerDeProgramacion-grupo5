@@ -29,9 +29,24 @@ ClientMessage Protocol::receiveRightPressed() { ClientMessage msg; msg.cmd = MOV
 
 ClientMessage Protocol::receiveRightReleased() { ClientMessage msg; msg.cmd = MOVE_RIGHT_RELEASED_STR; readClientIds(msg); return msg; }
 
-ClientMessage Protocol::receiveCreateGame() { ClientMessage msg; msg.cmd = CREATE_GAME_STR; readClientIds(msg); return msg; }
+ClientMessage Protocol::receiveCreateGame() {
+    ClientMessage msg; msg.cmd = CREATE_GAME_STR; readClientIds(msg);
+    // Leer nombre
+    readBuffer.resize(sizeof(uint16_t));
+    if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0) return msg; // nombre vacío si falla
+    size_t idx = 0; uint16_t len = exportUint16(readBuffer, idx);
+    if (len > 0) {
+        std::vector<uint8_t> nameBuf(len);
+        if (skt.recvall(nameBuf.data(), nameBuf.size()) > 0) {
+            msg.game_name.assign(reinterpret_cast<char*>(nameBuf.data()), nameBuf.size());
+        }
+    }
+    return msg;
+}
 
 ClientMessage Protocol::receiveJoinGame() { ClientMessage msg; msg.cmd = JOIN_GAME_STR; readClientIds(msg); return msg; }
+
+ClientMessage Protocol::receiveGetGames() { ClientMessage msg; msg.cmd = GET_GAMES_STR; readClientIds(msg); return msg; }
 
 ServerMessage Protocol::receivePositionsUpdate() {
     ServerMessage msg;
@@ -61,6 +76,23 @@ ServerMessage Protocol::receivePositionsUpdate() {
         update.new_pos.direction_x = static_cast<MovementDirectionX>(exportInt(readBuffer, idx));
         update.new_pos.direction_y = static_cast<MovementDirectionY>(exportInt(readBuffer, idx));
         
+        // Leer cantidad de checkpoints siguientes enviada por el servidor
+        uint8_t next_count = 0;
+        if (skt.recvall(&next_count, sizeof(next_count)) <= 0) return msg;
+
+        for (uint8_t k = 0; k < next_count; ++k) {
+            // Cada checkpoint: 2 floats (x,y) -> cada float se serializa como uint32
+            readBuffer.resize(2 * sizeof(uint32_t));
+            if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0) return msg;
+            size_t idx_cp = 0;
+            Position cp{};
+            cp.new_X = exportFloat(readBuffer, idx_cp);
+            cp.new_Y = exportFloat(readBuffer, idx_cp);
+            cp.direction_x = MovementDirectionX::not_horizontal;
+            cp.direction_y = MovementDirectionY::not_vertical;
+            update.next_checkpoints.push_back(cp);
+        }
+
         msg.positions.push_back(update);
     }
     
@@ -87,4 +119,27 @@ GameJoinedResponse Protocol::receiveGameJoinedResponse() {
     resp.success = (success_byte != 0);
     
     return resp;
+}
+
+ServerMessage Protocol::receiveGamesList() {
+    ServerMessage msg; msg.opcode = GAMES_LIST;
+    // Leer cantidad
+    readBuffer.resize(sizeof(uint32_t));
+    if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0) return msg;
+    size_t idx = 0; uint32_t count = exportUint32(readBuffer, idx);
+    for (uint32_t i = 0; i < count; ++i) {
+        readBuffer.resize(sizeof(uint32_t)*2 + sizeof(uint16_t));
+        if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0) return msg;
+        size_t j = 0; ServerMessage::GameSummary summary{};
+        summary.game_id = exportUint32(readBuffer, j);
+        summary.player_count = exportUint32(readBuffer, j);
+        uint16_t nameLen = exportUint16(readBuffer, j);
+        if (nameLen > 0) {
+            std::vector<uint8_t> nb(nameLen);
+            if (skt.recvall(nb.data(), nb.size()) <= 0) return msg;
+            summary.name.assign(reinterpret_cast<char*>(nb.data()), nb.size());
+        }
+        msg.games.push_back(std::move(summary));
+    }
+    return msg;
 }
