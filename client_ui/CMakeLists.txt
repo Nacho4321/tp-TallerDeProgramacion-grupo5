@@ -31,6 +31,8 @@ target_sources(taller_client_ui PRIVATE
     ../client/game_client_sender.cpp
     ../client/input_handler.cpp
     ../client/car.cpp
+    ../client/checkpoint.cpp
+    ../client/minimap.cpp
 )
 
 target_include_directories(taller_client_ui PRIVATE 

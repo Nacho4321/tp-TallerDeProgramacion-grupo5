@@ -40,7 +40,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "build",
+            "preLaunchTask": "build_and_wait",
             "miDebuggerPath": "/usr/bin/gdb"
         }
     ],
@@ -49,7 +49,6 @@
             "name": "Debug Server + Client",
             "configurations": ["Debug taller_server", "Debug taller_client"],
             "stopAll": true,
-            "preLaunchTask": "build",
             "presentation": {
                 "order": 1
             }

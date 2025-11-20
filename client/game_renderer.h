@@ -8,6 +8,8 @@
 #include "minimap.h"  
 #include "../common/Event.h"
 #include "../common/constants.h"
+#include "checkpoint.h"
+
 using namespace SDL2pp;
 
 static std::unordered_map<int, std::string> mapsDataPaths = {
@@ -29,6 +31,7 @@ private:
     Minimap minimap;  
     std::unique_ptr<Car> mainCar;
     std::vector<Car> otherCars;
+    std::vector<Checkpoint> checkpoints;
 
 public:
     GameRenderer(const char* windowTitle, int windowWidth, int windowHeight, int mapId = 1)
@@ -66,6 +69,8 @@ public:
                 const std::vector<Position>& next_checkpoints) {
         updateMainCar(mainCarPos);
         updateOtherCars(otherCarPositions);
+        updateCheckpoints(next_checkpoints);
+
         camera.setScreenSize(renderer.GetOutputWidth(), renderer.GetOutputHeight());
         camera.update(mainCar->getPosition());
         renderer.Clear();
@@ -75,9 +80,9 @@ public:
             renderCar(car);
         }
 
-        drawCheckpoints(next_checkpoints);
+        renderCheckpoints();
 
-        minimap.render(renderer, *mainCar, otherCars);
+        minimap.render(renderer, *mainCar, otherCars, next_checkpoints); 
         renderer.Present();
     }
 
@@ -114,28 +119,33 @@ private:
         );
     }
 
-    // Draw filled circle(s) for checkpoints. Uses horizontal-line fill for efficiency.
-    void drawCheckpoints(const std::vector<Position>& cps) {
-        Vector2 camPos = camera.getPosition();
-        // checkpoint color: yellow, semi-transparent
-        renderer.SetDrawBlendMode(SDL_BLENDMODE_BLEND);
-        renderer.SetDrawColor(255, 200, 0, 200);
-
-        int r = static_cast<int>(std::round(CHECKPOINT_RADIUS_PX));
-        for (const auto &p : cps) {
-            int cx = static_cast<int>(std::round(p.new_X - camPos.x));
-            int cy = static_cast<int>(std::round(p.new_Y - camPos.y));
-            // scanline fill
-            for (int dy = -r; dy <= r; ++dy) {
-                int yy = cy + dy;
-                int span = static_cast<int>(std::floor(std::sqrt((double)r*r - (double)dy*dy)));
-                int xx = cx - span;
-                int w = span * 2;
-                renderer.FillRect(Rect(xx, yy, w, 1));
+   void updateCheckpoints(const std::vector<Position>& positions) {
+        checkpoints.clear();
+        for (size_t i = 0; i < positions.size(); ++i) {
+            Checkpoint cp(positions[i], i, i < positions.size() - 1);
+            if (i < positions.size() - 1) {
+                cp.setNextCheckpoint(positions[i + 1]);
             }
+            checkpoints.push_back(cp);
         }
-        // restore opaque drawing color (white) to be safe
-        renderer.SetDrawColor(255, 255, 255, 255);
+    }
+
+    void renderCheckpoints() {
+        Vector2 camPos = camera.getPosition();
+        for (const auto& checkpoint : checkpoints) {
+            checkpoint.render(renderer, camPos);
+        }
+        
+        // Render screen indicator for the first checkpoint (if it exists)
+        if (!checkpoints.empty()) {
+            Checkpoint::renderScreenIndicator(
+                renderer,
+                checkpoints[0].getPosition(),
+                camPos,
+                renderer.GetOutputWidth(), 
+                renderer.GetOutputHeight()
+            );
+        }
     }
 };
 #endif // GAME_RENDERER_H
