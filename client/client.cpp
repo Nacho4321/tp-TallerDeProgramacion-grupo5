@@ -118,7 +118,6 @@ void Client::start()
                 });
             }
 
-            // Pass next checkpoints (if any) so the renderer can draw guidance circles
             const std::vector<Position> &next_cps = main_pos.next_checkpoints;
             game_renderer.render(mainCarPosition, otherCars, next_cps);
         }

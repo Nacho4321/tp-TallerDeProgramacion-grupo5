@@ -10,6 +10,12 @@
                 "isDefault": true
             },
             "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "build_and_wait",
+            "type": "shell",
+            "command": "sleep 1",
+            "dependsOn": ["build"]
         }
     ]
 }

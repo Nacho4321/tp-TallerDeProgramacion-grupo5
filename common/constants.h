@@ -28,7 +28,7 @@ const int OPCODE_SIZE = 1;
 const std::uint8_t POSITIONS_SIZE = 2;
 
 // Radio de los checkpoints en píxeles que usan servidor y cliente para dibujar
-constexpr float CHECKPOINT_RADIUS_PX = 40.0f;
+constexpr float CHECKPOINT_RADIUS_PX = 20.0f;
 
 const std::string MOVE_UP_PRESSED_STR = "move_up_pressed";              // NOLINT
 const std::string MOVE_UP_RELEASED_STR = "move_up_released";            // NOLINT
