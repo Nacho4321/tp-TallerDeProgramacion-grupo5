@@ -34,3 +34,8 @@ taller_client
 taller_editor
 taller_tests
 taller_client_ui
+lib/libgmock_main.so.1.12.1
+lib/libgmock.so.1.12.1
+lib/libgtest_main.so.1.12.1
+lib/libgtest.so.1.12.1
+qt.conf

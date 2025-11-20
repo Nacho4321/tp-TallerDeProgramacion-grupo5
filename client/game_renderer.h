@@ -10,6 +10,14 @@
 #include "../common/constants.h"
 using namespace SDL2pp;
 
+static std::unordered_map<int, std::string> mapsDataPaths = {
+    {1, "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png"},
+    {2, "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - San Andreas.png"},
+    {3, "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Vice City.png"}
+};
+
+static std::string CarDataPath = "data/cars/Mobile - Grand Theft Auto 4 - Miscellaneous - Cars.png";
+
 class GameRenderer {
 private:
     SDL sdl;
@@ -23,7 +31,7 @@ private:
     std::vector<Car> otherCars;
 
 public:
-    GameRenderer(const char* windowTitle, int windowWidth, int windowHeight)
+    GameRenderer(const char* windowTitle, int windowWidth, int windowHeight, int mapId = 1)
         : sdl(SDL_INIT_VIDEO),
           window(windowTitle,
                  SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -31,11 +39,11 @@ public:
                  SDL_WINDOW_RESIZABLE),
           renderer(window, -1, SDL_RENDERER_ACCELERATED),
           carSprites(renderer, [] {
-              SDL2pp::Surface surface("data/cars/Mobile - Grand Theft Auto 4 - Miscellaneous - Cars.png");
+              SDL2pp::Surface surface(CarDataPath);
               surface.SetColorKey(true, SDL_MapRGB(surface.Get()->format, 0xA3, 0xA3, 0x0D));
               return surface;
           }()),
-          backgroundTexture(renderer, Surface("data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png")),
+          backgroundTexture(renderer, Surface(mapsDataPaths.at(mapId))),
           camera(windowWidth, windowHeight, backgroundTexture.GetWidth(), backgroundTexture.GetHeight()),
           minimap(backgroundTexture.GetWidth(), backgroundTexture.GetHeight()), 
           mainCar(std::make_unique<Car>()) {
@@ -54,26 +62,10 @@ public:
         }
     }
 
-    void render() {
-        camera.setScreenSize(renderer.GetOutputWidth(), renderer.GetOutputHeight());
-        camera.update(mainCar->getPosition());
-        renderer.Clear();
-        renderBackground();
-        renderCar(*mainCar);
-        for (const auto& car : otherCars) {
-            renderCar(car);
-        }
-        
-        minimap.render(renderer, *mainCar, otherCars);
-        renderer.Present();
-    }
-
-    // New render that also takes next checkpoint positions (in pixels)
     void render(const CarPosition& mainCarPos, const std::vector<CarPosition>& otherCarPositions,
                 const std::vector<Position>& next_checkpoints) {
         updateMainCar(mainCarPos);
         updateOtherCars(otherCarPositions);
-        // draw world + cars
         camera.setScreenSize(renderer.GetOutputWidth(), renderer.GetOutputHeight());
         camera.update(mainCar->getPosition());
         renderer.Clear();
@@ -83,7 +75,6 @@ public:
             renderCar(car);
         }
 
-        // Draw checkpoints as circles on the main view (positions are in pixels)
         drawCheckpoints(next_checkpoints);
 
         minimap.render(renderer, *mainCar, otherCars);

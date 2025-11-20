@@ -144,7 +144,6 @@ private:
         );
     }
 
-    // Convert world coordinates to cache texture coordinates
     Rect scaleRectToCacheTexture(const Rect& worldRect) const {
         float scaleX = (float)cacheTextureWidth / mapWidth;
         float scaleY = (float)cacheTextureHeight / mapHeight;
@@ -165,13 +164,14 @@ private:
     void drawCars(Renderer& renderer, const Car& mainCar, 
                 const std::vector<Car>& otherCars, const Point& minimapPos,
                 const Rect& worldViewRect) const {
-        // Draw other cars in red
+
+        //red
         renderer.SetDrawColor(255, 0, 0, 255);
         for (const auto& car : otherCars) {
             drawCarDot(renderer, car.getPosition(), minimapPos, worldViewRect);
         }
         
-        // Draw main car in green
+        //green
         renderer.SetDrawColor(0, 255, 0, 255);
         drawCarDot(renderer, mainCar.getPosition(), minimapPos, worldViewRect);
     }
@@ -186,7 +186,7 @@ private:
         
         int dotX = minimapPos.x + (int)(relativeX * scaleX);
         int dotY = minimapPos.y + (int)(relativeY * scaleY);
-        int dotSize = 3;
+        int dotSize = 4;
         
         renderer.FillRect(Rect(dotX - dotSize / 2, dotY - dotSize / 2, dotSize, dotSize));
     }
