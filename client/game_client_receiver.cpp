@@ -24,12 +24,9 @@ void GameClientReceiver::run() {
                     incoming_messages.push(std::move(positionsMsg));
                 }
             } else if (opcode == GAMES_LIST) {
-                // Imprimir listado de partidas
-                std::cout << "[ClientReceiver] Lista de partidas:" << std::endl;
-                for (auto &g : positionsMsg.games) {
-                    std::cout << "  id=" << g.game_id << " name='" << g.name << "' players=" << g.player_count << std::endl;
-                }
-                // también se podría enviar a una cola específica si se requiere
+                // Enviar la lista de partidas a incoming_messages para que get_games_blocking la reciba
+                std::cout << "[ClientReceiver] Lista de partidas recibida (" << positionsMsg.games.size() << " juegos)" << std::endl;
+                incoming_messages.push(std::move(positionsMsg));
             } else {
                 // Paquete desconocido: ignorar
             }

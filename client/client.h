@@ -7,6 +7,13 @@
 #include "game_renderer.h"
 #include <SDL2pp/SDL2pp.hh>
 
+// Modos de inicio del cliente
+enum class StartMode {
+    NORMAL,      // Modo interactivo normal (espera comandos del usuario)
+    AUTO_CREATE, // Crea partida automáticamente al inicio
+    AUTO_JOIN    // Se une a partida automáticamente al inicio
+};
+
 class Client
 {
 private:
@@ -28,8 +35,14 @@ private:
     uint32_t my_game_id = 0;     // 0 => no asignado aún
     int32_t my_player_id = -1;   // -1 => no asignado aún
 
+    // Configuración de inicio
+    StartMode start_mode;
+    int auto_join_game_id;
+
 public:
-    explicit Client(const char *address, const char *port);
+    explicit Client(const char *address, const char *port, 
+                   StartMode mode = StartMode::NORMAL, 
+                   int join_game_id = -1);
     ~Client();
     void start();
     bool isConnected() const { return connected; }

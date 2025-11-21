@@ -46,6 +46,9 @@ public:
     // Devuelven true si success==true en la respuesta; en caso afirmativo actualizan IDs internos
     bool create_game_blocking(uint32_t& out_game_id, uint32_t& out_player_id);
     bool join_game_blocking(int32_t game_id_to_join, uint32_t& out_player_id);
+    
+    // Solicita lista de partidas y bloquea hasta recibir GAMES_LIST
+    std::vector<ServerMessage::GameSummary> get_games_blocking();
 };
 
 #endif // GAME_CLIENT_HANDLER_H
