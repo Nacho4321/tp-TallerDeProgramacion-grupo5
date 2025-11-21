@@ -38,6 +38,19 @@ void GameClientSender::run() {
                 // Normalizar el comando a solo "join_game" para el mapeo de opcode
                 client_msg.cmd = JOIN_GAME_STR;
             }
+            // Parse create_game <nombre>
+            if (client_msg.cmd.rfind(CREATE_GAME_STR, 0) == 0) {
+                size_t sp = client_msg.cmd.find(' ');
+                if (sp != std::string::npos && sp + 1 < client_msg.cmd.size()) {
+                    client_msg.game_name = client_msg.cmd.substr(sp + 1);
+                    client_msg.cmd = CREATE_GAME_STR; // normalizar
+                } else {
+                    client_msg.game_name = ""; // nombre vacío => server asigna por defecto
+                }
+            }
+            if (client_msg.cmd == GET_GAMES_STR) {
+                // no payload extra
+            }
             // DEBUG
             std::cout << "[Sender] Enviando cmd='" << client_msg.cmd
                       << "' player_id=" << client_msg.player_id

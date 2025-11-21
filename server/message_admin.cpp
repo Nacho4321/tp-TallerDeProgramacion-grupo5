@@ -63,6 +63,8 @@ void MessageAdmin::init_dispatch()
     { create_game(message); };
     cli_comm_dispatch[JOIN_GAME_STR] = [this](ClientHandlerMessage &message)
     { join_game(message); };
+    cli_comm_dispatch[GET_GAMES_STR] = [this](ClientHandlerMessage &message)
+    { get_games(message); };
 }
 
 void MessageAdmin::create_game(ClientHandlerMessage &message)
@@ -125,5 +127,15 @@ void MessageAdmin::join_game(ClientHandlerMessage &message)
         } catch (const ClosedQueue&) {
             outboxes.remove(message.client_id);
         }
+    }
+}
+
+void MessageAdmin::get_games(ClientHandlerMessage &message) {
+    (void)message; // no necesitamos datos extra del cliente por ahora
+    ServerMessage resp; resp.opcode = GAMES_LIST; resp.games = games_monitor.list_games();
+    // Enviar listado a este cliente
+    auto client_queue = outboxes.get_cliente_queue(message.client_id);
+    if (client_queue) {
+        try { client_queue->push(resp); } catch (const ClosedQueue&) { outboxes.remove(message.client_id); }
     }
 }

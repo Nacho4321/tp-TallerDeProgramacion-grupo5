@@ -1,6 +1,6 @@
 #include "game_monitor.h"
 
-int GameMonitor::add_game(int &client_id)
+int GameMonitor::add_game(int &client_id, const std::string& name)
 {
     std::lock_guard<std::mutex> lock1(games_mutex);
     std::lock_guard<std::mutex> lock2(game_queues_mutex);
@@ -19,10 +19,30 @@ int GameMonitor::add_game(int &client_id)
     new_game->start();
 
     games[game_id] = std::move(new_game);
+    game_names[game_id] = name.empty() ? (std::string{"Game "} + std::to_string(game_id)) : name;
 
     std::cout << "GameMonitor: juego " << game_id << " creado para cliente " << client_id << std::endl;
     
     return game_id; // Devolver el game_id asignado
+}
+
+std::vector<ServerMessage::GameSummary> GameMonitor::list_games() {
+    std::lock_guard<std::mutex> lock(games_mutex);
+    std::vector<ServerMessage::GameSummary> result;
+    result.reserve(games.size());
+    for (auto &entry : games) {
+        int gid = entry.first;
+        auto &loopPtr = entry.second;
+        uint32_t count = 0;
+        if (loopPtr) {
+            // Necesitamos método para obtener cantidad de jugadores
+            // Agregaremos get_player_count() a GameLoop
+            count = static_cast<uint32_t>(loopPtr->get_player_count());
+        }
+        ServerMessage::GameSummary summary{static_cast<uint32_t>(gid), game_names[gid], count};
+        result.push_back(std::move(summary));
+    }
+    return result;
 }
 
 void GameMonitor::join_player(int &player_id, int &game_id)
