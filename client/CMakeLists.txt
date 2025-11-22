@@ -10,6 +10,7 @@ target_sources(taller_client
     car.cpp
     checkpoint.cpp
     minimap.cpp
+    game_renderer.cpp
     PUBLIC
     # .h files
     game_client_receiver.h

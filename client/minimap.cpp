@@ -70,18 +70,19 @@ void Minimap::initialize(Renderer& renderer, Texture& backgroundTexture) {
     renderer.SetTarget();
 }
 
-void Minimap::render(Renderer& renderer, const Car& mainCar, 
+void Minimap::render(Renderer& renderer, const Car& mainCar,
                     const std::vector<Car>& otherCars,
-                    const std::vector<Position>& checkpoints) {
-    Point minimapPos = calculateMinimapPosition(renderer);
+                    const std::vector<Position>& checkpoints,
+                    int logicalScreenWidth, int logicalScreenHeight) {
+    Point minimapPos = calculateMinimapPosition(logicalScreenWidth, logicalScreenHeight);
     Rect worldViewRect = calculateWorldViewRect(mainCar.getPosition());
-    
+
     drawMinimapBackground(renderer, minimapPos);
-    
+
     Rect cacheViewRect = scaleRectToCacheTexture(worldViewRect);
     Rect dstRect(minimapPos.x, minimapPos.y, minimapWidth, minimapHeight);
     renderer.Copy(*minimapTexture, cacheViewRect, dstRect);
-    
+
     drawMinimapBorder(renderer, minimapPos);
     drawCheckpoints(renderer, checkpoints, minimapPos, worldViewRect);
     drawCars(renderer, mainCar, otherCars, minimapPos, worldViewRect);
@@ -93,12 +94,10 @@ float Minimap::calculateScale() const {
     return std::min(scaleX, scaleY);
 }
 
-Point Minimap::calculateMinimapPosition(const Renderer& renderer) const {
-    int screenWidth = renderer.GetOutputWidth();
-    int screenHeight = renderer.GetOutputHeight();
+Point Minimap::calculateMinimapPosition(int logicalScreenWidth, int logicalScreenHeight) const {
     return Point(
-        screenWidth - minimapWidth - padding,
-        screenHeight - minimapHeight - padding
+        logicalScreenWidth - minimapWidth - padding,
+        logicalScreenHeight - minimapHeight - padding
     );
 }
 
@@ -155,10 +154,9 @@ void Minimap::drawCheckpointDot(Renderer& renderer, const Position& pos, int ord
     float relativeX = pos.new_X - worldViewRect.x;
     float relativeY = pos.new_Y - worldViewRect.y;
     
-    if (relativeX < 0 || relativeX > worldViewRect.w || relativeY < 0 || relativeY > worldViewRect.h) {
-        return;  
-    }
-    
+    relativeX = std::max(std::min(relativeX, (float) worldViewRect.w), 0.0f);
+    relativeY = std::max(std::min(relativeY, (float) worldViewRect.h), 0.0f);
+
     float scaleX = (float)minimapWidth / worldViewRect.w;
     float scaleY = (float)minimapHeight / worldViewRect.h;
     
@@ -198,6 +196,9 @@ void Minimap::drawCarDot(Renderer& renderer, const CarPosition& pos,
                         const Point& minimapPos, const Rect& worldViewRect) const {
     float relativeX = pos.x - worldViewRect.x;
     float relativeY = pos.y - worldViewRect.y;
+
+    relativeX = std::max(std::min(relativeX, (float) worldViewRect.w), 0.0f);
+    relativeY = std::max(std::min(relativeY, (float) worldViewRect.h), 0.0f);
     
     float scaleX = (float)minimapWidth / worldViewRect.w;
     float scaleY = (float)minimapHeight / worldViewRect.h;

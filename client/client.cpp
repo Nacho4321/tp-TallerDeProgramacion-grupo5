@@ -1,14 +1,16 @@
 #include "client.h"
+#include "../common/constants.h"
 #include <iostream>
 #include <string>
 #include <SDL2/SDL.h>
+#include <map>
 
 Client::Client(const char *address, const char *port)
         : protocol(ini_protocol(address, port)),
             connected(true),
             handler(),
             handler_core(protocol),
-            game_renderer("Game Renderer", 640, 480)
+            game_renderer("Game Renderer", LOGICAL_SCREEN_WIDTH, LOGICAL_SCREEN_HEIGHT)
 {
     handler_core.start(); // iniciar handler (sender+receiver)
     
@@ -105,20 +107,21 @@ void Client::start()
                 float(main_pos.new_pos.direction_y)
             };
 
-            std::vector<CarPosition> otherCars;
+            std::map<int, CarPosition> otherCars;
             for (size_t i = 0; i < latest_message.positions.size(); ++i)
             {
                 if (i == idx_main) continue;
                 const PlayerPositionUpdate& pos = latest_message.positions[i];
-                otherCars.push_back(CarPosition{
+                otherCars[static_cast<int>(i)] = CarPosition{
                     pos.new_pos.new_X,
                     pos.new_pos.new_Y,
                     float(pos.new_pos.direction_x),
                     float(pos.new_pos.direction_y)
-                });
+                };
             }
 
             const std::vector<Position> &next_cps = main_pos.next_checkpoints;
+
             game_renderer.render(mainCarPosition, otherCars, next_cps);
         }
 

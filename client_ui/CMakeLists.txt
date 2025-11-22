@@ -33,6 +33,7 @@ target_sources(taller_client_ui PRIVATE
     ../client/car.cpp
     ../client/checkpoint.cpp
     ../client/minimap.cpp
+    ../client/game_renderer.cpp
 )
 
 target_include_directories(taller_client_ui PRIVATE 

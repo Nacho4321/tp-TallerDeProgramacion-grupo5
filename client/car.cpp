@@ -2,11 +2,11 @@
 #include <cmath>
 
 Car::Car(int carTypeId)
-    : position{0, 0, 0, 0}, spriteIndex(0), carType(carTypeId)
+    : position{0, 0, 0, 0}, spriteIndex(0), carType(carTypeId), exploding(false), explosionFrame(0), explosionFrameDelay(0)
 {}
 
 Car::Car(const CarPosition& pos, int carTypeId)
-    : position(pos), spriteIndex(0), carType(carTypeId)
+    : position(pos), spriteIndex(0), carType(carTypeId), exploding(false), explosionFrame(0), explosionFrameDelay(0)
 {
     updateSpriteIndex();
 }
@@ -21,6 +21,9 @@ const CarPosition& Car::getPosition() const {
 }
 
 SDL_Rect Car::getSprite() const {
+    if (exploding) {
+        return EXPLOSION_SPRITES[explosionFrame];
+    }
     return CAR_SPRITES[carType][spriteIndex];
 }
 
@@ -47,4 +50,29 @@ void Car::updateSpriteIndex() {
             }
         }
     }
+}
+
+void Car::startExplosion() {
+    exploding = true;
+    explosionFrame = 0;
+    explosionFrameDelay = 3;  // Show each frame for n render cycles
+}
+
+void Car::updateExplosion() {
+    if (exploding && explosionFrame < NUM_EXPLOSION_SPRITES - 1) {
+        if (explosionFrameDelay < 3) {
+            explosionFrameDelay++;
+        } else {
+            explosionFrame++;
+            explosionFrameDelay = 0;  // Reset delay for next frame
+        }
+    }
+}
+
+bool Car::isExploding() const {
+    return exploding;
+}
+
+bool Car::isExplosionComplete() const {
+    return exploding && explosionFrame >= NUM_EXPLOSION_SPRITES - 1;
 }
