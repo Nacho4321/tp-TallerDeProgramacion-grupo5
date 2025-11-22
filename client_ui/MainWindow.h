@@ -22,6 +22,7 @@ public:
 private slots:
     void onNewGameClicked();
     void onJoinGameClicked();
+    void onExitClicked();
 
 private:
     Ui::MainWindow *ui;

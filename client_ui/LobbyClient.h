@@ -9,9 +9,6 @@
 #include "../common/messages.h"
 #include "../client/game_client_handler.h"
 
-// Clase que mantiene una conexión activa con el servidor
-// para operaciones de lobby (listar partidas, crear, unirse)
-// Qt usa esta clase para hacer operaciones sin manejar sockets directamente
 class LobbyClient {
 private:
     std::unique_ptr<Protocol> protocol_;
@@ -24,10 +21,8 @@ public:
     LobbyClient();
     ~LobbyClient();
 
-    // Conecta al servidor
     bool connect(const std::string& host, const std::string& port);
     
-    // Solicita lista de partidas (operación sincrónica)
     std::vector<ServerMessage::GameSummary> listGames();
     
     // Getters
@@ -35,8 +30,7 @@ public:
     std::string getAddress() const { return address_; }
     std::string getPort() const { return port_; }
     
-    // Cierra la conexión
     void disconnect();
 };
 
-#endif // LOBBY_CLIENT_H
+#endif

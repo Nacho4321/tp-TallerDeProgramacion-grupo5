@@ -3,7 +3,7 @@
 #include <string>
 #include <SDL2/SDL.h>
 
-Client::Client(const char *address, const char *port, StartMode mode, int join_game_id)
+ Client::Client(const char *address, const char *port, StartMode mode, int join_game_id)
         : protocol(ini_protocol(address, port)),
             connected(true),
             handler(),
@@ -26,38 +26,36 @@ void Client::start()
 {
     // Ejecutar acción automática según el modo de inicio
     if (start_mode == StartMode::AUTO_CREATE) {
-        std::cout << "[Client] AUTO_CREATE mode: Creating game automatically..." << std::endl;
         uint32_t gid = 0, pid = 0;
         bool ok = handler_core.create_game_blocking(gid, pid);
         if (ok) {
-            std::cout << "[Client] Game created automatically. game_id=" << gid << " player_id=" << pid << std::endl;
             my_game_id = gid;
             my_player_id = static_cast<int32_t>(pid);
         } else {
-            std::cout << "[Client] Failed to auto-create game!" << std::endl;
+            std::cout << "[Client] Failed to autocreate game" << std::endl;
             connected = false;
             return;
         }
     } else if (start_mode == StartMode::AUTO_JOIN) {
         if (auto_join_game_id < 0) {
-            std::cerr << "[Client] AUTO_JOIN mode requires valid game_id!" << std::endl;
+            std::cerr << "[Client] AUTOJOIN mode requires validid!" << std::endl;
             connected = false;
             return;
         }
-        std::cout << "[Client] AUTO_JOIN mode: Joining game " << auto_join_game_id << " automatically..." << std::endl;
+        std::cout << "[Client] AUTOJOIN mode: Joining game " << auto_join_game_id << std::endl;
         uint32_t pid = 0;
         bool ok = handler_core.join_game_blocking(auto_join_game_id, pid);
         if (ok) {
-            std::cout << "[Client] Joined game automatically. game_id=" << auto_join_game_id << " player_id=" << pid << std::endl;
+            std::cout << "[Client] Joined game. game_id=" << auto_join_game_id << " player_id=" << pid << std::endl;
             my_game_id = static_cast<uint32_t>(auto_join_game_id);
             my_player_id = static_cast<int32_t>(pid);
         } else {
-            std::cout << "[Client] Failed to auto-join game " << auto_join_game_id << "!" << std::endl;
+            std::cout << "[Client] Failed to auto-join game " << auto_join_game_id << std::endl;
             connected = false;
             return;
         }
     }
-    // Si llegamos aquí en modo AUTO_*, ya estamos en partida, continuar con el loop normal
+    // una vez conectado continuo con el loop normal porque ya estoy en partida
     
     while (connected)
     {

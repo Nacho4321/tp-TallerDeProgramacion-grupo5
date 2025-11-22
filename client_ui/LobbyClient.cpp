@@ -13,14 +13,12 @@ bool LobbyClient::connect(const std::string& host, const std::string& port) {
         address_ = host;
         port_ = port;
         
-        // Crear protocolo y handler (sender + receiver threads)
         Socket s(host.c_str(), port.c_str());
         protocol_ = std::make_unique<Protocol>(std::move(s));
         handler_ = std::make_unique<GameClientHandler>(*protocol_);
         handler_->start();
         
         connected_ = true;
-        std::cout << "[LobbyClient] Conectado a " << host << ":" << port << std::endl;
         return true;
         
     } catch (const std::exception& e) {
@@ -39,12 +37,7 @@ std::vector<ServerMessage::GameSummary> LobbyClient::listGames() {
     }
     
     try {
-        std::cout << "[LobbyClient] Solicitando lista de partidas..." << std::endl;
-        
-        // Usar el método bloqueante del handler
         games = handler_->get_games_blocking();
-        
-        std::cout << "[LobbyClient] Recibidas " << games.size() << " partidas" << std::endl;
         return games;
         
     } catch (const std::exception& e) {
@@ -55,6 +48,7 @@ std::vector<ServerMessage::GameSummary> LobbyClient::listGames() {
 }
 
 void LobbyClient::disconnect() {
+    // esto podria ir en el destructor
     if (handler_) {
         handler_->stop();
         handler_->join();

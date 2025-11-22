@@ -17,6 +17,7 @@ MainWindow::MainWindow(QWidget *parent)
     
     connect(ui->btnNewGame, &QPushButton::clicked, this, &MainWindow::onNewGameClicked);
     connect(ui->btnJoinGame, &QPushButton::clicked, this, &MainWindow::onJoinGameClicked);
+    connect(ui->btnExit, &QPushButton::clicked, this, &MainWindow::onExitClicked);
     
     showConnectionDialog();
 }
@@ -31,7 +32,6 @@ void MainWindow::showConnectionDialog() {
     if (dialog.exec() == QDialog::Accepted) {
         auto conn = dialog.connection();
         if (conn && conn->isConnected()) {
-            // Usar la info de conexión para conectar el LobbyClient
             if (!lobbyClient->connect(conn->getAddress(), conn->getPort())) {
                 QMessageBox::critical(this, "Error", "Failed to connect to server");
                 close();
@@ -69,22 +69,24 @@ void MainWindow::onJoinGameClicked() {
     
     this->hide();
     JoinGameWindow dlg(lobbyClient, this);
-    const int r = dlg.exec();
-    
-    if (r != QDialog::Accepted) {
+    const int response = dlg.exec();
+
+    if (response != QDialog::Accepted) {
         this->show();
     } else {
-        // Usuario seleccionó una partida, lanzar el juego con JOIN
         int gameId = dlg.getSelectedGameId();
         std::string host = lobbyClient->getAddress();
         std::string port = lobbyClient->getPort();
         
-        std::cout << "[MainWindow] Launching game with JOIN to game_id=" << gameId << std::endl;
-        
-        // Desconectar el lobby client antes de lanzar el juego
+        // desconecto el lobbyClient antes de lanzar el juego
         lobbyClient->disconnect();
         
         GameLauncher::launchGameWithJoin(host, port, gameId);
         close();
     }
+}
+
+void MainWindow::onExitClicked() {
+    std::cout << "[MainWindow] User clicked Exit, closing application" << std::endl;
+    close();
 }

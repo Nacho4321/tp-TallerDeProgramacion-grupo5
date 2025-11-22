@@ -7,11 +7,11 @@
 #include "game_renderer.h"
 #include <SDL2pp/SDL2pp.hh>
 
-// Modos de inicio del cliente
+// Agrego esto para q no tengamos que apretar teclas al unirnos a una partida, pero siga funcionadno esa opcion
 enum class StartMode {
-    NORMAL,      // Modo interactivo normal (espera comandos del usuario)
-    AUTO_CREATE, // Crea partida automáticamente al inicio
-    AUTO_JOIN    // Se une a partida automáticamente al inicio
+    NORMAL,      // espera comandos (create/join)
+    AUTO_CREATE, // crea partida autoamticamente al inicio
+    AUTO_JOIN    // se une a partida automaticamente al inicio
 };
 
 class Client

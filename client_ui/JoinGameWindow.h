@@ -34,4 +34,4 @@ private:
     void updateJoinButtonState();
 };
 
-#endif // JOINGAMEWINDOW_H
+#endif

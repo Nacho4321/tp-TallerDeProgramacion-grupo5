@@ -12,7 +12,6 @@ JoinGameWindow::JoinGameWindow(std::shared_ptr<LobbyClient> lobby, QWidget* pare
     
     ui->setupUi(this);
     
-    // Conectar señales
     connect(ui->refreshButton, &QPushButton::clicked, this, &JoinGameWindow::onRefresh);
     connect(ui->joinButton, &QPushButton::clicked, this, &JoinGameWindow::onJoin);
     connect(ui->cancelButton, &QPushButton::clicked, this, &JoinGameWindow::onCancel);
@@ -20,10 +19,8 @@ JoinGameWindow::JoinGameWindow(std::shared_ptr<LobbyClient> lobby, QWidget* pare
     connect(ui->gamesListWidget, &QListWidget::itemDoubleClicked, 
             [this](QListWidgetItem*) { onJoin(); });
     
-    // Deshabilitar botón Join inicialmente
     ui->joinButton->setEnabled(false);
     
-    // Cargar lista de partidas al abrir
     loadGamesList();
 }
 
@@ -42,19 +39,14 @@ void JoinGameWindow::loadGamesList() {
     }
     
     try {
-        std::cout << "[JoinGameWindow] Requesting games list..." << std::endl;
-        
-        // Usar el LobbyClient para pedir la lista (operación sincrónica)
         auto games = lobbyClient_->listGames();
-        
-        std::cout << "[JoinGameWindow] Received " << games.size() << " games" << std::endl;
-        
-        // Poblar la lista
+
         if (games.empty()) {
             QListWidgetItem* item = new QListWidgetItem("No games available");
             item->setFlags(item->flags() & ~Qt::ItemIsSelectable);
             item->setData(Qt::UserRole, -1);
             ui->gamesListWidget->addItem(item);
+
         } else {
             for (const auto& game : games) {
                 QString itemText = QString("🏎️  %1  |  ID: %2  |  👥 %3 player(s)")
@@ -76,7 +68,6 @@ void JoinGameWindow::loadGamesList() {
 }
 
 void JoinGameWindow::onRefresh() {
-    std::cout << "[JoinGameWindow] Refreshing games list..." << std::endl;
     loadGamesList();
 }
 
@@ -86,8 +77,7 @@ void JoinGameWindow::onJoin() {
         return;
     }
     
-    std::cout << "[JoinGameWindow] User confirmed join to game " << selectedGameId_ << std::endl;
-    accept();  // Cierra el diálogo con éxito
+    accept(); 
 }
 
 void JoinGameWindow::onCancel() {
@@ -102,13 +92,13 @@ void JoinGameWindow::onGameSelected(QListWidgetItem* item) {
     }
     
     QVariant data = item->data(Qt::UserRole);
+    
     if (data.isValid()) {
         selectedGameId_ = data.toInt();
         std::cout << "[JoinGameWindow] Selected game ID: " << selectedGameId_ << std::endl;
     } else {
         selectedGameId_ = -1;
     }
-    
     updateJoinButtonState();
 }
 
