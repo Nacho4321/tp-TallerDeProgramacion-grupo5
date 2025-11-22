@@ -12,7 +12,19 @@ void ClientReceiver::run()
         {
             ClientMessage client_msg = protocol.receiveClientMessage();
             if (client_msg.cmd.empty())
-                break; // EOF o desconexión
+            {
+                ClientHandlerMessage leave_msg;
+                leave_msg.client_id = client_id;
+                leave_msg.msg.cmd = LEAVE_GAME_STR; 
+                leave_msg.msg.player_id = -1;
+                leave_msg.msg.game_id = -1;
+                try {
+                    global_inbox.push(leave_msg);
+                } catch (...) {
+                    // Si falla la push por cola cerrada u otro error, no podemos hacer más.
+                }
+                break;
+            }
 
             std::cout << "[Server] Client " << client_id << " sent: "
                       << client_msg.cmd << std::endl; // DEBUG

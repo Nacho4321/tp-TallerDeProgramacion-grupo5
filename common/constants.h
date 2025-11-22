@@ -47,6 +47,7 @@ const std::string MOVE_RIGHT_RELEASED_STR = "move_right_released";        // NOL
 const std::string CREATE_GAME_STR = "create_game";                        // NOLINT
 const std::string JOIN_GAME_STR = "join_game";                            // NOLINT
 const std::string GET_GAMES_STR = "get_games";                            // NOLINT
+const std::string LEAVE_GAME_STR = "leave_game";                          // NOLINT
 
 
 #endif
