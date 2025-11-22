@@ -125,4 +125,25 @@ inline const std::array<std::array<SDL_Rect, 16>, 7> CAR_SPRITES ={{
 
 inline const int NUM_CAR_SPRITES = CAR_SPRITES[0].size();
 
+inline const std::array<SDL_Rect, 16> EXPLOSION_SPRITES = {{
+    {   0,   0, 32, 32 },
+    {  32,   0, 32, 32 },
+    {  64,   0, 32, 32 },
+    {  96,   0, 32, 32 },
+    {   0,  32, 32, 32 },
+    {  32,  32, 32, 32 },
+    {  64,  32, 32, 32 },
+    {  96,  32, 32, 32 },
+    {   0,  64, 32, 32 },
+    {  32,  64, 32, 32 },
+    {  64,  64, 32, 32 }, 
+    {  96,  64, 32, 32 },
+    {   0,  96, 32, 32 },
+    {  32,  96, 32, 32 },
+    {  64,  96, 32, 32 },
+    {  96,  96, 32, 32 } 
+}};
+
+inline const int NUM_EXPLOSION_SPRITES = EXPLOSION_SPRITES.size();
+
 #endif
