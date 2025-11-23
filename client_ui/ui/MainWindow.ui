@@ -46,11 +46,17 @@ QPushButton:pressed { background: #262A30; }
     </property>
     <item alignment="Qt::AlignLeft|Qt::AlignBottom">
      <widget class="QFrame" name="optionsFrame">
-      <property name="maximumSize">
+      <property name="minimumSize">
        <size>
         <width>220</width>
-        <height>16777215</height>
+        <height>0</height>
        </size>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+        <horstretch>1</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
       </property>
       <property name="frameShape">
        <enum>QFrame::NoFrame</enum>
@@ -73,6 +79,23 @@ QPushButton:pressed { background: #262A30; }
        </property>
        <item>
         <widget class="QPushButton" name="btnNewGame">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>40</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>11</pointsize>
+          </font>
+         </property>
          <property name="text">
           <string>New Game</string>
          </property>
@@ -80,6 +103,23 @@ QPushButton:pressed { background: #262A30; }
        </item>
        <item>
         <widget class="QPushButton" name="btnJoinGame">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>40</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>11</pointsize>
+          </font>
+         </property>
          <property name="text">
           <string>Join Game</string>
          </property>
@@ -87,6 +127,23 @@ QPushButton:pressed { background: #262A30; }
        </item>
        <item>
         <widget class="QPushButton" name="btnExit">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>40</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>11</pointsize>
+          </font>
+         </property>
          <property name="text">
           <string>Exit</string>
          </property>
