@@ -69,8 +69,6 @@ void MessageAdmin::init_dispatch()
 
 void MessageAdmin::create_game(ClientHandlerMessage &message)
 {
-    std::cout << "[MessageAdmin] Cliente " << message.client_id 
-              << " solicita crear partida con nombre: '" << message.msg.game_name << "'" << std::endl;
     int game_id = games_monitor.add_game(message.client_id, message.msg.game_name);
     
     // Enviar respuesta al cliente con los IDs asignados

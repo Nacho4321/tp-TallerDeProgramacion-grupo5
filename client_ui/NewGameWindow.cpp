@@ -51,7 +51,7 @@ void NewGameWindow::onCreate() {
     // Desconectar lobby antes de lanzar el juego
     lobbyClient_->disconnect();
               
-    // Lanzar el cliente SDL con el nombre del juego
+    // Lanzar el cliente SDL
     GameLauncher::launchGame(host, port, gameName.toStdString());
 }
 
