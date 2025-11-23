@@ -87,6 +87,5 @@ void MainWindow::onJoinGameClicked() {
 }
 
 void MainWindow::onExitClicked() {
-    std::cout << "[MainWindow] User clicked Exit, closing application" << std::endl;
     close();
 }

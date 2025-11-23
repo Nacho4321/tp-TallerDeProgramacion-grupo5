@@ -31,4 +31,4 @@ private:
     void showConnectionDialog();
 };
 
-#endif // MAINWINDOW_H
+#endif

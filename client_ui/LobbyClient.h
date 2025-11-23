@@ -26,9 +26,9 @@ public:
     std::vector<ServerMessage::GameSummary> listGames();
     
     // Getters
-    bool isConnected() const { return connected_; }
-    std::string getAddress() const { return address_; }
-    std::string getPort() const { return port_; }
+    bool isConnected() const;
+    std::string getAddress() const;
+    std::string getPort();
     
     void disconnect();
 };

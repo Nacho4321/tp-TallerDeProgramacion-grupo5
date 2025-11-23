@@ -26,4 +26,4 @@ private:
 };
 
 
-#endif // NEWGAMEWINDOW_H
+#endif

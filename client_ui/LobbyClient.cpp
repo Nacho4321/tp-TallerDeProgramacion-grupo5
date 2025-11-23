@@ -47,8 +47,19 @@ std::vector<ServerMessage::GameSummary> LobbyClient::listGames() {
     }
 }
 
+bool LobbyClient::isConnected() const {
+    return connected_;
+}
+
+std::string LobbyClient::getAddress() const {
+    return address_;
+}
+
+std::string LobbyClient::getPort() const {
+    return port_;
+}
+
 void LobbyClient::disconnect() {
-    // esto podria ir en el destructor
     if (handler_) {
         handler_->stop();
         handler_->join();
