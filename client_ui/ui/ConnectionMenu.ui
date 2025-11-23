@@ -26,22 +26,77 @@
    <string>ConnectionWindow</string>
   </property>
   <property name="styleSheet">
-   <string>
+   <string notr="true">
 #ConnectionMenu {
   border-image: url(:/img/connectionMenu.jpg) 0 0 0 0 stretch stretch;
-  background-color: #121418;
+  background-color: #0f1114;
 }
-QLabel#lblPort, QLabel#lblIp { color: #FFD400; font-weight: 700; }
+
+QLabel#lblPort, QLabel#lblIp {
+  color: #FFD700;
+  font-weight: 700;
+  font-size: 12pt;
+  letter-spacing: 1px;
+}
+
 QLineEdit {
-  background: #3b3f46; color: #e8e8e8;
-  border: 1px solid #4a505a; border-radius: 6px; padding: 6px 8px;
+  background: #23262e;
+  color: #e8eaed;
+  border: 2px solid #3a3f4a;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 11pt;
+  selection-background-color: #0d7377;
 }
+
+QLineEdit:focus {
+  border: 2px solid #4a7c9e;
+  background: #2a2d36;
+}
+
 QPushButton {
-  background: #2C2F36; color: #E8E8E8; border: 1px solid #3A3F47;
-  border-radius: 8px; padding: 8px 14px; font-weight: 600;
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                              stop:0 #2d3139, stop:1 #23262e);
+  color: #e8eaed;
+  border: 2px solid #3a3f4a;
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-weight: 600;
+  font-size: 12pt;
 }
-QPushButton:hover { background: #343842; }
-QPushButton:pressed { background: #262A30; }
+
+QPushButton:hover {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                              stop:0 #3a3f4a, stop:1 #2d3139);
+  border: 2px solid #4a5060;
+  color: #ffffff;
+}
+
+QPushButton:pressed {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                              stop:0 #1d2027, stop:1 #23262e);
+}
+
+QPushButton#btnConnect {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                              stop:0 #0d7377, stop:1 #0a5a5e);
+  font-weight: bold;
+}
+
+QPushButton#btnConnect:hover {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                              stop:0 #14a5a5, stop:1 #0d7377);
+}
+
+QPushButton#btnExit {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                              stop:0 #6b3030, stop:1 #522424);
+}
+
+QPushButton#btnExit:hover {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                              stop:0 #8b4040, stop:1 #6b3030);
+}
    </string>
   </property>
   <layout class="QVBoxLayout" name="root">
@@ -93,6 +148,13 @@ QPushButton:pressed { background: #262A30; }
         <property name="text">
          <string>PORT</string>
         </property>
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
        </widget>
       </item>
       <item>
@@ -100,12 +162,24 @@ QPushButton:pressed { background: #262A30; }
         <property name="text">
          <string>8080</string>
         </property>
+        <property name="font">
+         <font>
+          <pointsize>11</pointsize>
+         </font>
+        </property>
        </widget>
       </item>
       <item>
        <widget class="QLabel" name="lblIp">
         <property name="text">
-         <string>IP</string>
+         <string>IP ADDRESS</string>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
         </property>
        </widget>
       </item>
@@ -114,6 +188,11 @@ QPushButton:pressed { background: #262A30; }
         <property name="text">
          <string>localhost</string>
         </property>
+        <property name="font">
+         <font>
+          <pointsize>11</pointsize>
+         </font>
+        </property>
        </widget>
       </item>
       <item>
@@ -121,12 +200,45 @@ QPushButton:pressed { background: #262A30; }
         <property name="text">
          <string>Connect</string>
         </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>45</height>
+         </size>
+        </property>
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="default">
+         <bool>true</bool>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="btnExit">
         <property name="text">
          <string>Exit</string>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>45</height>
+         </size>
+        </property>
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+         </font>
         </property>
        </widget>
       </item>

@@ -13,7 +13,121 @@
   <property name="windowTitle">
    <string>Create New Game</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">QDialog {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 #1a1d23, stop:1 #0f1114);
+}
+
+QLabel {
+    color: #e8eaed;
+    font-size: 11pt;
+}
+
+QLabel#titleLabel {
+    color: #ffffff;
+    font-size: 16pt;
+    font-weight: bold;
+    padding: 10px;
+}
+
+QLineEdit {
+    background-color: #23262e;
+    color: #e8eaed;
+    border: 2px solid #3a3f4a;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 11pt;
+}
+
+QLineEdit:focus {
+    border: 2px solid #4a7c9e;
+    background-color: #2a2d36;
+}
+
+QSpinBox {
+    background-color: #23262e;
+    color: #e8eaed;
+    border: 2px solid #3a3f4a;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 11pt;
+}
+
+QSpinBox:focus {
+    border: 2px solid #4a7c9e;
+}
+
+QSpinBox::up-button, QSpinBox::down-button {
+    background-color: #2d3139;
+    border: 1px solid #3a3f4a;
+    width: 20px;
+}
+
+QSpinBox::up-button:hover, QSpinBox::down-button:hover {
+    background-color: #3a3f4a;
+}
+
+QPushButton {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 #2d3139, stop:1 #23262e);
+    color: #e8eaed;
+    border: 2px solid #3a3f4a;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 12pt;
+    font-weight: 600;
+}
+
+QPushButton:hover {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 #3a3f4a, stop:1 #2d3139);
+    border: 2px solid #4a5060;
+    color: #ffffff;
+}
+
+QPushButton:pressed {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 #1d2027, stop:1 #23262e);
+}
+
+QPushButton#createButton {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 #0d7377, stop:1 #0a5a5e);
+    font-weight: bold;
+}
+
+QPushButton#createButton:hover {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 #14a5a5, stop:1 #0d7377);
+}
+
+QPushButton#cancelButton {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 #444444, stop:1 #333333);
+}
+
+QPushButton#cancelButton:hover {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 #555555, stop:1 #444444);
+}</string>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>15</number>
+   </property>
+   <property name="leftMargin">
+    <number>30</number>
+   </property>
+   <property name="topMargin">
+    <number>25</number>
+   </property>
+   <property name="rightMargin">
+    <number>30</number>
+   </property>
+   <property name="bottomMargin">
+    <number>25</number>
+   </property>
    <item>
     <widget class="QLabel" name="titleLabel">
      <property name="text">
@@ -24,7 +138,8 @@
      </property>
      <property name="font">
       <font>
-       <pointsize>14</pointsize>
+       <pointsize>16</pointsize>
+       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -35,6 +150,12 @@
      <property name="text">
       <string>Game Name:</string>
      </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+       <weight>50</weight>
+      </font>
+     </property>
     </widget>
    </item>
    <item>
@@ -42,12 +163,23 @@
      <property name="placeholderText">
       <string>Enter game name...</string>
      </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
     </widget>
    </item>
    <item>
     <widget class="QLabel" name="maxPlayersLabel">
      <property name="text">
       <string>Max Players:</string>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+       <weight>50</weight>
+      </font>
      </property>
     </widget>
    </item>
@@ -62,6 +194,11 @@
      <property name="value">
       <number>4</number>
      </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
     </widget>
    </item>
    <item>
@@ -72,17 +209,39 @@
      <property name="sizeHint" stdset="0">
       <size>
        <width>20</width>
-       <height>40</height>
+       <height>30</height>
       </size>
      </property>
     </spacer>
    </item>
    <item>
     <layout class="QHBoxLayout" name="buttonLayout">
+     <property name="spacing">
+      <number>12</number>
+     </property>
      <item>
       <widget class="QPushButton" name="createButton">
        <property name="text">
-        <string>Create Game</string>
+        <string>✓ Create Game</string>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>45</height>
+        </size>
+       </property>
+       <property name="cursor">
+        <cursorShape>PointingHandCursor</cursorShape>
+       </property>
+       <property name="default">
+        <bool>true</bool>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
        </property>
       </widget>
      </item>
@@ -90,6 +249,20 @@
       <widget class="QPushButton" name="cancelButton">
        <property name="text">
         <string>Cancel</string>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>45</height>
+        </size>
+       </property>
+       <property name="cursor">
+        <cursorShape>PointingHandCursor</cursorShape>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
        </property>
       </widget>
      </item>
