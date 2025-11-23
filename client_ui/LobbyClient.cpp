@@ -28,6 +28,7 @@ bool LobbyClient::connect(const std::string& host, const std::string& port) {
     }
 }
 
+
 std::vector<ServerMessage::GameSummary> LobbyClient::listGames() {
     std::vector<ServerMessage::GameSummary> games;
     
@@ -47,17 +48,21 @@ std::vector<ServerMessage::GameSummary> LobbyClient::listGames() {
     }
 }
 
+
 bool LobbyClient::isConnected() const {
     return connected_;
 }
+
 
 std::string LobbyClient::getAddress() const {
     return address_;
 }
 
+
 std::string LobbyClient::getPort() const {
     return port_;
 }
+
 
 void LobbyClient::disconnect() {
     if (handler_) {

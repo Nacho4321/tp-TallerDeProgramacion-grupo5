@@ -22,6 +22,7 @@ MainWindow::MainWindow(QWidget *parent)
     showConnectionDialog();
 }
 
+
 MainWindow::~MainWindow() {
     delete ui;
 }
@@ -30,19 +31,20 @@ void MainWindow::showConnectionDialog() {
     ConnectionMenu dialog(this);
     
     if (dialog.exec() == QDialog::Accepted) {
-        auto conn = dialog.connection();
-        if (conn && conn->isConnected()) {
-            if (!lobbyClient->connect(conn->getAddress(), conn->getPort())) {
-                QMessageBox::critical(this, "Error", "Failed to connect to server");
-                close();
-                return;
-            }
+        std::string host = dialog.getHost();
+        std::string port = dialog.getPort();
+        
+        if (!lobbyClient->connect(host, port)) {
+            QMessageBox::critical(this, "Error", "Failed to connect to server");
+            close();
+            return;
         }
     } else {
         QMessageBox::information(this, "Information", "You must connect to the server to continue");
         close();
     }
 }
+
 
 void MainWindow::onNewGameClicked() {
     if (!lobbyClient || !lobbyClient->isConnected()) {
@@ -59,6 +61,7 @@ void MainWindow::onNewGameClicked() {
         close();
     }
 }
+
 
 void MainWindow::onJoinGameClicked() {
     if (!lobbyClient || !lobbyClient->isConnected()) {
@@ -85,6 +88,7 @@ void MainWindow::onJoinGameClicked() {
         close();
     }
 }
+
 
 void MainWindow::onExitClicked() {
     close();

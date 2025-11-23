@@ -28,7 +28,7 @@ public:
     // Getters
     bool isConnected() const;
     std::string getAddress() const;
-    std::string getPort();
+    std::string getPort() const;
     
     void disconnect();
 };

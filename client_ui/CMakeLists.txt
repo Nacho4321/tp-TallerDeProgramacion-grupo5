@@ -4,7 +4,6 @@ target_sources(taller_client_ui
     main.cpp
     ConnectionMenu.cpp
     MainWindow.cpp
-    ClientConnection.cpp
     NewGameWindow.cpp
     JoinGameWindow.cpp
     GameLauncher.cpp
@@ -22,7 +21,6 @@ target_sources(taller_client_ui
     PUBLIC
     MainWindow.h
     ConnectionMenu.h
-    ClientConnection.h
     NewGameWindow.h
     JoinGameWindow.h
     GameLauncher.h
