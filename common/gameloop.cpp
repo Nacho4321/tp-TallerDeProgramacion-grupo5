@@ -5,8 +5,6 @@
 #define MAX_PLAYERS 8
 #define INITIAL_X_POS 960
 #define INITIAL_Y_POS 540
-// Velocidad base en pixeles por segundo (antes era 0.0008 por tick, casi imperceptible)
-#define INITIAL_SPEED 200.0f
 #define FULL_LOBBY_MSG "can't join lobby, maximum players reached"
 #define SCALE 32.0f
 #define FPS (1.0f / 60.0f)
@@ -123,6 +121,82 @@ int GameLoop::find_player_by_body(b2Body *body)
     return -1;
 }
 
+b2Vec2 GameLoop::get_lateral_velocity(b2Body *body) const
+{
+    b2Vec2 currentRightNormal = body->GetWorldVector(b2Vec2(1, 0));
+    return b2Dot(currentRightNormal, body->GetLinearVelocity()) * currentRightNormal;
+}
+
+b2Vec2 GameLoop::get_forward_velocity(b2Body *body) const
+{
+    b2Vec2 currentForwardNormal = body->GetWorldVector(b2Vec2(0, 1));
+    return b2Dot(currentForwardNormal, body->GetLinearVelocity()) * currentForwardNormal;
+}
+
+void GameLoop::update_friction_for_player(PlayerData &player_data)
+{
+    b2Body *body = player_data.body;
+    if (!body) return;
+
+    // impulso lateral para reducir el deslizamiento lateral (limitado para permitir derrapes)
+    const float maxLateralImpulse = 2.5f;
+    b2Vec2 impulse = body->GetMass() * -get_lateral_velocity(body);
+    float ilen = impulse.Length();
+    if (ilen > maxLateralImpulse)
+        impulse *= maxLateralImpulse / ilen;
+    body->ApplyLinearImpulse(impulse, body->GetWorldCenter(), true);
+
+    // matar un poco la velocidad angular para evitar giros descontrolados
+    body->ApplyAngularImpulse(0.1f * body->GetInertia() * -body->GetAngularVelocity(), true);
+
+    // forward drag
+    b2Vec2 forwardDir = body->GetWorldVector(b2Vec2(0, 1));
+    float currentForwardSpeed = b2Dot(body->GetLinearVelocity(), forwardDir);
+    b2Vec2 dragForce = -2.0f * currentForwardSpeed * forwardDir;
+    body->ApplyForce(dragForce, body->GetWorldCenter(), true);
+}
+
+void GameLoop::update_drive_for_player(PlayerData &player_data)
+{
+    b2Body *body = player_data.body;
+    if (!body) return;
+
+    bool wantUp = (player_data.position.direction_y == up);
+    bool wantDown = (player_data.position.direction_y == down);
+    bool wantLeft = (player_data.position.direction_x == left);
+    bool wantRight = (player_data.position.direction_x == right);
+
+    float maxForwardSpeed_m = player_data.car.speed / SCALE;                 // m/s
+    float maxBackwardSpeed_m = -player_data.car.speed * 0.5f / SCALE;        // m/s
+    float maxAccel_m = player_data.car.acceleration / SCALE;                 // m/s^2
+
+
+    float desiredSpeed = 0.0f;
+    if (wantUp) desiredSpeed = maxForwardSpeed_m;
+    else if (wantDown) desiredSpeed = maxBackwardSpeed_m;
+    else return; 
+
+
+    b2Vec2 forwardNormal = body->GetWorldVector(b2Vec2(0, 1));
+    float currentSpeed = b2Dot(body->GetLinearVelocity(), forwardNormal);
+
+    const float kp = 4.0f;
+    float accelCmd = (desiredSpeed - currentSpeed) * kp;
+    if (accelCmd > maxAccel_m) accelCmd = maxAccel_m;
+    if (accelCmd < -maxAccel_m) accelCmd = -maxAccel_m;
+
+    // Force = mass * accel
+    float desiredForce = body->GetMass() * accelCmd;
+    body->ApplyForce(desiredForce * forwardNormal, body->GetWorldCenter(), true);
+
+    // aplica un torque modesto cuando se presionan las teclas izquierda/derecha.
+    const float turnTorque = 2.0f; // reduced from 15.0f
+    if (wantLeft)
+        body->ApplyTorque(-turnTorque, true);
+    else if (wantRight)
+        body->ApplyTorque(turnTorque, true);
+}
+
 void GameLoop::process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpointFix)
 {
     if (!maybePlayerFix || !maybeCheckpointFix)
@@ -176,10 +250,10 @@ void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_o
     std::vector<PlayerPositionUpdate> broadcast;
     if (int(players.size()) == 0)
     {
-        Position pos = Position{INITIAL_X_POS, INITIAL_Y_POS, not_horizontal, not_vertical};
+        Position pos = Position{INITIAL_X_POS, INITIAL_Y_POS, not_horizontal, not_vertical, 0.0f};
         players[id] = PlayerData{create_player_body(INITIAL_X_POS, INITIAL_Y_POS, pos),
                                  MOVE_UP_RELEASED_STR,
-                                 CarInfo{"lambo", INITIAL_SPEED, INITIAL_SPEED, INITIAL_SPEED}, pos};
+                                 CarInfo{"lambo", DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP}, pos};
         players_messanger[id] = player_outbox;
     }
     else if (int(players.size()) < MAX_PLAYERS)
@@ -195,9 +269,9 @@ void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_o
             dir_y = anchor_it->second.position.new_Y;
         }
         std::cout << "[GameLoop] add_player: spawn at (" << dir_x << "," << dir_y << ")" << std::endl;
-        Position pos = Position{dir_x, dir_y, not_horizontal, not_vertical};
-        players[id] = PlayerData{create_player_body(dir_x, dir_y, pos),
-                                 MOVE_UP_RELEASED_STR, CarInfo{"lambo", INITIAL_SPEED, INITIAL_SPEED, INITIAL_SPEED}, pos};
+    Position pos = Position{dir_x, dir_y, not_horizontal, not_vertical, 0.0f};
+    players[id] = PlayerData{create_player_body(dir_x, dir_y, pos),
+                MOVE_UP_RELEASED_STR, CarInfo{"lambo", DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP}, pos};
         std::cout << "[GameLoop] add_player: player data inserted" << std::endl;
         players_messanger[id] = player_outbox;
         std::cout << "[GameLoop] add_player: messenger inserted" << std::endl;
@@ -297,11 +371,8 @@ b2Body *GameLoop::create_player_body(float x_px, float y_px, Position &pos)
     bd.type = b2_dynamicBody;
     bd.position.Set(x_px / SCALE, y_px / SCALE);
 
-    // Rotacion del body
-    float dy = float(pos.direction_y);
-    float dx = float(pos.direction_x);
-    float angleRad = std::atan2(dy, dx);
-    bd.angle = angleRad;
+    // Rotacion del body: use explicit angle provided in Position (radians)
+    bd.angle = pos.angle;
 
     // Lo creamos en el world
     b2Body *b = world.CreateBody(&bd);
@@ -339,6 +410,11 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
         player_data.position.new_X = p.x * SCALE; // reconvertir a píxeles
         player_data.position.new_Y = p.y * SCALE;
 
+    double ang = body->GetAngle();
+    while (ang < 0.0) ang += 2.0 * M_PI;
+    while (ang >= 2.0 * M_PI) ang -= 2.0 * M_PI;
+    player_data.position.angle = static_cast<float>(ang);
+
         PlayerPositionUpdate update;
         update.player_id = id;
         update.new_pos = player_data.position;
@@ -352,14 +428,13 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
             {
                 int idx = (player_data.next_checkpoint + k) % total;
                 b2Vec2 c = checkpoint_centers[idx];
-                Position cp_pos{c.x * SCALE, c.y * SCALE, not_horizontal, not_vertical};
+                Position cp_pos{c.x * SCALE, c.y * SCALE, not_horizontal, not_vertical, 0.0f};
                 update.next_checkpoints.push_back(cp_pos);
             }
         }
 
         broadcast.push_back(update);
 
-        // Printeo la posición del jugador y su próximo checkpoint
         int next_idx = player_data.next_checkpoint;
         if (next_idx >= 0 && next_idx < static_cast<int>(checkpoint_centers.size()))
         {
@@ -367,7 +442,7 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
             float cx_px = c.x * SCALE;
             float cy_px = c.y * SCALE;
             std::cout << "[GameLoop] Player " << id << " pos=(" << player_data.position.new_X << "," << player_data.position.new_Y << ") "
-                      << "next_checkpoint=(" << cx_px << "," << cy_px << ") idx=" << next_idx << std::endl;
+                      << "angle_rad=" << player_data.position.angle << " next_checkpoint=(" << cx_px << "," << cy_px << ") idx=" << next_idx << std::endl;
         }
     }
 }
@@ -378,26 +453,11 @@ void GameLoop::update_body_positions()
     std::lock_guard<std::mutex> lk(players_map_mutex);
     for (auto &[id, player_data] : players)
     {
-        Position &pos = player_data.position;
-        float dirX = float(pos.direction_x);
-        float dirY = float(pos.direction_y);
+        // Aplicar fricción/adhesión primero
+        update_friction_for_player(player_data);
 
-        if (dirX != 0 || dirY != 0)
-        {
-            float angle = std::atan2(dirY, dirX);
-            player_data.body->SetTransform(
-                player_data.body->GetPosition(),
-                angle);
-        }
-
-        // convertimos velocidad (px/s) a m/s para que funcione en box2d como queremos
-        float vx = dirX * (player_data.car.speed / SCALE);
-        float vy = dirY * (player_data.car.speed / SCALE);
-
-        if (player_data.body)
-        {
-            player_data.body->SetLinearVelocity(b2Vec2(vx, vy));
-        }
+        // Aplicar fuerza de conducción / torque basado en la entrada
+        update_drive_for_player(player_data);
     }
 }
 

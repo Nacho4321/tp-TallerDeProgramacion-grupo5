@@ -57,6 +57,7 @@ std::vector<std::uint8_t> Protocol::encodeServerMessage(ServerMessage& out) {
             insertInt(pos_update.player_id);
             insertFloat(pos_update.new_pos.new_X);
             insertFloat(pos_update.new_pos.new_Y);
+            insertFloat(pos_update.new_pos.angle);
             insertInt(static_cast<int>(pos_update.new_pos.direction_x));
             insertInt(static_cast<int>(pos_update.new_pos.direction_y));
             // Enviar cantidad de checkpoints siguientes y sus posiciones (x,y floats)
@@ -65,6 +66,7 @@ std::vector<std::uint8_t> Protocol::encodeServerMessage(ServerMessage& out) {
             for (const auto &cp : pos_update.next_checkpoints) {
                 insertFloat(cp.new_X);
                 insertFloat(cp.new_Y);
+                insertFloat(cp.angle);
             }
         }
         return buffer;

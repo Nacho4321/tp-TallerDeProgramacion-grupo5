@@ -52,6 +52,11 @@ private:
     int find_player_by_body(b2Body *body);
     void process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpointFix);
 
+    b2Vec2 get_lateral_velocity(b2Body *body) const;
+    b2Vec2 get_forward_velocity(b2Body *body) const;
+    void update_friction_for_player(class PlayerData &player_data);
+    void update_drive_for_player(class PlayerData &player_data);
+
 public:
     explicit GameLoop(std::shared_ptr<Queue<Event>> events);
     void handle_begin_contact(b2Fixture *a, b2Fixture *b);

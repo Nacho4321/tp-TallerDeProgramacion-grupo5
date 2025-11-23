@@ -34,6 +34,10 @@ constexpr float CHECKPOINT_RADIUS_PX = 20.0f;
 constexpr int LOGICAL_SCREEN_WIDTH = 854;
 constexpr int LOGICAL_SCREEN_HEIGHT = 480;
 
+constexpr float DEFAULT_CAR_SPEED_PX_S = 200.0f;      // pixels/sec
+constexpr float DEFAULT_CAR_ACCEL_PX_S2 = 400.0f;     // px/sec^2
+constexpr float DEFAULT_CAR_HP = 100.0f;
+
 const std::string MOVE_UP_PRESSED_STR = "move_up_pressed";              // NOLINT
 const std::string MOVE_UP_RELEASED_STR = "move_up_released";            // NOLINT
 const std::string MOVE_DOWN_PRESSED_STR = "move_down_pressed";          // NOLINT
