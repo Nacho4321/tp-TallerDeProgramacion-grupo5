@@ -38,11 +38,13 @@ private:
     // Configuración de inicio
     StartMode start_mode;
     int auto_join_game_id;
+    std::string auto_create_game_name;
 
 public:
     explicit Client(const char *address, const char *port, 
                    StartMode mode = StartMode::NORMAL, 
-                   int join_game_id = -1);
+                   int join_game_id = -1,
+                   const std::string& game_name = "");
     ~Client();
     void start();
     bool isConnected() const { return connected; }

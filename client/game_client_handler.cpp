@@ -39,12 +39,19 @@ void GameClientHandler::set_game_id(int32_t id) {
     sender.set_game_id(id);
 }
 
-bool GameClientHandler::create_game_blocking(uint32_t& out_game_id, uint32_t& out_player_id) {
+bool GameClientHandler::create_game_blocking(uint32_t& out_game_id, uint32_t& out_player_id, const std::string& game_name) {
     // Reset IDs to -1 before solicitar creación
-    std::cout << "[Handler] Preparando CREATE_GAME..." << std::endl;
+    std::cout << "[Handler] Preparando CREATE_GAME con nombre='" << game_name << "'..." << std::endl;
     sender.set_game_id(-1);
     sender.set_player_id(-1);
-    send("create_game");
+    
+    // Enviar comando con nombre si se provee
+    if (game_name.empty()) {
+        send("create_game");
+    } else {
+        send("create_game " + game_name);
+    }
+    
     std::cout << "[Handler] CREATE_GAME enviado, esperando respuesta..." << std::endl;
     try {
         ServerMessage resp = join_results.pop(); // bloquea hasta respuesta

@@ -3,14 +3,15 @@
 #include <string>
 #include <SDL2/SDL.h>
 
- Client::Client(const char *address, const char *port, StartMode mode, int join_game_id)
+ Client::Client(const char *address, const char *port, StartMode mode, int join_game_id, const std::string& game_name)
         : protocol(ini_protocol(address, port)),
             connected(true),
             handler(),
             handler_core(protocol),
             game_renderer("Game Renderer", 640, 480),
             start_mode(mode),
-            auto_join_game_id(join_game_id)
+            auto_join_game_id(join_game_id),
+            auto_create_game_name(game_name)
 {
     handler_core.start(); // iniciar handler (sender+receiver)
     
@@ -27,7 +28,7 @@ void Client::start()
     // Ejecutar acción automática según el modo de inicio
     if (start_mode == StartMode::AUTO_CREATE) {
         uint32_t gid = 0, pid = 0;
-        bool ok = handler_core.create_game_blocking(gid, pid);
+        bool ok = handler_core.create_game_blocking(gid, pid, auto_create_game_name);
         if (ok) {
             my_game_id = gid;
             my_player_id = static_cast<int32_t>(pid);
