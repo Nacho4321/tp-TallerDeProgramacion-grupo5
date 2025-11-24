@@ -10,11 +10,10 @@
             connected(true),
             handler(),
             handler_core(protocol),
-            game_renderer("Game Renderer", 640, 480),
+            game_renderer("Game Renderer", LOGICAL_SCREEN_WIDTH, LOGICAL_SCREEN_HEIGHT),
             start_mode(mode),
             auto_join_game_id(join_game_id),
             auto_create_game_name(game_name)
-            game_renderer("Game Renderer", LOGICAL_SCREEN_WIDTH, LOGICAL_SCREEN_HEIGHT)
 {
     handler_core.start(); // iniciar handler (sender+receiver)
     

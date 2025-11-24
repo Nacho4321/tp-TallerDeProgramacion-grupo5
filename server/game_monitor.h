@@ -23,9 +23,6 @@ public:
     int add_game(int &client_id, const std::string& name = ""); // Devuelve el game_id asignado
     void join_player(int &client_id, int &game_id);
     std::vector<ServerMessage::GameSummary> list_games();
-    int add_game(int &client_id, const std::string& name); // Devuelve el game_id asignado
-    void join_player(int &client_id, int &game_id);
-    std::vector<ServerMessage::GameSummary> list_games();
     void remove_player(int client_id);
 };
 
