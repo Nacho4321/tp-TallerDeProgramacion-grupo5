@@ -23,6 +23,10 @@ void GameClientReceiver::run() {
                 if (!positionsMsg.positions.empty()) {
                     incoming_messages.push(std::move(positionsMsg));
                 }
+            } else if (opcode == GAMES_LIST) {
+                // Enviar la lista de partidas a incoming messages para que get_games_blocking lareciba
+                std::cout << "[ClientReceiver] Lista de partidas recibida (" << positionsMsg.games.size() << " juegos)" << std::endl;
+                incoming_messages.push(std::move(positionsMsg));
             } else {
                 // Paquete desconocido: ignorar
             }

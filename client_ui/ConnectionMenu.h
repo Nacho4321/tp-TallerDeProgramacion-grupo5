@@ -2,8 +2,7 @@
 #define CONNECTIONMENU_H
 
 #include <QDialog>
-#include <memory>
-#include "ClientConnection.h"
+#include <string>
 
 namespace Ui {
 class ConnectionMenu;
@@ -17,15 +16,16 @@ public:
     explicit ConnectionMenu(QWidget *parent = nullptr);
     ~ConnectionMenu();
     
-    // Obtiene la conexión establecida
-    std::shared_ptr<ClientConnection> connection() const;
+    std::string getHost() const;
+    std::string getPort() const;
 
 private slots:
     void onConnectClicked();
 
 private:
     Ui::ConnectionMenu *ui;
-    std::shared_ptr<ClientConnection> connection_;
+    std::string host_;
+    std::string port_;
 };
 
 #endif

@@ -360,15 +360,15 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
         broadcast.push_back(update);
 
         // Printeo la posición del jugador y su próximo checkpoint
-        int next_idx = player_data.next_checkpoint;
-        if (next_idx >= 0 && next_idx < static_cast<int>(checkpoint_centers.size()))
-        {
-            b2Vec2 c = checkpoint_centers[next_idx];
-            float cx_px = c.x * SCALE;
-            float cy_px = c.y * SCALE;
-            std::cout << "[GameLoop] Player " << id << " pos=(" << player_data.position.new_X << "," << player_data.position.new_Y << ") "
-                      << "next_checkpoint=(" << cx_px << "," << cy_px << ") idx=" << next_idx << std::endl;
-        }
+        // int next_idx = player_data.next_checkpoint;
+        // if (next_idx >= 0 && next_idx < static_cast<int>(checkpoint_centers.size()))
+        // {
+        //     b2Vec2 c = checkpoint_centers[next_idx];
+        //     float cx_px = c.x * SCALE;
+        //     float cy_px = c.y * SCALE;
+        //     std::cout << "[GameLoop] Player " << id << " pos=(" << player_data.position.new_X << "," << player_data.position.new_Y << ") "
+        //               << "next_checkpoint=(" << cx_px << "," << cy_px << ") idx=" << next_idx << std::endl;
+        // }
     }
 }
 
