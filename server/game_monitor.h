@@ -2,6 +2,7 @@
 #define GAME_MONITOR_H
 #include <unordered_map>
 #include <memory>
+#include <string>
 #include "../common/gameloop.h"
 #include <mutex>
 #define STARTING_ID 1
@@ -10,7 +11,7 @@ class GameMonitor
 private:
     std::unordered_map<int, std::unique_ptr<GameLoop>> games;
     std::mutex games_mutex;
-    std::unordered_map<int, std::string> game_names;  // nombres de partidas
+    std::unordered_map<int, std::string> game_names; // nombres de partidas
     std::unordered_map<int, std::shared_ptr<Queue<Event>>> &games_queues;
     std::mutex &game_queues_mutex;
     OutboxMonitor &outboxes;
@@ -22,6 +23,10 @@ public:
     int add_game(int &client_id, const std::string& name = ""); // Devuelve el game_id asignado
     void join_player(int &client_id, int &game_id);
     std::vector<ServerMessage::GameSummary> list_games();
+    int add_game(int &client_id, const std::string& name); // Devuelve el game_id asignado
+    void join_player(int &client_id, int &game_id);
+    std::vector<ServerMessage::GameSummary> list_games();
+    void remove_player(int client_id);
 };
 
 #endif

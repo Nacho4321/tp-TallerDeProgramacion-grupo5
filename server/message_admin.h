@@ -20,6 +20,7 @@ private:
     void create_game(ClientHandlerMessage &message);
     void join_game(ClientHandlerMessage &message);
     void get_games(ClientHandlerMessage &message);
+    void leave_game(ClientHandlerMessage &message);
 
 public:
     explicit MessageAdmin(Queue<ClientHandlerMessage> &global_in, std::unordered_map<int, std::shared_ptr<Queue<Event>>> &game_qs, std::mutex &game_qs_mutex, GameMonitor &games_mon, OutboxMonitor &outbox) : global_inbox(global_in), game_queues(game_qs), game_queues_mutex(game_qs_mutex), games_monitor(games_mon), cli_comm_dispatch(), outboxes(outbox) {}

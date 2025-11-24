@@ -65,10 +65,13 @@ void MessageAdmin::init_dispatch()
     { join_game(message); };
     cli_comm_dispatch[GET_GAMES_STR] = [this](ClientHandlerMessage &message)
     { get_games(message); };
+    cli_comm_dispatch[LEAVE_GAME_STR] = [this](ClientHandlerMessage &message)
+    { leave_game(message); };
 }
 
 void MessageAdmin::create_game(ClientHandlerMessage &message)
 {
+    std::cout << "[MessageAdmin] Cliente " << message.client_id << " solicita crear partida" << std::endl;
     int game_id = games_monitor.add_game(message.client_id, message.msg.game_name);
     
     // Enviar respuesta al cliente con los IDs asignados
@@ -136,5 +139,21 @@ void MessageAdmin::get_games(ClientHandlerMessage &message) {
     auto client_queue = outboxes.get_cliente_queue(message.client_id);
     if (client_queue) {
         try { client_queue->push(resp); } catch (const ClosedQueue&) { outboxes.remove(message.client_id); }
+    }
+}
+
+void MessageAdmin::leave_game(ClientHandlerMessage &message)
+{
+    std::cout << "[MessageAdmin] Cliente " << message.client_id << " solicita dejar partida" << std::endl;
+    try {
+        games_monitor.remove_player(message.client_id);
+    } catch (const std::exception &e) {
+        std::cerr << "[MessageAdmin] remove_player threw: " << e.what() << std::endl;
+    }
+    // Siempre intentar limpiar el outbox del cliente
+    try {
+        outboxes.remove(message.client_id);
+    } catch (const std::exception &e) {
+        std::cerr << "[MessageAdmin] outboxes.remove threw: " << e.what() << std::endl;
     }
 }

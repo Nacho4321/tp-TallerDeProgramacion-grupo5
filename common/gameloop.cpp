@@ -210,6 +210,36 @@ void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_o
               << " messengers.size()=" << players_messanger.size() << std::endl;
 }
 
+void GameLoop::remove_player(int client_id)
+{
+    std::lock_guard<std::mutex> lk(players_map_mutex);
+    auto it = players.find(client_id);
+    if (it == players.end())
+    {
+        throw std::runtime_error("player not found");
+    }
+    PlayerData &pd = it->second;
+    b2Body *body = pd.body;
+    if (body)
+    {
+        b2World *w = body->GetWorld();
+        if (w)
+        {
+            // Destruir el body del mundo de Box2D
+            try {
+                w->DestroyBody(body);
+            } catch (...) {
+                std::cerr << "[GameLoop] Warning: DestroyBody threw for client " << client_id << std::endl;
+            }
+        }
+    }
+    // Borrar del mapa de mensajería si existiera
+    players_messanger.erase(client_id);
+    // Borrar del mapa de players
+    players.erase(it);
+    std::cout << "[GameLoop] remove_player: client " << client_id << " removed" << std::endl;
+}
+
 void GameLoop::start_game()
 {
     started = true;

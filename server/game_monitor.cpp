@@ -62,6 +62,31 @@ void GameMonitor::join_player(int &player_id, int &game_id)
     it->second->add_player(player_id, q);
     std::cout << "[GameMonitor] join_player: add_player() OK" << std::endl;
 }
+
+void GameMonitor::remove_player(int client_id)
+{
+    std::lock_guard<std::mutex> lock(games_mutex);
+    for (auto &entry : games)
+    {
+        auto &game = entry.second;
+        if (!game)
+            continue;
+        // Intentar remover en cada juego (si existe). GameLoop::remove_player
+        // internamente verificará si el player está presente.
+        try
+        {
+            game->remove_player(client_id);
+            // si no lanzó, asumimos que se removió y devolvemos
+            std::cout << "[GameMonitor] remove_player: client " << client_id << " removed from game " << entry.first << std::endl;
+            return;
+        }
+        catch (...) {
+            // Ignorar y seguir buscando
+        }
+    }
+    // Si no se encontró el jugador en ningún juego, no es fatal.
+    std::cout << "[GameMonitor] remove_player: client " << client_id << " not found in any game" << std::endl;
+}
 GameMonitor::~GameMonitor()
 {
     std::lock_guard<std::mutex> lock(games_mutex);

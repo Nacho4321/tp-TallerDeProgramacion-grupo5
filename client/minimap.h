@@ -28,13 +28,14 @@ public:
 
     void initialize(Renderer& renderer, Texture& backgroundTexture);
     
-    void render(Renderer& renderer, const Car& mainCar, 
+    void render(Renderer& renderer, const Car& mainCar,
                 const std::vector<Car>& otherCars,
-                const std::vector<Position>& checkpoints);
+                const std::vector<Position>& checkpoints,
+                int logicalScreenWidth, int logicalScreenHeight);
 
 private:
     float calculateScale() const;
-    Point calculateMinimapPosition(const Renderer& renderer) const;
+    Point calculateMinimapPosition(int logicalScreenWidth, int logicalScreenHeight) const;
     void drawMinimapBackground(Renderer& renderer, const Point& pos) const;
     Rect calculateWorldViewRect(const CarPosition& carPos) const;
     Rect scaleRectToCacheTexture(const Rect& worldRect) const;

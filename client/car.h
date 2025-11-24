@@ -19,6 +19,9 @@ private:
     CarPosition position;
     int spriteIndex;
     int carType;
+    bool exploding;
+    int explosionFrame;
+    int explosionFrameDelay;
 
 public:
     Car(int carTypeId = 0);
@@ -29,6 +32,11 @@ public:
     const CarPosition& getPosition() const;
 
     SDL_Rect getSprite() const;
+
+    void startExplosion();
+    void updateExplosion();
+    bool isExploding() const;
+    bool isExplosionComplete() const;
 
 private:
     void updateSpriteIndex();
