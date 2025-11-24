@@ -2,6 +2,7 @@
 #include "constants.h"
 #include <thread>
 #include <chrono>
+#include <random>
 #define MAX_PLAYERS 8
 #define INITIAL_X_POS 960
 #define INITIAL_Y_POS 540
@@ -48,6 +49,9 @@ void GameLoop::run()
         std::cout << "[GameLoop] Created " << checkpoint_centers.size() << " checkpoint sensors (from base_liberty_city_checkpoints.json)." << std::endl;
     }
 
+    // Initialize NPCs after checkpoints are available
+    init_npcs();
+
     while (should_keep_running())
     {
         try
@@ -58,6 +62,8 @@ void GameLoop::run()
             acum += dt;
             if (!players.empty())
             {
+                // Update NPC movement even if there are players (NPCs depend only on waypoints)
+                update_npcs();
                 // Actualiza las propiedades de los bodies de los jugadores según su Position
                 update_body_positions();
                 // Step del mundo (Hace el cálculo de las físicas y demás, no es nuestra incumbencia como lo hace)
@@ -190,7 +196,7 @@ void GameLoop::update_drive_for_player(PlayerData &player_data)
     body->ApplyForce(desiredForce * forwardNormal, body->GetWorldCenter(), true);
 
     // aplica un torque modesto cuando se presionan las teclas izquierda/derecha.
-    const float turnTorque = 2.0f; // reduced from 15.0f
+    const float turnTorque = 2.0f; 
     if (wantLeft)
         body->ApplyTorque(-turnTorque, true);
     else if (wantRight)
@@ -409,11 +415,10 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
         b2Vec2 p = body->GetPosition();
         player_data.position.new_X = p.x * SCALE; // reconvertir a píxeles
         player_data.position.new_Y = p.y * SCALE;
-
-    double ang = body->GetAngle();
-    while (ang < 0.0) ang += 2.0 * M_PI;
-    while (ang >= 2.0 * M_PI) ang -= 2.0 * M_PI;
-    player_data.position.angle = static_cast<float>(ang);
+        double ang = body->GetAngle();
+        while (ang < 0.0) ang += 2.0 * M_PI;
+        while (ang >= 2.0 * M_PI) ang -= 2.0 * M_PI;
+        player_data.position.angle = static_cast<float>(ang);
 
         PlayerPositionUpdate update;
         update.player_id = id;
@@ -445,6 +450,34 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
                       << "angle_rad=" << player_data.position.angle << " next_checkpoint=(" << cx_px << "," << cy_px << ") idx=" << next_idx << std::endl;
         }
     }
+
+    // Apendear también las posiciones de los NPCs
+    for (auto &npc : npcs) {
+        if (!npc.body) continue;
+        b2Vec2 p = npc.body->GetPosition();
+        Position pos{};
+        pos.new_X = p.x * SCALE;
+        pos.new_Y = p.y * SCALE;
+        
+        b2Vec2 vel = npc.body->GetLinearVelocity();
+        const float DIR_THRESH = 0.05f; // umbral para considerar movimiento significativo
+        MovementDirectionX dx = not_horizontal;
+        MovementDirectionY dy = not_vertical;
+        if (vel.x > DIR_THRESH) dx = right; else if (vel.x < -DIR_THRESH) dx = left;
+        if (vel.y > DIR_THRESH) dy = down; else if (vel.y < -DIR_THRESH) dy = up;
+        pos.direction_x = dx;
+        pos.direction_y = dy;
+        // usar ángulo real del body (normalizar a [0,2PI)) para que el cliente pueda orientar correctamente
+        double ang = npc.body->GetAngle();
+        while (ang < 0.0) ang += 2.0 * M_PI;
+        while (ang >= 2.0 * M_PI) ang -= 2.0 * M_PI;
+        pos.angle = static_cast<float>(ang);
+
+        PlayerPositionUpdate update;
+        update.player_id = npc.npc_id; // id negativo para NPC
+        update.new_pos = pos;
+        broadcast.push_back(update);
+    }
 }
 
 void GameLoop::update_body_positions()
@@ -458,6 +491,78 @@ void GameLoop::update_body_positions()
 
         // Aplicar fuerza de conducción / torque basado en la entrada
         update_drive_for_player(player_data);
+    }
+}
+
+// ---------------- NPC Implementation ----------------
+
+b2Body* GameLoop::create_npc_body(float x_px, float y_px) {
+    b2BodyDef bd;
+    bd.type = b2_kinematicBody; // kinematic: controlamos la velocidad directamente
+    bd.position.Set(x_px / SCALE, y_px / SCALE);
+    b2Body* b = world.CreateBody(&bd);
+
+    // Igual q el jugador
+    float halfWidth = 22.0f / (2.0f * SCALE);
+    float halfHeight = 28.0f / (2.0f * SCALE);
+    b2PolygonShape shape; shape.SetAsBox(halfWidth, halfHeight);
+    b2FixtureDef fd; fd.shape = &shape; fd.isSensor = false; fd.density = 1.0f; fd.friction = 0.3f; fd.restitution = 0.0f;
+    b->CreateFixture(&fd);
+    return b;
+}
+
+void GameLoop::init_npcs() {
+    std::lock_guard<std::mutex> lk(players_map_mutex); 
+    if (checkpoint_centers.size() < 2) {
+        std::cout << "[GameLoop][NPC] Not enough checkpoints to spawn moving NPCs." << std::endl;
+        return;
+    }
+    int desired_npcs = std::min(MAX_NPCS, static_cast<int>(checkpoint_centers.size()));
+    std::random_device rd; std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> wp_dist(0, static_cast<int>(checkpoint_centers.size()) - 1);
+    std::uniform_real_distribution<float> dir_dist(0.0f, 1.0f);
+
+    int next_negative_id = -1; // -1, -2, -3 ...
+    for (int i = 0; i < desired_npcs; ++i) {
+        int start_wp = wp_dist(gen);
+        int step = (dir_dist(gen) < NPC_REVERSE_RATIO) ? -1 : 1;
+        b2Vec2 wp = checkpoint_centers[start_wp];
+        float speed_mps = NPC_SPEED_PX_S / SCALE;
+        b2Body* body = create_npc_body(wp.x * SCALE, wp.y * SCALE);
+        NPCData npc{body, next_negative_id--, start_wp, step, speed_mps};
+        npcs.push_back(npc);
+    }
+    std::cout << "[GameLoop][NPC] Spawned " << npcs.size() << " NPCs." << std::endl;
+}
+
+void GameLoop::update_npcs() {
+    std::lock_guard<std::mutex> lk(players_map_mutex); 
+    if (checkpoint_centers.empty()) return;
+    const float arrival_threshold_m = 0.5f; // 0.5 metros para considerar "llegado" al waypoint
+    int total = static_cast<int>(checkpoint_centers.size());
+    for (auto &npc : npcs) {
+        b2Body* body = npc.body;
+        if (!body) continue;
+        b2Vec2 target = checkpoint_centers[npc.waypoint_index];
+        b2Vec2 pos = body->GetPosition();
+        b2Vec2 to_target = target - pos;
+        float dist = to_target.Length();
+        if (dist < arrival_threshold_m) {
+            npc.waypoint_index = (npc.waypoint_index + npc.direction_step + total) % total;
+            target = checkpoint_centers[npc.waypoint_index];
+            to_target = target - pos;
+            dist = to_target.Length();
+        }
+        if (dist > 0.0001f) {
+            b2Vec2 dir = (1.0f / dist) * to_target; // normalizo
+            b2Vec2 vel = npc.speed_mps * dir;
+            body->SetLinearVelocity(vel);
+            float movement_angle = std::atan2(vel.y, vel.x); 
+            float body_angle = movement_angle - b2_pi/2.0f; 
+            body->SetTransform(pos, body_angle);
+        } else {
+            body->SetLinearVelocity(b2Vec2(0,0));
+        }
     }
 }
 

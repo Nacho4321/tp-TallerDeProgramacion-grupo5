@@ -41,6 +41,20 @@ private:
     // Centros de los checkpoints en metros del mundo, indexados por índice de checkpoint
     std::vector<b2Vec2> checkpoint_centers;
 
+    // ---------------- NPC ----------------
+    struct NPCData {
+        b2Body* body{nullptr};
+        int npc_id{0};                // id negativo para el broadcast
+        int waypoint_index{0};         // índice actual del waypoint objetivo
+        int direction_step{1};         // +1 adelante, -1 reversa a través de los waypoints
+        float speed_mps{0.0f};         // velocidad de movimiento en metros/segundo
+    };
+    std::vector<NPCData> npcs;         // lista activa de NPCs
+
+    b2Body* create_npc_body(float x_px, float y_px);
+    void init_npcs();                  // spawn NPCs en el mapa
+    void update_npcs();                // avanzar movimiento de NPCs a lo largo de los waypoints
+
     CheckpointContactListener contact_listener;
 
     b2Body *create_player_body(float x, float y, Position &pos);

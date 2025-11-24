@@ -38,6 +38,11 @@ constexpr float DEFAULT_CAR_SPEED_PX_S = 200.0f;      // pixels/sec
 constexpr float DEFAULT_CAR_ACCEL_PX_S2 = 400.0f;     // px/sec^2
 constexpr float DEFAULT_CAR_HP = 100.0f;
 
+// NPCs
+constexpr int MAX_NPCS = 12;                 
+constexpr float NPC_SPEED_PX_S = 120.0f;     // pixels/sec 
+constexpr float NPC_REVERSE_RATIO = 0.3f;    // fraccion de NPCs que van en sentido inverso
+
 const std::string MOVE_UP_PRESSED_STR = "move_up_pressed";              // NOLINT
 const std::string MOVE_UP_RELEASED_STR = "move_up_released";            // NOLINT
 const std::string MOVE_DOWN_PRESSED_STR = "move_down_pressed";          // NOLINT
