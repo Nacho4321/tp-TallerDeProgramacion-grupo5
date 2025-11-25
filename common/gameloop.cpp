@@ -5,6 +5,7 @@
 #include <chrono>
 #include <random>
 #include <algorithm>
+#include <iomanip>
 #define MAX_PLAYERS 8
 #define INITIAL_X_POS 960
 #define INITIAL_Y_POS 540
@@ -86,8 +87,15 @@ void GameLoop::run()
             float dt = std::chrono::duration<float>(now - last_tick).count(); // segundos
             last_tick = now;
             acum += dt;
-            if (!players.empty())
+            
+            // Solo procesar física si el juego está en PLAYING
+            if (game_state == GameState::PLAYING && !players.empty())
             {
+                if (reset_accumulator.load()) {
+                    acum = 0.0f; // evitar teleports por backlog de dt acumulado en lobby
+                    reset_accumulator.store(false);
+                    std::cout << "[GameLoop] Physics accumulator reset on start." << std::endl;
+                }
                 update_npcs();
                 // Actualiza las propiedades de los bodies de los jugadores según su Position
                 update_body_positions();
@@ -104,6 +112,16 @@ void GameLoop::run()
                 msg.opcode = UPDATE_POSITIONS;
                 msg.positions = broadcast;
 
+                broadcast_positions(msg);
+            }
+            else if (game_state == GameState::LOBBY && !players.empty())
+            {
+                // En lobby: enviar posiciones sin actualizar física
+                std::vector<PlayerPositionUpdate> broadcast;
+                update_player_positions(broadcast);
+                ServerMessage msg;
+                msg.opcode = UPDATE_POSITIONS;
+                msg.positions = broadcast;
                 broadcast_positions(msg);
             }
         }
@@ -126,7 +144,7 @@ void GameLoop::run()
 
 // Constructor para poder setear el contact listener del world
 GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events)
-    : players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), next_id(INITIAL_ID), map_layout(world), physics_config(CarPhysicsConfig::getInstance())
+    : players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), game_state(GameState::LOBBY), next_id(INITIAL_ID), map_layout(world), physics_config(CarPhysicsConfig::getInstance())
 {
     if (!physics_config.loadFromFile("config/car_physics.yaml")) {
         std::cerr << "[GameLoop] WARNING: Failed to load car physics config, using defaults" << std::endl;
@@ -255,10 +273,39 @@ void GameLoop::process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpoin
         int new_next = pd.next_checkpoint + 1;
         if (total > 0 && new_next >= total)
         {
-            // Jugador completó todos los checkpoints en la lista
+            // Jugador completó todos los checkpoints en la lista - VUELTA COMPLETA!
+            auto lap_end_time = std::chrono::steady_clock::now();
+            float lap_time = std::chrono::duration<float>(lap_end_time - pd.lap_start_time).count();
+            
             pd.laps_completed += 1;
             pd.next_checkpoint = 0; // reseteo al primer checkpoint
-            std::cout << "[GameLoop] Player " << playerId << " completed all checkpoints! laps=" << pd.laps_completed << std::endl;
+            
+            // Actualizar mejor tiempo si es el primero o si mejoró
+            bool is_new_best = false;
+            if (pd.best_lap_time == 0.0f || lap_time < pd.best_lap_time) {
+                pd.best_lap_time = lap_time;
+                is_new_best = true;
+            }
+            
+            // Mostrar tiempo en consola
+            int minutes = static_cast<int>(lap_time) / 60;
+            float seconds = lap_time - (minutes * 60);
+            
+            std::cout << "\n========================================" << std::endl;
+            std::cout << "   PLAYER " << playerId << " COMPLETED LAP " << pd.laps_completed << "!" << std::endl;
+            std::cout << "   Lap Time: " << minutes << ":" << std::fixed << std::setprecision(3) << seconds << std::endl;
+            
+            if (is_new_best) {
+                std::cout << "   NEW BEST TIME!" << std::endl;
+            } else {
+                int best_min = static_cast<int>(pd.best_lap_time) / 60;
+                float best_sec = pd.best_lap_time - (best_min * 60);
+                std::cout << "   Best Time: " << best_min << ":" << std::fixed << std::setprecision(3) << best_sec << std::endl;
+            }
+            std::cout << "========================================\n" << std::endl;
+            
+            // Reiniciar cronómetro para la siguiente vuelta
+            pd.lap_start_time = lap_end_time;
         }
         else
         {
@@ -282,36 +329,38 @@ void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_o
               << " players.size()=" << players.size()
               << " outbox.valid=" << std::boolalpha << static_cast<bool>(player_outbox)
               << std::endl;
-    std::vector<PlayerPositionUpdate> broadcast;
-    if (int(players.size()) == 0) {
-        Position pos = Position{INITIAL_X_POS, INITIAL_Y_POS, not_horizontal, not_vertical, 0.0f};
-        players[id] = PlayerData{create_player_body(INITIAL_X_POS, INITIAL_Y_POS, pos, "defaults"),
-                                 MOVE_UP_RELEASED_STR,
-                                 CarInfo{"defaults", DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP}, pos};
-        players_messanger[id] = player_outbox;
-    }
-    else if (int(players.size()) < MAX_PLAYERS) {
-        std::cout << "[GameLoop] add_player: computing spawn near an existing player" << std::endl;
-        auto anchor_it = players.begin();
-        float dir_x = INITIAL_X_POS;
-        float dir_y = INITIAL_Y_POS;
-        if (anchor_it != players.end())
-        {
-            std::cout << "[GameLoop] add_player: anchor id=" << anchor_it->first << std::endl;
-            dir_x = anchor_it->second.position.new_X + 30.0f * static_cast<float>(players.size());
-            dir_y = anchor_it->second.position.new_Y;
-        }
-        std::cout << "[GameLoop] add_player: spawn at (" << dir_x << "," << dir_y << ")" << std::endl;
-        Position pos = Position{dir_x, dir_y, not_horizontal, not_vertical, 0.0f};
-        players[id] = PlayerData{create_player_body(dir_x, dir_y, pos, "defaults"),
-                    MOVE_UP_RELEASED_STR, CarInfo{"defaults", DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP}, pos};
-        std::cout << "[GameLoop] add_player: player data inserted" << std::endl;
-        players_messanger[id] = player_outbox;
-        std::cout << "[GameLoop] add_player: messenger inserted" << std::endl;
-    }
-    else {
+    
+    // Verificar que no excedamos el máximo de jugadores
+    if (int(players.size()) >= MAX_PLAYERS) {
         std::cout << FULL_LOBBY_MSG << std::endl;
+        return;
     }
+    
+    // Agregar jugador al orden
+    player_order.push_back(id);
+    
+    // Calcular índice de spawn basado en la posición en el orden
+    int spawn_idx = static_cast<int>(player_order.size()) - 1;
+    const SpawnPoint& spawn = spawn_points[spawn_idx];
+    
+    std::cout << "[GameLoop] add_player: assigning spawn point " << spawn_idx 
+              << " at (" << spawn.x << "," << spawn.y << ")" << std::endl;
+    
+    Position pos = Position{spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
+    PlayerData player_data;
+    // Usar 'lambo' como auto por defecto inicial
+    player_data.body = create_player_body(spawn.x, spawn.y, pos, "lambo");
+    player_data.state = MOVE_UP_RELEASED_STR;
+    player_data.car = CarInfo{"lambo", DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP};
+    player_data.position = pos;
+    player_data.next_checkpoint = 0;
+    player_data.laps_completed = 0;
+    player_data.lap_start_time = std::chrono::steady_clock::now();
+    player_data.best_lap_time = 0.0f;
+    
+    players[id] = player_data;
+    players_messanger[id] = player_outbox;
+    
     std::cout << "[GameLoop] add_player: done. players.size()=" << players.size()
               << " messengers.size()=" << players_messanger.size() << std::endl;
 }
@@ -324,6 +373,8 @@ void GameLoop::remove_player(int client_id)
     {
         throw std::runtime_error("player not found");
     }
+    
+    // Destruir el body del jugador
     PlayerData &pd = it->second;
     b2Body *body = pd.body;
     if (body)
@@ -331,7 +382,6 @@ void GameLoop::remove_player(int client_id)
         b2World *w = body->GetWorld();
         if (w)
         {
-            // Destruir el body del mundo de Box2D
             try {
                 w->DestroyBody(body);
             } catch (...) {
@@ -339,15 +389,95 @@ void GameLoop::remove_player(int client_id)
             }
         }
     }
-    // Borrar del mapa de mensajería si existiera
+    
+    // Borrar del mapa de mensajería y players
     players_messanger.erase(client_id);
-    // Borrar del mapa de players
     players.erase(it);
+    
+    // Remover del orden de jugadores
+    auto order_it = std::find(player_order.begin(), player_order.end(), client_id);
+    if (order_it != player_order.end()) {
+        player_order.erase(order_it);
+    }
+    
     std::cout << "[GameLoop] remove_player: client " << client_id << " removed" << std::endl;
+    
+    // Si estamos en LOBBY, reordenar los jugadores restantes
+    if (game_state == GameState::LOBBY && !player_order.empty()) {
+        std::cout << "[GameLoop] remove_player: reordering remaining " << player_order.size() << " players in lobby" << std::endl;
+        
+        // Reposicionar cada jugador restante a su nuevo spawn point
+        for (size_t i = 0; i < player_order.size(); ++i) {
+            int player_id = player_order[i];
+            auto player_it = players.find(player_id);
+            if (player_it == players.end()) continue;
+            
+            PlayerData& player_data = player_it->second;
+            const SpawnPoint& spawn = spawn_points[i];
+            
+            std::cout << "[GameLoop] remove_player: moving player " << player_id 
+                      << " to spawn " << i << " at (" << spawn.x << "," << spawn.y << ")" << std::endl;
+            
+            // Destruir el body anterior
+            if (player_data.body) {
+                b2World* world = player_data.body->GetWorld();
+                if (world) {
+                    world->DestroyBody(player_data.body);
+                }
+            }
+            
+            // Crear nuevo body en la nueva posición
+            Position new_pos{spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
+            player_data.body = create_player_body(spawn.x, spawn.y, new_pos, player_data.car.car_name);
+            player_data.position = new_pos;
+        }
+    }
 }
 
 void GameLoop::start_game()
 {
+    std::lock_guard<std::mutex> lk(players_map_mutex);
+    if (game_state == GameState::LOBBY) {
+        game_state = GameState::PLAYING;
+        std::cout << "[GameLoop] Game started! Transitioning from LOBBY to PLAYING" << std::endl;
+        reset_accumulator.store(true); // marcar para resetear acumulador en próximo ciclo de run()
+        
+        // Inicializar tiempo de vuelta para todos los jugadores
+        auto race_start_time = std::chrono::steady_clock::now();
+        
+        // Reset velocities and positions to ensure clean start
+        for (auto &[id, player_data] : players) {
+            if (player_data.body) {
+                // Reset velocidades lineales y angulares
+                player_data.body->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
+                player_data.body->SetAngularVelocity(0.0f);
+                
+                // Inicializar tiempo de vuelta
+                player_data.lap_start_time = race_start_time;
+                player_data.best_lap_time = 0.0f;
+                player_data.next_checkpoint = 0;
+                player_data.laps_completed = 0;
+                
+                // Sincronizar la posición del body con la posición almacenada
+                b2Vec2 current_pos = player_data.body->GetPosition();
+                float current_x_px = current_pos.x * SCALE;
+                float current_y_px = current_pos.y * SCALE;
+                
+                std::cout << "[GameLoop] start_game: Player " << id 
+                          << " at body_pos=(" << current_x_px << "," << current_y_px << ")"
+                          << " stored_pos=(" << player_data.position.new_X << "," << player_data.position.new_Y << ")"
+                          << " - lap timer started"
+                          << std::endl;
+            }
+        }
+
+        // Limpieza: ya no se necesita reposicionar ni loggear NPCs al iniciar.
+        // Solo detenemos su velocidad inicial (se establecerá en update_npcs posteriormente).
+        for (auto &npc : npcs) {
+            if (!npc.body || npc.is_parked) continue;
+            npc.body->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
+        }
+    }
     started = true;
 }
 
@@ -414,8 +544,11 @@ b2Body *GameLoop::create_player_body(float x_px, float y_px, Position &pos, cons
     float halfWidth = car_physics.width / (2.0f * SCALE);
     float halfHeight = car_physics.height / (2.0f * SCALE);
 
+    // Offset del centro de colisión (Y+ = hacia adelante del auto)
+    b2Vec2 center_offset(0.0f, car_physics.center_offset_y / SCALE);
+    
     b2PolygonShape shape;
-    shape.SetAsBox(halfWidth, halfHeight);
+    shape.SetAsBox(halfWidth, halfHeight, center_offset, 0.0f);
 
     b2FixtureDef fd;
     fd.shape = &shape;
@@ -449,6 +582,7 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
         PlayerPositionUpdate update;
         update.player_id = id;
         update.new_pos = player_data.position;
+    update.car_type = player_data.car.car_name;
 
         // Envio los 3 proximos checkpoints
         const int LOOKAHEAD = 3;
@@ -503,6 +637,7 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
         PlayerPositionUpdate update;
         update.player_id = npc.npc_id; // id negativo para NPC
         update.new_pos = pos;
+        update.car_type = "npc";
         broadcast.push_back(update);
     }
 }
@@ -523,14 +658,15 @@ void GameLoop::update_body_positions()
 
 // ---------------- NPC Implementation ----------------
 
-b2Body* GameLoop::create_npc_body(float x_px, float y_px, bool is_static, float angle_rad) {
+b2Body* GameLoop::create_npc_body(float x_m, float y_m, bool is_static, float angle_rad) {
     b2BodyDef bd;
-    bd.type = is_static ? b2_staticBody : b2_kinematicBody; // static para estacionados, kinematic para móviles
-    bd.position.Set(x_px / SCALE, y_px / SCALE);
-    bd.angle = angle_rad;  // Establecer la orientación inicial
+    bd.type = is_static ? b2_staticBody : b2_kinematicBody;
+    // Las posiciones que llegan desde MapLayout ya están convertidas a metros
+    bd.position.Set(x_m, y_m);
+    bd.angle = angle_rad;
     b2Body* b = world.CreateBody(&bd);
 
-    // Igual q el jugador
+    // Dimensiones del auto en metros (convertido desde píxeles con SCALE)
     float halfWidth = 22.0f / (2.0f * SCALE);
     float halfHeight = 28.0f / (2.0f * SCALE);
     b2PolygonShape shape; shape.SetAsBox(halfWidth, halfHeight);
@@ -565,7 +701,8 @@ void GameLoop::init_npcs(const std::vector<MapLayout::ParkedCarData> &parked_dat
         // Determinar ángulo según orientación
         float angle_rad = parked.horizontal ? b2_pi / 2.0f : 0.0f;  // horizontal=true son 90°, horizontal=false es 0°
         
-        b2Body* body = create_npc_body(parked.position.x * SCALE, parked.position.y * SCALE, true, angle_rad);
+    // parked.position.* ya está en metros; no es necesario volver a multiplicar/dividir por SCALE
+    b2Body* body = create_npc_body(parked.position.x, parked.position.y, true, angle_rad);
         
         NPCData npc;
         npc.body = body;
@@ -586,31 +723,66 @@ void GameLoop::init_npcs(const std::vector<MapLayout::ParkedCarData> &parked_dat
         std::cout << "[GameLoop][NPC] Not enough waypoints to spawn moving NPCs." << std::endl;
         return;
     }
-    
-    // Spawnnear hasta MAX_MOVING_NPCS NPCs móviles
-    int moving_npcs_count = std::min(NPCConfig::getInstance().getMaxMoving(), static_cast<int>(street_waypoints.size()));
-    
+
+    // Preparar lista de waypoints válidos (excluir los demasiado cerca de autos estacionados)
+    const float min_distance_from_parked_m = 1.0f; // distancia mínima para no superponerse (1 metro)
+    std::vector<int> candidate_waypoints;
+    candidate_waypoints.reserve(street_waypoints.size());
+    for (int idx = 0; idx < static_cast<int>(street_waypoints.size()); ++idx) {
+        b2Vec2 wp_pos = street_waypoints[idx].position;
+        bool too_close = false;
+        for (const auto &pc : parked_data) {
+            float d = (wp_pos - pc.position).Length();
+            if (d < min_distance_from_parked_m) { too_close = true; break; }
+        }
+        if (!too_close) candidate_waypoints.push_back(idx);
+    }
+    if (candidate_waypoints.empty()) {
+        // Si no hay candidatos, usar todos para evitar no spawnear nada
+        for (int idx = 0; idx < static_cast<int>(street_waypoints.size()); ++idx) candidate_waypoints.push_back(idx);
+        std::cout << "[GameLoop][NPC] Warning: All waypoints filtered out by parked proximity; using full set." << std::endl;
+    }
+
+    // Limitar cantidad a lo disponible
+    int moving_npcs_count = std::min(NPCConfig::getInstance().getMaxMoving(), static_cast<int>(candidate_waypoints.size()));
+
     std::random_device rd; 
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> wp_dist(0, static_cast<int>(street_waypoints.size()) - 1);
+    std::shuffle(candidate_waypoints.begin(), candidate_waypoints.end(), gen);
 
+    // Evitar múltiple uso del mismo waypoint de inicio
     for (int i = 0; i < moving_npcs_count; ++i) {
-        int start_wp_idx = wp_dist(gen);
+        int start_wp_idx = candidate_waypoints[i];
         const MapLayout::WaypointData& start_wp = street_waypoints[start_wp_idx];
-        
-        b2Vec2 spawn_pos = start_wp.position;
-    float speed_mps = NPCConfig::getInstance().getSpeedPxS() / SCALE;
-        
-        // Crear cuerpo kinematic (móvil)
-        b2Body* body = create_npc_body(spawn_pos.x * SCALE, spawn_pos.y * SCALE, false);
-        
-        // Elegir target inicial aleatorio de los waypoints conectados
+        b2Vec2 spawn_pos = start_wp.position; // metros
+        float speed_mps = NPCConfig::getInstance().getSpeedPxS() / SCALE;
+
+        // Elegir target inicial: la conexión más cercana para suavizar arranque
         int target_wp_idx = start_wp_idx;
         if (!start_wp.connections.empty()) {
-            std::uniform_int_distribution<size_t> conn_dist(0, start_wp.connections.size() - 1);
-            target_wp_idx = start_wp.connections[conn_dist(gen)];
+            float best_dist = std::numeric_limits<float>::max();
+            for (int candidate_idx : start_wp.connections) {
+                if (candidate_idx < 0 || candidate_idx >= static_cast<int>(street_waypoints.size())) continue;
+                b2Vec2 cand_pos = street_waypoints[candidate_idx].position;
+                float d = (cand_pos - spawn_pos).Length();
+                if (d < best_dist) { best_dist = d; target_wp_idx = candidate_idx; }
+            }
         }
-        
+
+        // Calcular ángulo inicial apuntando hacia el primer target (si distinto)
+        float initial_angle = 0.0f;
+        if (target_wp_idx != start_wp_idx) {
+            b2Vec2 target_pos = street_waypoints[target_wp_idx].position;
+            b2Vec2 dir = target_pos - spawn_pos;
+            float len = dir.Length();
+            if (len > 0.0001f) {
+                float movement_angle = std::atan2(dir.y, dir.x);
+                initial_angle = movement_angle - b2_pi/2.0f; // sprite orientado hacia arriba
+            }
+        }
+
+        b2Body* body = create_npc_body(spawn_pos.x, spawn_pos.y, false, initial_angle);
+
         NPCData npc;
         npc.body = body;
         npc.npc_id = next_negative_id--;
@@ -618,10 +790,12 @@ void GameLoop::init_npcs(const std::vector<MapLayout::ParkedCarData> &parked_dat
         npc.target_waypoint = target_wp_idx;
         npc.speed_mps = speed_mps;
         npc.is_parked = false;
-        npc.is_horizontal = false;  // No aplica para móviles
-        
+        npc.is_horizontal = false;
         npcs.push_back(npc);
     }
+
+    std::cout << "[GameLoop][NPC] Moving NPC spawn candidates: " << candidate_waypoints.size()
+              << " chosen: " << moving_npcs_count << std::endl;
     
     std::cout << "[GameLoop][NPC] Spawned " << moving_npcs_count << " moving NPCs." << std::endl;
     std::cout << "[GameLoop][NPC] Total NPCs: " << npcs.size() << std::endl;

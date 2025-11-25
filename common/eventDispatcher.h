@@ -6,6 +6,7 @@
 #include "Event.h"
 #include "constants.h"
 #include "PlayerData.h"
+#include "car_physics_config.h"
 class EventDispatcher
 {
 private:
@@ -21,6 +22,7 @@ private:
     void move_left_released(Event &event);
     void move_right(Event &event);
     void move_right_released(Event &event);
+    void change_car(Event &event, const std::string& car_type);
 
 public:
     EventDispatcher(std::mutex &map_mutex, std::unordered_map<int, PlayerData> &map) : players_map_mutex(map_mutex), players(map)

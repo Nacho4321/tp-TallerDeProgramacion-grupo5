@@ -20,6 +20,7 @@ private:
     void create_game(ClientHandlerMessage &message);
     void join_game(ClientHandlerMessage &message);
     void get_games(ClientHandlerMessage &message);
+    void start_game(ClientHandlerMessage &message);
     void leave_game(ClientHandlerMessage &message);
 
 public:

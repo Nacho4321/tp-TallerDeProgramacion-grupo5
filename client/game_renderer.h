@@ -35,14 +35,16 @@ private:
     void updateCheckpoints(const std::vector<Position>& positions);
     void renderCheckpoints();
     void updateMainCar(const CarPosition& position);
-    void updateOtherCars(const std::map<int, CarPosition>& positions);
+    void updateOtherCars(const std::map<int, std::pair<CarPosition,int>>& positions);
 
 
 public:
     GameRenderer(const char* windowTitle, int windowWidth, int windowHeight, int mapId = 1);
 
-    void render(const CarPosition& mainCarPos, const std::map<int, CarPosition>& otherCarPositions,
+    void render(const CarPosition& mainCarPos, int mainCarTypeId, const std::map<int, std::pair<CarPosition,int>>& otherCarPositions,
                 const std::vector<Position>& next_checkpoints);
+
+    void setMainCarType(int typeId) { if (mainCar) mainCar->setCarType(typeId); }
 };
 
 #endif // GAME_RENDERER_H

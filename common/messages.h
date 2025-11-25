@@ -27,6 +27,8 @@ struct PlayerPositionUpdate
 {
     int player_id;
     Position new_pos;
+    // Tipo de auto actual de este jugador (para que el cliente elija sprite); para NPCs puede ser "npc".
+    std::string car_type;
     // Up to N next checkpoints (in pixels) that the client can draw as guidance.
     // Coordinates are in the same units as Position (pixels).
     std::vector<Position> next_checkpoints;
@@ -67,5 +69,7 @@ struct ClientMessage
     int32_t game_id = -1;
     // Nombre de la partida (para create_game) u otro payload textual
     std::string game_name;
+    // Tipo de auto solicitado en un cambio de auto (solo si cmd comienza con CHANGE_CAR_STR)
+    std::string car_type;
 };
 #endif

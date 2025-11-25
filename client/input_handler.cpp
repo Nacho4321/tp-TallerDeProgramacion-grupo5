@@ -78,6 +78,8 @@ std::string InputHandler::receive()
                 return ""; // No enviar nada aún
             case SDLK_c:
                 return CREATE_GAME_STR;
+            case SDLK_i:
+                return START_GAME_STR;
             case SDLK_LEFT:
                 return MOVE_LEFT_PRESSED_STR;
             case SDLK_RIGHT:
@@ -86,6 +88,18 @@ std::string InputHandler::receive()
                 return MOVE_UP_PRESSED_STR;
             case SDLK_DOWN:
                 return MOVE_DOWN_PRESSED_STR;
+            case SDLK_1:
+                return std::string(CHANGE_CAR_STR) + " lambo";
+            case SDLK_2:
+                return std::string(CHANGE_CAR_STR) + " truck";
+            case SDLK_3:
+                return std::string(CHANGE_CAR_STR) + " sports_car";
+            case SDLK_4:
+                return std::string(CHANGE_CAR_STR) + " rally";
+            case SDLK_5:
+                return std::string(CHANGE_CAR_STR) + " lambo"; // futuro tipo
+            case SDLK_6:
+                return std::string(CHANGE_CAR_STR) + " truck"; // futuro tipo
             default:
                 break;
             }
@@ -102,6 +116,14 @@ std::string InputHandler::receive()
                 return MOVE_UP_RELEASED_STR;
             case SDLK_DOWN:
                 return MOVE_DOWN_RELEASED_STR;
+            case SDLK_1:
+            case SDLK_2:
+            case SDLK_3:
+            case SDLK_4:
+            case SDLK_5:
+            case SDLK_6:
+                // Ignorar keyup para cambio de auto (solo en keydown)
+                break;
             default:
                 break;
             }

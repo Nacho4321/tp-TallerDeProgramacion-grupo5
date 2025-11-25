@@ -20,6 +20,8 @@ const std::uint8_t GAME_JOINED = 0x12;
 // Listar partidas existentes
 const std::uint8_t GET_GAMES = 0x13;
 const std::uint8_t GAMES_LIST = 0x14;
+// Start game (transition from lobby to playing)
+const std::uint8_t START_GAME = 0x15;
 
 // Game opcodes
 const std::uint8_t UPDATE_POSITIONS = 0x20;
@@ -43,6 +45,10 @@ constexpr int MAX_MOVING_NPCS = 20;          // NPCs circulando por waypoints
 constexpr int MAX_PARKED_NPCS = 10;          // NPCs estacionados
 constexpr float NPC_SPEED_PX_S = 120.0f;     // pixels/sec 
 
+// Car change (runtime swap during game)
+constexpr uint8_t CHANGE_CAR = 0x30;         // opcode para cambio de auto
+const std::string CHANGE_CAR_STR = "change_car"; // comando base
+
 const std::string MOVE_UP_PRESSED_STR = "move_up_pressed";              // NOLINT
 const std::string MOVE_UP_RELEASED_STR = "move_up_released";            // NOLINT
 const std::string MOVE_DOWN_PRESSED_STR = "move_down_pressed";          // NOLINT
@@ -56,6 +62,7 @@ const std::string MOVE_RIGHT_RELEASED_STR = "move_right_released";        // NOL
 const std::string CREATE_GAME_STR = "create_game";                        // NOLINT
 const std::string JOIN_GAME_STR = "join_game";                            // NOLINT
 const std::string GET_GAMES_STR = "get_games";                            // NOLINT
+const std::string START_GAME_STR = "start_game";                          // NOLINT
 const std::string LEAVE_GAME_STR = "leave_game";                          // NOLINT
 
 

@@ -2,6 +2,7 @@
 #define PLAYER_DATA_H
 #include "Event.h"
 #include <box2d/b2_body.h>
+#include <chrono>
 struct CarInfo
 {
     std::string car_name;
@@ -19,5 +20,9 @@ struct PlayerData
     int next_checkpoint = 0;
     // Cuántas vueltas completas (listas de checkpoints) el jugador ha completado
     int laps_completed = 0;
+    // Tiempo de inicio de la vuelta actual
+    std::chrono::steady_clock::time_point lap_start_time;
+    // Mejor tiempo de vuelta (en segundos, 0 = no tiene tiempo aún)
+    float best_lap_time = 0.0f;
 };
 #endif

@@ -42,13 +42,16 @@ void GameRenderer::updateMainCar(const CarPosition& position) {
     mainCar->setPosition(position);
 }
 
-void GameRenderer::updateOtherCars(const std::map<int, CarPosition>& positions) {
-    for (const auto& [id, pos] : positions) {
+void GameRenderer::updateOtherCars(const std::map<int, std::pair<CarPosition,int>>& positions) {
+    for (const auto& [id, data] : positions) {
+        const CarPosition& pos = data.first;
+        int typeId = data.second;
         auto it = otherCars.find(id);
         if (it != otherCars.end()) {
             it->second.setPosition(pos);
+            it->second.setCarType(typeId);
         } else {
-            otherCars.emplace(id, Car(pos));
+            otherCars.emplace(id, Car(pos, typeId));
         }
     }
 
@@ -72,9 +75,10 @@ void GameRenderer::updateOtherCars(const std::map<int, CarPosition>& positions) 
     }
 }
 
-void GameRenderer::render(const CarPosition& mainCarPos, const std::map<int, CarPosition>& otherCarPositions,
-            const std::vector<Position>& next_checkpoints) {
+void GameRenderer::render(const CarPosition& mainCarPos, int mainCarTypeId, const std::map<int, std::pair<CarPosition,int>>& otherCarPositions,
+        const std::vector<Position>& next_checkpoints) {
     updateMainCar(mainCarPos);
+    setMainCarType(mainCarTypeId);
     updateOtherCars(otherCarPositions);
     updateCheckpoints(next_checkpoints);
 

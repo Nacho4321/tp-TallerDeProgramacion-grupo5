@@ -11,8 +11,6 @@ ClientMessage Protocol::receiveClientMessage() {
     uint8_t opcode;
     if (skt.recvall(&opcode, sizeof(opcode)) <= 0)
         return {};
-    // DEBUG: log opcode crudo recibido
-    std::cout << "[Protocol(Server)] Raw opcode recibido=" << int(opcode) << std::endl;
 
     switch (opcode) {
         case MOVE_UP_PRESSED:
@@ -50,6 +48,20 @@ ClientMessage Protocol::receiveClientMessage() {
                 auto msg = receiveGetGames();
                 std::cout << "[Protocol(Server)] Decodificado GET_GAMES player_id=" << msg.player_id
                           << " game_id=" << msg.game_id << std::endl;
+                return msg;
+            }
+        case START_GAME:
+            {
+                auto msg = receiveStartGame();
+                std::cout << "[Protocol(Server)] Decodificado START_GAME player_id=" << msg.player_id
+                          << " game_id=" << msg.game_id << std::endl;
+                return msg;
+            }
+        case CHANGE_CAR:
+            {
+                auto msg = receiveChangeCar();
+                std::cout << "[Protocol(Server)] Decodificado CHANGE_CAR player_id=" << msg.player_id
+                          << " game_id=" << msg.game_id << " car_type=" << msg.car_type << std::endl;
                 return msg;
             }
         default:

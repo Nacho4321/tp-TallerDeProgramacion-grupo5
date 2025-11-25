@@ -26,6 +26,18 @@ std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage& msg
         opcode = GET_GAMES;
         std::cout << "[Protocol(Client)] Encoding GET_GAMES" << std::endl;
     }
+    else if (cmd == START_GAME_STR) {
+        opcode = START_GAME;
+        std::cout << "[Protocol(Client)] Encoding START_GAME" << std::endl;
+    }
+    else if (cmd.rfind(CHANGE_CAR_STR, 0) == 0) {
+        opcode = CHANGE_CAR;
+        // Parse car_type after space
+        size_t sp = cmd.find(' ');
+        if (sp != std::string::npos && sp + 1 < cmd.size()) {
+            // store car type into a local copy; we rely on msg.car_type already set by sender fallback below if needed
+        }
+    }
     else opcode = 0; // desconocido
 
     buffer.push_back(opcode);
@@ -37,6 +49,10 @@ std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage& msg
         uint16_t len = static_cast<uint16_t>(msg.game_name.size());
         insertUint16(len);
         for (char c : msg.game_name) buffer.push_back(static_cast<uint8_t>(c));
+    } else if (opcode == CHANGE_CAR) {
+        uint16_t len = static_cast<uint16_t>(msg.car_type.size());
+        insertUint16(len);
+        for (char c : msg.car_type) buffer.push_back(static_cast<uint8_t>(c));
     }
     return buffer;
 }
@@ -68,6 +84,10 @@ std::vector<std::uint8_t> Protocol::encodeServerMessage(ServerMessage& out) {
                 insertFloat(cp.new_Y);
                 insertFloat(cp.angle);
             }
+            // Enviar car_type como string (uint16 length + bytes)
+            uint16_t carLen = static_cast<uint16_t>(pos_update.car_type.size());
+            insertUint16(carLen);
+            for (char c : pos_update.car_type) buffer.push_back(static_cast<uint8_t>(c));
         }
         return buffer;
     } else if (out.opcode == GAME_JOINED) {
