@@ -212,9 +212,7 @@ void GameLoop::update_drive_for_player(PlayerData &player_data)
         body->ApplyForce(desiredForce * forwardNormal, body->GetWorldCenter(), true);
     }
 
-    // aplica un torque cuando se presionan las teclas izquierda/derecha
     // aplica un torque modesto cuando se presionan las teclas izquierda/derecha.
-    const float turnTorque = 2.0f; 
     if (wantLeft)
         body->ApplyTorque(-car_physics.torque, true);
     else if (wantRight)
