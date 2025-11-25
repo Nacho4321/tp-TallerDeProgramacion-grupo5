@@ -11,6 +11,7 @@
 #include <box2d/b2_polygon_shape.h>
 #include <box2d/b2_fixture.h>
 #include "map_layout.h"
+#include "car_physics_config.h"
 #define INITIAL_ID 1
 
 
@@ -43,7 +44,9 @@ private:
 
     CheckpointContactListener contact_listener;
 
-    b2Body *create_player_body(float x, float y, Position &pos);
+    CarPhysicsConfig& physics_config;
+
+    b2Body *create_player_body(float x, float y, Position &pos, const std::string& car_name);
     void broadcast_positions(ServerMessage &msg);
     void update_player_positions(std::vector<PlayerPositionUpdate> &broadcast);
     void update_body_positions();
@@ -51,6 +54,11 @@ private:
     // Helpers usados por el contact listener
     int find_player_by_body(b2Body *body);
     void process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpointFix);
+
+    b2Vec2 get_lateral_velocity(b2Body *body) const;
+    b2Vec2 get_forward_velocity(b2Body *body) const;
+    void update_friction_for_player(class PlayerData &player_data);
+    void update_drive_for_player(class PlayerData &player_data);
 
 public:
     explicit GameLoop(std::shared_ptr<Queue<Event>> events);

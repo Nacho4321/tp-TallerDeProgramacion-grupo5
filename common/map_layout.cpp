@@ -34,7 +34,7 @@ void MapLayout::create_map_layout(const std::string &jsonPath)
                 float baseX = obj["x"].get<float>();
                 float baseY = obj["y"].get<float>();
 
-                std::cout << "Polygon RAW coords:\n";
+                // std::cout << "Polygon RAW coords:\n";
                 std::vector<b2Vec2> verts;
 
                 for (auto &pt : obj["polygon"])
@@ -42,7 +42,7 @@ void MapLayout::create_map_layout(const std::string &jsonPath)
                     float raw_px = baseX + pt["x"].get<float>();
                     float raw_py = baseY + pt["y"].get<float>();
 
-                    std::cout << raw_px << ", " << raw_py << "\n";
+                    // std::cout << raw_px << ", " << raw_py << "\n";
 
                     float px = raw_px + OFFSET_X;
                     float py = raw_py + OFFSET_Y;
@@ -50,7 +50,7 @@ void MapLayout::create_map_layout(const std::string &jsonPath)
                     verts.emplace_back(px / SCALE, py / SCALE);
                 }
 
-                std::cout << "----\n";
+                // std::cout << "----\n";
 
                 create_polygon_layout(verts);
                 continue;
@@ -64,12 +64,12 @@ void MapLayout::create_map_layout(const std::string &jsonPath)
                 float w = obj["width"].get<float>();
                 float h = obj["height"].get<float>();
 
-                std::cout << "Square RAW coords:\n";
-                std::cout << x << ", " << y << "\n";
-                std::cout << x + w << ", " << y << "\n";
-                std::cout << x + w << ", " << y + h << "\n";
-                std::cout << x << ", " << y + h << "\n";
-                std::cout << "----\n";
+                // std::cout << "Square RAW coords:\n";
+                // std::cout << x << ", " << y << "\n";
+                // std::cout << x + w << ", " << y << "\n";
+                // std::cout << x + w << ", " << y + h << "\n";
+                // std::cout << x << ", " << y + h << "\n";
+                // std::cout << "----\n";
 
                 std::vector<b2Vec2> verts;
                 verts.emplace_back((x + OFFSET_X) / SCALE, (y + OFFSET_Y) / SCALE);

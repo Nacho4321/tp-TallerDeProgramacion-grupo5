@@ -2,6 +2,7 @@
 #include "../common/constants.h"
 #include <iostream>
 #include <string>
+#include <cmath>
 #include <SDL2/SDL.h>
 #include <map>
 
@@ -136,11 +137,14 @@ void Client::start()
             }
 
             const PlayerPositionUpdate& main_pos = latest_message.positions[idx_main];
+            // Use server-provided body angle to compute forward direction for rendering.
+            // Server treats local forward as (0,1) rotated by body angle, i.e. forward = rotate((0,1), angle) = (-sin(angle), cos(angle)).
+            double angle = main_pos.new_pos.angle;
             CarPosition mainCarPosition = CarPosition{
                 main_pos.new_pos.new_X,
                 main_pos.new_pos.new_Y,
-                float(main_pos.new_pos.direction_x),
-                float(main_pos.new_pos.direction_y)
+                float(-std::sin(angle)),
+                float(std::cos(angle))
             };
 
             std::map<int, CarPosition> otherCars;
@@ -148,11 +152,13 @@ void Client::start()
             {
                 if (i == idx_main) continue;
                 const PlayerPositionUpdate& pos = latest_message.positions[i];
+                // Use server-provided body angle for other cars as well (forward = rotate((0,1), angle)).
+                double ang = pos.new_pos.angle;
                 otherCars[static_cast<int>(i)] = CarPosition{
                     pos.new_pos.new_X,
                     pos.new_pos.new_Y,
-                    float(pos.new_pos.direction_x),
-                    float(pos.new_pos.direction_y)
+                    float(-std::sin(ang)),
+                    float(std::cos(ang))
                 };
             }
 

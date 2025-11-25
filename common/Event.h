@@ -29,6 +29,7 @@ struct Position
     float new_Y;
     MovementDirectionX direction_x;
     MovementDirectionY direction_y;
+    float angle; // body orientation in radians (added so server can send actual rotation)
 };
 struct PlayerMovedEvent : public Event
 {

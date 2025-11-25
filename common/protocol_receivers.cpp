@@ -62,10 +62,7 @@ ServerMessage Protocol::receivePositionsUpdate() {
         PlayerPositionUpdate update;
         
     // Recibir datos en el buffer temporal
-    // Cada PlayerPositionUpdate serializa 5 uint32/int32-sized values:
-    // player_id (int32), new_X (float->uint32), new_Y (float->uint32),
-    // direction_x (int32), direction_y (int32) => 5 * 4 = 20 bytes
-    readBuffer.resize(5 * sizeof(uint32_t));
+    readBuffer.resize(6 * sizeof(uint32_t));
         if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0)
             return msg;
             
@@ -73,21 +70,22 @@ ServerMessage Protocol::receivePositionsUpdate() {
         update.player_id = exportInt(readBuffer, idx);
         update.new_pos.new_X = exportFloat(readBuffer, idx);
         update.new_pos.new_Y = exportFloat(readBuffer, idx);
-        update.new_pos.direction_x = static_cast<MovementDirectionX>(exportInt(readBuffer, idx));
-        update.new_pos.direction_y = static_cast<MovementDirectionY>(exportInt(readBuffer, idx));
+    update.new_pos.angle = exportFloat(readBuffer, idx);
+    update.new_pos.direction_x = static_cast<MovementDirectionX>(exportInt(readBuffer, idx));
+    update.new_pos.direction_y = static_cast<MovementDirectionY>(exportInt(readBuffer, idx));
         
         // Leer cantidad de checkpoints siguientes enviada por el servidor
         uint8_t next_count = 0;
         if (skt.recvall(&next_count, sizeof(next_count)) <= 0) return msg;
 
         for (uint8_t k = 0; k < next_count; ++k) {
-            // Cada checkpoint: 2 floats (x,y) -> cada float se serializa como uint32
-            readBuffer.resize(2 * sizeof(uint32_t));
+            readBuffer.resize(3 * sizeof(uint32_t));
             if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0) return msg;
             size_t idx_cp = 0;
             Position cp{};
             cp.new_X = exportFloat(readBuffer, idx_cp);
             cp.new_Y = exportFloat(readBuffer, idx_cp);
+            cp.angle = exportFloat(readBuffer, idx_cp);
             cp.direction_x = MovementDirectionX::not_horizontal;
             cp.direction_y = MovementDirectionY::not_vertical;
             update.next_checkpoints.push_back(cp);

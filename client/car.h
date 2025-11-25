@@ -18,6 +18,7 @@ class Car {
 private:
     CarPosition position;
     int spriteIndex;
+    double renderedAngle; 
     int carType;
     bool exploding;
     int explosionFrame;

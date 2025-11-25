@@ -2,11 +2,11 @@
 #include <cmath>
 
 Car::Car(int carTypeId)
-    : position{0, 0, 0, 0}, spriteIndex(0), carType(carTypeId), exploding(false), explosionFrame(0), explosionFrameDelay(0)
+    : position{0, 0, 0, 0}, spriteIndex(0), renderedAngle(0.0), carType(carTypeId), exploding(false), explosionFrame(0), explosionFrameDelay(0)
 {}
 
 Car::Car(const CarPosition& pos, int carTypeId)
-    : position(pos), spriteIndex(0), carType(carTypeId), exploding(false), explosionFrame(0), explosionFrameDelay(0)
+    : position(pos), spriteIndex(0), renderedAngle(0.0), carType(carTypeId), exploding(false), explosionFrame(0), explosionFrameDelay(0)
 {
     updateSpriteIndex();
 }
@@ -35,20 +35,7 @@ void Car::updateSpriteIndex() {
         if (degrees < 0) degrees += 360;
         degrees = fmod(degrees, 360);
 
-        int desiredSprite = (int)round(degrees / 22.5) % NUM_CAR_SPRITES;
-
-        // Smooth transition
-        if (desiredSprite != spriteIndex) {
-            int total = NUM_CAR_SPRITES;
-            int forward  = (desiredSprite - spriteIndex + total) % total;
-            int backward = (spriteIndex - desiredSprite + total) % total;
-
-            if (forward <= backward) {
-                spriteIndex = (spriteIndex + 1) % total;
-            } else {
-                spriteIndex = (spriteIndex - 1 + total) % total;
-            }
-        }
+        spriteIndex = (int)round(degrees / 22.5) % NUM_CAR_SPRITES;
     }
 }
 
