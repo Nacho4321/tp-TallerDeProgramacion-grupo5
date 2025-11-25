@@ -6,7 +6,7 @@ constexpr float CHECKPOINT_WIDTH = 80.0f;
 constexpr float CHECKPOINT_HEIGHT = 20.0f;
 
 CheckpointItem::CheckpointItem(float x, float y, int index, QGraphicsItem* parent)
-    : QGraphicsRectItem(x - CHECKPOINT_WIDTH/2, y - CHECKPOINT_HEIGHT/2, 
+    : QGraphicsRectItem(x - CHECKPOINT_WIDTH / 2, y - CHECKPOINT_HEIGHT / 2,
                         CHECKPOINT_WIDTH, CHECKPOINT_HEIGHT, parent),
       checkpointIndex(index),
       isStart(false),
@@ -71,4 +71,18 @@ void CheckpointItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {
 
 void CheckpointItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
     QGraphicsRectItem::mouseReleaseEvent(event);
+}
+
+int CheckpointItem::getIndex() const {
+    return checkpointIndex;
+}
+
+void CheckpointItem::setIsStart(bool start) {
+    isStart = start;
+    update();
+}
+
+void CheckpointItem::setIsFinish(bool finish) {
+    isFinish = finish;
+    update();
 }

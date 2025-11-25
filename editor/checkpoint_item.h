@@ -17,10 +17,10 @@ public:
     CheckpointItem(float x, float y, int index, QGraphicsItem* parent = nullptr);
 
     void setIndex(int index);
-    int getIndex() const { return checkpointIndex; }
+    int getIndex() const;
 
-    void setIsStart(bool start) { isStart = start; update(); }
-    void setIsFinish(bool finish) { isFinish = finish; update(); }
+    void setIsStart(bool start);
+    void setIsFinish(bool finish);
 
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
 

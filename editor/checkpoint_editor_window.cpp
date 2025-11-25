@@ -32,8 +32,8 @@ CheckpointEditorWindow::CheckpointEditorWindow(QWidget* parent)
       infoLabel(nullptr),
       routeLine(nullptr),
       // por ahora hardcodeado, despues cambiar
-      mapImagePath("data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png"),
-      checkpointsJsonPath("data/cities/base_liberty_city_checkpoints.json"),
+      mapImagePath("../data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png"),
+      checkpointsJsonPath("../data/cities/base_liberty_city_checkpoints.json"),
       isDragging(false),
       lastDragPos() {
     
@@ -303,16 +303,25 @@ void CheckpointEditorWindow::updateCheckpointList() {
     for (size_t i = 0; i < checkpoints.size(); ++i) {
         QString label;
         if (i == 0) {
-            label = QString("START: x=%.1f, y=%.1f").arg(checkpoints[i].x).arg(checkpoints[i].y);
+            label = QString("START (%1): x=%2, y=%3")
+                .arg(i + 1)
+                .arg(checkpoints[i].x, 0, 'f', 1)
+                .arg(checkpoints[i].y, 0, 'f', 1);
         } else if (i == checkpoints.size() - 1) {
-            label = QString("FINISH: x=%.1f, y=%.1f").arg(checkpoints[i].x).arg(checkpoints[i].y);
+            label = QString("FINISH (%1): x=%2, y=%3")
+                .arg(i + 1)
+                .arg(checkpoints[i].x, 0, 'f', 1)
+                .arg(checkpoints[i].y, 0, 'f', 1);
         } else {
-            label = QString("Checkpoint %1: x=%.1f, y=%.1f").arg(i + 1).arg(checkpoints[i].x).arg(checkpoints[i].y);
+            label = QString("Checkpoint %1: x=%2, y=%3")
+                .arg(i + 1)
+                .arg(checkpoints[i].x, 0, 'f', 1)
+                .arg(checkpoints[i].y, 0, 'f', 1);
         }
         checkpointList->addItem(label);
     }
     
-    infoLabel->setText(QString("Total checkpoints: %1").arg(checkpoints.size()));
+    infoLabel->setText(QString("Total de checkpoints: %1").arg(checkpoints.size()));
 }
 
 void CheckpointEditorWindow::updateCheckpointVisuals() {
@@ -529,8 +538,8 @@ void CheckpointEditorWindow::centerOnCheckpoints() {
 void CheckpointEditorWindow::wheelEvent(QWheelEvent* event) {
     if (event->angleDelta().y() > 0) {
         zoomIn();
-    } else {
+    } else if (event->angleDelta().y() < 0) {
         zoomOut();
     }
-    event->accept();
+    event->accept(); 
 }

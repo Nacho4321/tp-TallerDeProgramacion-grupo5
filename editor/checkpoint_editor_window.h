@@ -59,7 +59,7 @@ private:
     void updateCheckpointList();
     void updateCheckpointVisuals();
     void updateRouteLine();
-    void reorderCheckpoint(int fromIndex, int toIndex);
+    
     void zoomIn();
     void zoomOut();
     void resetZoom();
