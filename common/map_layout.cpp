@@ -239,15 +239,15 @@ void MapLayout::create_polygon_layout(const std::vector<b2Vec2> &vertices, uint1
 
     if (category == 0x0001) // Collisions
     {
-        fd.filter.maskBits = 0xFFFF;
+        fd.filter.maskBits = 0xFFFF; // Colisiona con todo
     }
     else if (category == 0x0002) // Collisions_Bridge
     {
-        fd.filter.maskBits = 0xFFFF & ~0x0008;
+        fd.filter.maskBits = 0xFFFF & ~0x0008; // Colisiona con todo EXCEPTO autos (0x0008)
     }
     else if (category == 0x0004) // Collisions_Under
     {
-        fd.filter.maskBits = 0xFFFF;
+        fd.filter.maskBits = 0xFFFF & ~0x0008; // Colisiona con todo EXCEPTO autos (0x0008)
     }
 
     body->CreateFixture(&fd);

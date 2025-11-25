@@ -127,7 +127,17 @@ void EventDispatcher::change_car(Event &event, const std::string& car_type) {
         b2Vec2 center_offset(0.0f, phys.center_offset_y / SCALE_LOCAL);
         b2PolygonShape shape; 
         shape.SetAsBox(halfW, halfH, center_offset, 0.0f);  // último parámetro es ángulo (0 = sin rotación)
-        b2FixtureDef fd; fd.shape = &shape; fd.density = phys.density; fd.friction = phys.friction; fd.restitution = phys.restitution; newBody->CreateFixture(&fd);
+        b2FixtureDef fd; 
+        fd.shape = &shape; 
+        fd.density = phys.density; 
+        fd.friction = phys.friction; 
+        fd.restitution = phys.restitution;
+        // Configurar máscaras de colisión para que NO colisione con puentes ni objetos superiores
+        fd.filter.categoryBits = 0x0008; // Categoria: autos
+        fd.filter.maskBits = 0x0001 |    // Solo colisiona con: Collisions normales
+                     0x0008;     // y otros autos
+                         // NO colisiona con 0x0002 (puentes) ni 0x0004 (collisions_under)
+        newBody->CreateFixture(&fd);
         newBody->SetBullet(true);
         newBody->SetLinearDamping(phys.linear_damping);
         newBody->SetAngularDamping(phys.angular_damping);

@@ -78,6 +78,7 @@ private:
     std::vector<MapLayout::WaypointData> street_waypoints;  // grafo de waypoints para navegación de NPCs
     std::vector<NPCData> npcs;               // lista activa de NPCs
     std::atomic<bool> reset_accumulator{false}; // flag para resetear acumulador de física al iniciar
+    std::atomic<bool> pending_race_reset{false}; // flag para resetear la carrera fuera del callback de Box2D
 
     // Crea el cuerpo de un NPC. Recibe coordenadas ya en metros (el JSON se convierte a metros en MapLayout).
     b2Body* create_npc_body(float x_m, float y_m, bool is_static, float angle_rad = 0.0f);
@@ -101,6 +102,11 @@ private:
     b2Vec2 get_forward_velocity(b2Body *body) const;
     void update_friction_for_player(class PlayerData &player_data);
     void update_drive_for_player(class PlayerData &player_data);
+    
+    // Verifica si todos los jugadores terminaron la carrera (solo marca flag)
+    void check_race_completion();
+    // Ejecuta el reset al lobby cuando es seguro (fuera del callback de Box2D)
+    void perform_race_reset();
 
 public:
     explicit GameLoop(std::shared_ptr<Queue<Event>> events);
