@@ -5,6 +5,7 @@
 #include <chrono>
 #include <random>
 #include <algorithm>
+#include <iomanip>
 #define MAX_PLAYERS 8
 #define INITIAL_X_POS 960
 #define INITIAL_Y_POS 540
@@ -267,10 +268,39 @@ void GameLoop::process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpoin
         int new_next = pd.next_checkpoint + 1;
         if (total > 0 && new_next >= total)
         {
-            // Jugador completó todos los checkpoints en la lista
+            // Jugador completó todos los checkpoints en la lista - VUELTA COMPLETA!
+            auto lap_end_time = std::chrono::steady_clock::now();
+            float lap_time = std::chrono::duration<float>(lap_end_time - pd.lap_start_time).count();
+            
             pd.laps_completed += 1;
             pd.next_checkpoint = 0; // reseteo al primer checkpoint
-            std::cout << "[GameLoop] Player " << playerId << " completed all checkpoints! laps=" << pd.laps_completed << std::endl;
+            
+            // Actualizar mejor tiempo si es el primero o si mejoró
+            bool is_new_best = false;
+            if (pd.best_lap_time == 0.0f || lap_time < pd.best_lap_time) {
+                pd.best_lap_time = lap_time;
+                is_new_best = true;
+            }
+            
+            // Mostrar tiempo en consola
+            int minutes = static_cast<int>(lap_time) / 60;
+            float seconds = lap_time - (minutes * 60);
+            
+            std::cout << "\n========================================" << std::endl;
+            std::cout << "  🏁 PLAYER " << playerId << " COMPLETED LAP " << pd.laps_completed << "!" << std::endl;
+            std::cout << "  ⏱️  Lap Time: " << minutes << ":" << std::fixed << std::setprecision(3) << seconds << std::endl;
+            
+            if (is_new_best) {
+                std::cout << "  ⭐ NEW BEST TIME!" << std::endl;
+            } else {
+                int best_min = static_cast<int>(pd.best_lap_time) / 60;
+                float best_sec = pd.best_lap_time - (best_min * 60);
+                std::cout << "  🏆 Best Time: " << best_min << ":" << std::fixed << std::setprecision(3) << best_sec << std::endl;
+            }
+            std::cout << "========================================\n" << std::endl;
+            
+            // Reiniciar cronómetro para la siguiente vuelta
+            pd.lap_start_time = lap_end_time;
         }
         else
         {
@@ -312,12 +342,18 @@ void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_o
               << " at (" << spawn.x << "," << spawn.y << ")" << std::endl;
     
     Position pos = Position{spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
-    players[id] = PlayerData{
-        create_player_body(spawn.x, spawn.y, pos, "defaults"),
-        MOVE_UP_RELEASED_STR,
-        CarInfo{"defaults", DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP},
-        pos
-    };
+    PlayerData player_data;
+    // Usar 'lambo' como auto por defecto inicial
+    player_data.body = create_player_body(spawn.x, spawn.y, pos, "lambo");
+    player_data.state = MOVE_UP_RELEASED_STR;
+    player_data.car = CarInfo{"lambo", DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP};
+    player_data.position = pos;
+    player_data.next_checkpoint = 0;
+    player_data.laps_completed = 0;
+    player_data.lap_start_time = std::chrono::steady_clock::now();
+    player_data.best_lap_time = 0.0f;
+    
+    players[id] = player_data;
     players_messanger[id] = player_outbox;
     
     std::cout << "[GameLoop] add_player: done. players.size()=" << players.size()
@@ -400,12 +436,21 @@ void GameLoop::start_game()
         game_state = GameState::PLAYING;
         std::cout << "[GameLoop] Game started! Transitioning from LOBBY to PLAYING" << std::endl;
         
+        // Inicializar tiempo de vuelta para todos los jugadores
+        auto race_start_time = std::chrono::steady_clock::now();
+        
         // Reset velocities and positions to ensure clean start
         for (auto &[id, player_data] : players) {
             if (player_data.body) {
                 // Reset velocidades lineales y angulares
                 player_data.body->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
                 player_data.body->SetAngularVelocity(0.0f);
+                
+                // Inicializar tiempo de vuelta
+                player_data.lap_start_time = race_start_time;
+                player_data.best_lap_time = 0.0f;
+                player_data.next_checkpoint = 0;
+                player_data.laps_completed = 0;
                 
                 // Sincronizar la posición del body con la posición almacenada
                 b2Vec2 current_pos = player_data.body->GetPosition();
@@ -415,6 +460,7 @@ void GameLoop::start_game()
                 std::cout << "[GameLoop] start_game: Player " << id 
                           << " at body_pos=(" << current_x_px << "," << current_y_px << ")"
                           << " stored_pos=(" << player_data.position.new_X << "," << player_data.position.new_Y << ")"
+                          << " - lap timer started"
                           << std::endl;
             }
         }

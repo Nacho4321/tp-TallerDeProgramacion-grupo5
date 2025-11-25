@@ -60,14 +60,24 @@ bool CarPhysicsConfig::reload() {
 }
 
 const CarPhysics& CarPhysicsConfig::getCarPhysics(const std::string& car_name) const {
-    auto it = car_configs.find(car_name);
+    // Normalización del nombre: si viene vacío o es el marcador 'defaults', usar 'lambo'
+    std::string effective = car_name;
+    if (effective.empty() || effective == "defaults") {
+        auto it_lambo = car_configs.find("lambo");
+        if (it_lambo != car_configs.end()) {
+            return it_lambo->second; // silencioso
+        }
+        // Si no existe 'lambo' en la configuración, caer a defaults genéricos sin log ruidoso
+        return defaults;
+    }
+
+    auto it = car_configs.find(effective);
     if (it != car_configs.end()) {
         return it->second;
     }
 
-    // Fallback to defaults if car type not found
-    std::cerr << "[CarPhysicsConfig] Car type '" << car_name
-              << "' not found, using defaults" << std::endl;
+    // Solo loggear si el usuario pidió explícitamente algo desconocido distinto de 'defaults'
+    std::cerr << "[CarPhysicsConfig] Unknown car type '" << effective << "', falling back to generic defaults" << std::endl;
     return defaults;
 }
 

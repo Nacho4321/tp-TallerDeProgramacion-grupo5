@@ -11,8 +11,6 @@ ClientMessage Protocol::receiveClientMessage() {
     uint8_t opcode;
     if (skt.recvall(&opcode, sizeof(opcode)) <= 0)
         return {};
-    // DEBUG: log opcode crudo recibido
-    std::cout << "[Protocol(Server)] Raw opcode recibido=" << int(opcode) << std::endl;
 
     switch (opcode) {
         case MOVE_UP_PRESSED:

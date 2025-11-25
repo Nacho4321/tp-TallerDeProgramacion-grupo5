@@ -21,7 +21,6 @@ void MessageAdmin::handle_message()
     // pop puede lanzar ClosedQueue si la cola fue cerrada al apagar el servidor
     message = global_inbox.pop();
     auto it = cli_comm_dispatch.find(message.msg.cmd);
-    std::cout << message.msg.cmd << std::endl;
     if (it != cli_comm_dispatch.end())
     {
         it->second(message);

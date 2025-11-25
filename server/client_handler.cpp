@@ -26,8 +26,6 @@ void ClientReceiver::run()
                 break;
             }
 
-            std::cout << "[Server] Client " << client_id << " sent: "
-                      << client_msg.cmd << std::endl; // DEBUG
             ClientHandlerMessage msg; // para agregarle el id
             msg.client_id = client_id;
             msg.msg = client_msg;
