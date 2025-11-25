@@ -42,7 +42,6 @@ constexpr float DEFAULT_CAR_HP = 100.0f;
 constexpr int MAX_MOVING_NPCS = 20;          // NPCs circulando por waypoints
 constexpr int MAX_PARKED_NPCS = 10;          // NPCs estacionados
 constexpr float NPC_SPEED_PX_S = 120.0f;     // pixels/sec 
-constexpr float NPC_REVERSE_RATIO = 0.3f;    // fraccion de NPCs que van en sentido inverso
 
 const std::string MOVE_UP_PRESSED_STR = "move_up_pressed";              // NOLINT
 const std::string MOVE_UP_RELEASED_STR = "move_up_released";            // NOLINT
