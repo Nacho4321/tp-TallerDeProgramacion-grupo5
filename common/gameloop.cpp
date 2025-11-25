@@ -108,6 +108,10 @@ void GameLoop::run()
                     world.Step(FPS, VELOCITY_ITERS, COLLISION_ITERS);
                     acum -= FPS;
                 }
+                
+                // Ahora es seguro modificar Box2D (world.Step() completó)
+                perform_race_reset();
+                
                 std::vector<PlayerPositionUpdate> broadcast;
                 // Actulza las posiciones de los jugadores según los bodies y reescala para enviar a clientes
                 update_player_positions(broadcast);
@@ -276,6 +280,12 @@ void GameLoop::process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpoin
 
     int checkpointIndex = it->second;
     PlayerData &pd = players[playerId];
+    
+    // Si el jugador ya terminó la carrera, ignorar checkpoints
+    if (pd.race_finished) {
+        return;
+    }
+    
     // Si el checkpoint que acaba de tocar es el siguiente que debe pasar
     if (pd.next_checkpoint == checkpointIndex)
     {
@@ -283,44 +293,26 @@ void GameLoop::process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpoin
         int new_next = pd.next_checkpoint + 1;
         if (total > 0 && new_next >= total)
         {
-            // Jugador completó todos los checkpoints en la lista - VUELTA COMPLETA!
+            // Jugador completó todos los checkpoints - CARRERA COMPLETA!
             auto lap_end_time = std::chrono::steady_clock::now();
             float lap_time = std::chrono::duration<float>(lap_end_time - pd.lap_start_time).count();
 
             pd.laps_completed += 1;
-            pd.next_checkpoint = 0; // reseteo al primer checkpoint
-
-            // Actualizar mejor tiempo si es el primero o si mejoró
-            bool is_new_best = false;
-            if (pd.best_lap_time == 0.0f || lap_time < pd.best_lap_time)
-            {
-                pd.best_lap_time = lap_time;
-                is_new_best = true;
-            }
+            pd.race_finished = true; // Marcar como terminado
 
             // Mostrar tiempo en consola
             int minutes = static_cast<int>(lap_time) / 60;
             float seconds = lap_time - (minutes * 60);
 
             std::cout << "\n========================================" << std::endl;
-            std::cout << "   PLAYER " << playerId << " COMPLETED LAP " << pd.laps_completed << "!" << std::endl;
-            std::cout << "   Lap Time: " << minutes << ":" << std::fixed << std::setprecision(3) << seconds << std::endl;
-
-            if (is_new_best)
-            {
-                std::cout << "   NEW BEST TIME!" << std::endl;
-            }
-            else
-            {
-                int best_min = static_cast<int>(pd.best_lap_time) / 60;
-                float best_sec = pd.best_lap_time - (best_min * 60);
-                std::cout << "   Best Time: " << best_min << ":" << std::fixed << std::setprecision(3) << best_sec << std::endl;
-            }
+            std::cout << "   PLAYER " << playerId << " FINISHED THE RACE!" << std::endl;
+            std::cout << "   Time: " << minutes << ":" << std::fixed << std::setprecision(3) << seconds << std::endl;
+            std::cout << "   Waiting for other players..." << std::endl;
             std::cout << "========================================\n"
                       << std::endl;
-
-            // Reiniciar cronómetro para la siguiente vuelta
-            pd.lap_start_time = lap_end_time;
+            
+            // Verificar si todos terminaron
+            check_race_completion();
         }
         else
         {
@@ -372,7 +364,7 @@ void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_o
     player_data.next_checkpoint = 0;
     player_data.laps_completed = 0;
     player_data.lap_start_time = std::chrono::steady_clock::now();
-    player_data.best_lap_time = 0.0f;
+    player_data.race_finished = false;
 
     players[id] = player_data;
     players_messanger[id] = player_outbox;
@@ -480,11 +472,11 @@ void GameLoop::start_game()
                 player_data.body->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
                 player_data.body->SetAngularVelocity(0.0f);
 
-                // Inicializar tiempo de vuelta
+                // Inicializar tiempo de carrera
                 player_data.lap_start_time = race_start_time;
-                player_data.best_lap_time = 0.0f;
                 player_data.next_checkpoint = 0;
                 player_data.laps_completed = 0;
+                player_data.race_finished = false;
 
                 // Sincronizar la posición del body con la posición almacenada
                 b2Vec2 current_pos = player_data.body->GetPosition();
@@ -494,7 +486,7 @@ void GameLoop::start_game()
                 std::cout << "[GameLoop] start_game: Player " << id
                           << " at body_pos=(" << current_x_px << "," << current_y_px << ")"
                           << " stored_pos=(" << player_data.position.new_X << "," << player_data.position.new_Y << ")"
-                          << " - lap timer started"
+                          << " - race timer started"
                           << std::endl;
             }
         }
@@ -585,9 +577,10 @@ b2Body *GameLoop::create_player_body(float x_px, float y_px, Position &pos, cons
     fd.density = car_physics.density;
     fd.friction = car_physics.friction;
     fd.restitution = car_physics.restitution;
-    fd.filter.categoryBits = 0x0008;
-    fd.filter.maskBits = 0x0001 | // Collisions normales
-                         0x0008;  // autos entre sí
+    fd.filter.categoryBits = 0x0008; // Categoria: autos
+    fd.filter.maskBits = 0x0001 |    // Solo colisiona con: Collisions normales
+                         0x0008;     // y otros autos
+                                     // NO colisiona con 0x0002 (puentes) ni 0x0004 (collisions_under)
     b->CreateFixture(&fd);
 
     b->SetBullet(true); // mejora CCD para objetos rápidos
@@ -618,9 +611,9 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
         update.new_pos = player_data.position;
         update.car_type = player_data.car.car_name;
 
-        // Envio los 3 proximos checkpoints
+        // Solo enviar checkpoints si el jugador no ha terminado la carrera
         const int LOOKAHEAD = 3;
-        if (!checkpoint_centers.empty())
+        if (!player_data.race_finished && !checkpoint_centers.empty())
         {
             int total = static_cast<int>(checkpoint_centers.size());
             for (int k = 0; k < LOOKAHEAD; ++k)
@@ -722,6 +715,10 @@ b2Body *GameLoop::create_npc_body(float x_m, float y_m, bool is_static, float an
     fd.density = 1.0f;
     fd.friction = 0.3f;
     fd.restitution = 0.0f;
+    fd.filter.categoryBits = 0x0008; // Categoria: NPCs (misma que autos)
+    fd.filter.maskBits = 0x0001 |    // Solo colisiona con: Collisions normales
+                         0x0008;     // y otros autos/NPCs
+                                     // NO colisiona con 0x0002 (puentes) ni 0x0004 (collisions_under)
     b->CreateFixture(&fd);
     return b;
 }
@@ -944,4 +941,74 @@ size_t GameLoop::get_player_count() const
 {
     std::lock_guard<std::mutex> lk(const_cast<std::mutex &>(players_map_mutex));
     return players.size();
+}
+
+void GameLoop::check_race_completion()
+{
+    // Asume que ya estamos bajo players_map_mutex lock (llamado desde process_pair)
+    // IMPORTANTE: No podemos modificar Box2D aquí (estamos en callback de contacto)
+    
+    // Contar cuántos jugadores terminaron
+    int finished_count = 0;
+    int total_players = static_cast<int>(players.size());
+    
+    for (const auto &[id, player_data] : players) {
+        if (player_data.race_finished) {
+            finished_count++;
+        }
+    }
+    
+    // Si todos los jugadores terminaron, marcar flag para resetear después
+    if (finished_count == total_players && total_players > 0) {
+        std::cout << "\n======================================" << std::endl;
+        std::cout << "   ALL PLAYERS FINISHED!" << std::endl;
+        std::cout << "   Preparing to return to lobby..." << std::endl;
+        std::cout << "======================================\n" << std::endl;
+        
+        pending_race_reset.store(true);
+    }
+}
+
+void GameLoop::perform_race_reset()
+{
+    // Esta función se llama desde run(), fuera de callbacks de Box2D
+    std::lock_guard<std::mutex> lk(players_map_mutex);
+    
+    if (!pending_race_reset.load()) {
+        return;
+    }
+    
+    std::cout << "[GameLoop] Executing race reset..." << std::endl;
+    
+    // Cambiar estado a LOBBY
+    game_state = GameState::LOBBY;
+    
+    // Resetear cada jugador a su spawn point
+    for (size_t i = 0; i < player_order.size(); ++i) {
+        int player_id = player_order[i];
+        auto player_it = players.find(player_id);
+        if (player_it == players.end()) continue;
+        
+        PlayerData& player_data = player_it->second;
+        const SpawnPoint& spawn = spawn_points[i];
+        
+        // Destruir el body anterior (ahora es seguro, no estamos en callback)
+        if (player_data.body) {
+            world.DestroyBody(player_data.body);
+        }
+        
+        // Crear nuevo body en la posición de spawn
+        Position new_pos{spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
+        player_data.body = create_player_body(spawn.x, spawn.y, new_pos, player_data.car.car_name);
+        player_data.position = new_pos;
+        
+        // Resetear estado de carrera
+        player_data.next_checkpoint = 0;
+        player_data.laps_completed = 0;
+        player_data.race_finished = false;
+        player_data.lap_start_time = std::chrono::steady_clock::now();
+    }
+    
+    pending_race_reset.store(false);
+    std::cout << "[GameLoop] Race reset complete. Returning to LOBBY." << std::endl;
 }

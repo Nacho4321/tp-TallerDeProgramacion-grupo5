@@ -22,7 +22,7 @@ struct PlayerData
     int laps_completed = 0;
     // Tiempo de inicio de la vuelta actual
     std::chrono::steady_clock::time_point lap_start_time;
-    // Mejor tiempo de vuelta (en segundos, 0 = no tiene tiempo aún)
-    float best_lap_time = 0.0f;
+    // Si el jugador ya completó la carrera (esperando a que otros terminen)
+    bool race_finished = false;
 };
 #endif
