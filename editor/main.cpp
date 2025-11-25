@@ -1,6 +1,12 @@
+#include <QApplication>
+#include "checkpoint_editor_window.h"
 
-
-int main()
+int main(int argc, char* argv[])
 {
-    return 0;
+    QApplication app(argc, argv);
+    
+    CheckpointEditorWindow editor;
+    editor.show();
+    
+    return app.exec();
 }

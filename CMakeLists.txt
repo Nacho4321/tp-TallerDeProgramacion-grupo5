@@ -151,6 +151,14 @@ if(TALLER_CLIENT_UI)
     set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_SOURCE_DIR}/client_ui/ui)
 endif()
 
+# Enable Qt for the editor
+if(TALLER_EDITOR)
+    find_package(Qt6 REQUIRED COMPONENTS Widgets)
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTOUIC ON)
+    set(CMAKE_AUTORCC ON)
+endif()
+
 # Program section
 # ---------------
 if(TALLER_CLIENT)
@@ -207,7 +215,7 @@ if(TALLER_EDITOR)
     add_executable(taller_editor)
 
     # Make them depend on taller_common lib
-    add_dependencies(taller_editor taller_common SDL2pp::SDL2pp)
+    add_dependencies(taller_editor taller_common)
 
     # Add source files and enable warnings
     # HEY!! TODO XXX: add more subfolders here
@@ -215,11 +223,8 @@ if(TALLER_EDITOR)
 
     set_project_warnings(taller_editor ${TALLER_MAKE_WARNINGS_AS_ERRORS} FALSE)
 
-    # add libSDL2pp's headers
-    target_include_directories(taller_editor PRIVATE ${libSDL2pp_SOURCE_DIR})
-
-    # Link the taller_common lib target
-    target_link_libraries(taller_editor taller_common SDL2pp::SDL2pp)
+    # Link the taller_common lib target and Qt6
+    target_link_libraries(taller_editor taller_common Qt6::Widgets)
 endif()
 
 
