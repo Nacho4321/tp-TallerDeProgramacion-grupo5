@@ -1,5 +1,6 @@
 #include "gameloop.h"
 #include "constants.h"
+#include "npc_config.h"
 #include <thread>
 #include <chrono>
 #include <random>
@@ -48,6 +49,18 @@ void GameLoop::run()
             checkpoint_fixtures[fix] = static_cast<int>(i);
         }
         std::cout << "[GameLoop] Created " << checkpoint_centers.size() << " checkpoint sensors (from base_liberty_city_checkpoints.json)." << std::endl;
+    }
+
+    // Cargar configuración de NPCs desde YAML (si existe)
+    {
+        auto &npc_cfg = NPCConfig::getInstance();
+        if (!npc_cfg.loadFromFile("config/npc.yaml")) {
+            std::cerr << "[GameLoop][NPC] Using built-in defaults (could not load config/npc.yaml)" << std::endl;
+        } else {
+            std::cout << "[GameLoop][NPC] Loaded NPC config: moving=" << npc_cfg.getMaxMoving()
+                      << " parked=" << npc_cfg.getMaxParked()
+                      << " speed_px_s=" << npc_cfg.getSpeedPxS() << std::endl;
+        }
     }
 
     // Extraigo waypoints de NPCs del archivo JSON dedicado
@@ -532,7 +545,7 @@ void GameLoop::init_npcs(const std::vector<MapLayout::ParkedCarData> &parked_dat
     int next_negative_id = -1; // -1, -2, -3 ...
     
     // 1. Crear NPCs estacionados desde parked_cars.json (limitado a MAX_PARKED_NPCS)
-    int parked_count = std::min(static_cast<int>(parked_data.size()), MAX_PARKED_NPCS);
+    int parked_count = std::min(static_cast<int>(parked_data.size()), NPCConfig::getInstance().getMaxParked());
     
     // Mezclar aleatoriamente las posiciones disponibles
     std::random_device rd_parked;
@@ -575,7 +588,7 @@ void GameLoop::init_npcs(const std::vector<MapLayout::ParkedCarData> &parked_dat
     }
     
     // Spawnnear hasta MAX_MOVING_NPCS NPCs móviles
-    int moving_npcs_count = std::min(MAX_MOVING_NPCS, static_cast<int>(street_waypoints.size()));
+    int moving_npcs_count = std::min(NPCConfig::getInstance().getMaxMoving(), static_cast<int>(street_waypoints.size()));
     
     std::random_device rd; 
     std::mt19937 gen(rd());
@@ -586,7 +599,7 @@ void GameLoop::init_npcs(const std::vector<MapLayout::ParkedCarData> &parked_dat
         const MapLayout::WaypointData& start_wp = street_waypoints[start_wp_idx];
         
         b2Vec2 spawn_pos = start_wp.position;
-        float speed_mps = NPC_SPEED_PX_S / SCALE;
+    float speed_mps = NPCConfig::getInstance().getSpeedPxS() / SCALE;
         
         // Crear cuerpo kinematic (móvil)
         b2Body* body = create_npc_body(spawn_pos.x * SCALE, spawn_pos.y * SCALE, false);
