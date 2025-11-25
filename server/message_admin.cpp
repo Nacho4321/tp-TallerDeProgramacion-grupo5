@@ -65,6 +65,8 @@ void MessageAdmin::init_dispatch()
     { join_game(message); };
     cli_comm_dispatch[GET_GAMES_STR] = [this](ClientHandlerMessage &message)
     { get_games(message); };
+    cli_comm_dispatch[START_GAME_STR] = [this](ClientHandlerMessage &message)
+    { start_game(message); };
     cli_comm_dispatch[LEAVE_GAME_STR] = [this](ClientHandlerMessage &message)
     { leave_game(message); };
 }
@@ -139,6 +141,16 @@ void MessageAdmin::get_games(ClientHandlerMessage &message) {
     auto client_queue = outboxes.get_cliente_queue(message.client_id);
     if (client_queue) {
         try { client_queue->push(resp); } catch (const ClosedQueue&) { outboxes.remove(message.client_id); }
+    }
+}
+
+void MessageAdmin::start_game(ClientHandlerMessage &message) {
+    std::cout << "[MessageAdmin] Cliente " << message.client_id << " solicita iniciar partida (game_id=" << message.msg.game_id << ")" << std::endl;
+    try {
+        games_monitor.start_game(message.msg.game_id);
+        std::cout << "[MessageAdmin] Partida " << message.msg.game_id << " iniciada exitosamente" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[MessageAdmin] Error al iniciar partida: " << e.what() << std::endl;
     }
 }
 

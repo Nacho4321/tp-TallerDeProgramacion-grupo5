@@ -26,6 +26,10 @@ std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage& msg
         opcode = GET_GAMES;
         std::cout << "[Protocol(Client)] Encoding GET_GAMES" << std::endl;
     }
+    else if (cmd == START_GAME_STR) {
+        opcode = START_GAME;
+        std::cout << "[Protocol(Client)] Encoding START_GAME" << std::endl;
+    }
     else if (cmd.rfind(CHANGE_CAR_STR, 0) == 0) {
         opcode = CHANGE_CAR;
         // Parse car_type after space

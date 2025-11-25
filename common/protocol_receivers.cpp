@@ -48,6 +48,8 @@ ClientMessage Protocol::receiveJoinGame() { ClientMessage msg; msg.cmd = JOIN_GA
 
 ClientMessage Protocol::receiveGetGames() { ClientMessage msg; msg.cmd = GET_GAMES_STR; readClientIds(msg); return msg; }
 
+ClientMessage Protocol::receiveStartGame() { ClientMessage msg; msg.cmd = START_GAME_STR; readClientIds(msg); return msg; }
+
 ClientMessage Protocol::receiveChangeCar() {
     ClientMessage msg; msg.cmd = CHANGE_CAR_STR; readClientIds(msg);
     // Leer car_type length + string

@@ -52,6 +52,13 @@ ClientMessage Protocol::receiveClientMessage() {
                           << " game_id=" << msg.game_id << std::endl;
                 return msg;
             }
+        case START_GAME:
+            {
+                auto msg = receiveStartGame();
+                std::cout << "[Protocol(Server)] Decodificado START_GAME player_id=" << msg.player_id
+                          << " game_id=" << msg.game_id << std::endl;
+                return msg;
+            }
         case CHANGE_CAR:
             {
                 auto msg = receiveChangeCar();

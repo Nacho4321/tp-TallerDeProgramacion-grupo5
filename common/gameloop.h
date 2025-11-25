@@ -2,6 +2,7 @@
 #define GAMELOOP_H
 #include "thread.h"
 #include <unordered_map>
+#include <array>
 #include "../common/eventloop.h"
 #include "PlayerData.h"
 #include "../common/messages.h"
@@ -14,6 +15,10 @@
 #include "car_physics_config.h"
 #define INITIAL_ID 1
 
+enum class GameState {
+    LOBBY,      // Esperando que el host inicie el juego
+    PLAYING     // Juego en curso
+};
 
 class GameLoop : public Thread
 {
@@ -35,7 +40,24 @@ private:
     std::shared_ptr<Queue<Event>> event_queue;
     EventLoop event_loop;
     bool started;
+    GameState game_state;  // Estado actual del juego (lobby o jugando)
     int next_id;
+    
+    // Spawn points para hasta 8 jugadores (en píxeles)
+    struct SpawnPoint { float x; float y; float angle; };
+    static constexpr int MAX_PLAYERS = 8;
+    std::array<SpawnPoint, MAX_PLAYERS> spawn_points = {{
+        {890.0f, 700.0f, 0.0f},     // Spawn 0
+        {910.0f, 660.0f, 0.0f},    // Spawn 1
+        {890.0f, 625.0f, 0.0f},    // Spawn 2
+        {910.0f, 585.0f, 0.0f},     // Spawn 3
+        {890.0f, 550.0f, 0.0f},    // Spawn 4
+        {910.0f, 510.0f, 0.0f},    // Spawn 5
+        {890.0f, 475.0f, 0.0f},     // Spawn 6
+        {910.0f, 435.0f, 0.0f}     // Spawn 7
+    }};
+    std::vector<int> player_order;  // IDs de jugadores en orden de llegada
+    
     MapLayout map_layout;
     // Mapa de fixtures de checkpoints a sus índices
     std::unordered_map<b2Fixture *, int> checkpoint_fixtures;

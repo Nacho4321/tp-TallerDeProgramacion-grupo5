@@ -87,6 +87,17 @@ void GameMonitor::remove_player(int client_id)
     // Si no se encontró el jugador en ningún juego, no es fatal.
     std::cout << "[GameMonitor] remove_player: client " << client_id << " not found in any game" << std::endl;
 }
+
+void GameMonitor::start_game(int game_id) {
+    std::lock_guard<std::mutex> lock(games_mutex);
+    auto it = games.find(game_id);
+    if (it == games.end() || !it->second) {
+        throw std::runtime_error("Game not found");
+    }
+    it->second->start_game();
+    std::cout << "[GameMonitor] Game " << game_id << " started (transitioned to PLAYING)" << std::endl;
+}
+
 GameMonitor::~GameMonitor()
 {
     std::lock_guard<std::mutex> lock(games_mutex);

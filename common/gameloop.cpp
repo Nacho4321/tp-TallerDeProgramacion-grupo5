@@ -86,7 +86,9 @@ void GameLoop::run()
             float dt = std::chrono::duration<float>(now - last_tick).count(); // segundos
             last_tick = now;
             acum += dt;
-            if (!players.empty())
+            
+            // Solo procesar física si el juego está en PLAYING
+            if (game_state == GameState::PLAYING && !players.empty())
             {
                 update_npcs();
                 // Actualiza las propiedades de los bodies de los jugadores según su Position
@@ -104,6 +106,16 @@ void GameLoop::run()
                 msg.opcode = UPDATE_POSITIONS;
                 msg.positions = broadcast;
 
+                broadcast_positions(msg);
+            }
+            else if (game_state == GameState::LOBBY && !players.empty())
+            {
+                // En lobby: enviar posiciones sin actualizar física
+                std::vector<PlayerPositionUpdate> broadcast;
+                update_player_positions(broadcast);
+                ServerMessage msg;
+                msg.opcode = UPDATE_POSITIONS;
+                msg.positions = broadcast;
                 broadcast_positions(msg);
             }
         }
@@ -126,7 +138,7 @@ void GameLoop::run()
 
 // Constructor para poder setear el contact listener del world
 GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events)
-    : players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), next_id(INITIAL_ID), map_layout(world), physics_config(CarPhysicsConfig::getInstance())
+    : players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), game_state(GameState::LOBBY), next_id(INITIAL_ID), map_layout(world), physics_config(CarPhysicsConfig::getInstance())
 {
     if (!physics_config.loadFromFile("config/car_physics.yaml")) {
         std::cerr << "[GameLoop] WARNING: Failed to load car physics config, using defaults" << std::endl;
@@ -282,36 +294,32 @@ void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_o
               << " players.size()=" << players.size()
               << " outbox.valid=" << std::boolalpha << static_cast<bool>(player_outbox)
               << std::endl;
-    std::vector<PlayerPositionUpdate> broadcast;
-    if (int(players.size()) == 0) {
-        Position pos = Position{INITIAL_X_POS, INITIAL_Y_POS, not_horizontal, not_vertical, 0.0f};
-        players[id] = PlayerData{create_player_body(INITIAL_X_POS, INITIAL_Y_POS, pos, "defaults"),
-                                 MOVE_UP_RELEASED_STR,
-                                 CarInfo{"defaults", DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP}, pos};
-        players_messanger[id] = player_outbox;
-    }
-    else if (int(players.size()) < MAX_PLAYERS) {
-        std::cout << "[GameLoop] add_player: computing spawn near an existing player" << std::endl;
-        auto anchor_it = players.begin();
-        float dir_x = INITIAL_X_POS;
-        float dir_y = INITIAL_Y_POS;
-        if (anchor_it != players.end())
-        {
-            std::cout << "[GameLoop] add_player: anchor id=" << anchor_it->first << std::endl;
-            dir_x = anchor_it->second.position.new_X + 30.0f * static_cast<float>(players.size());
-            dir_y = anchor_it->second.position.new_Y;
-        }
-        std::cout << "[GameLoop] add_player: spawn at (" << dir_x << "," << dir_y << ")" << std::endl;
-        Position pos = Position{dir_x, dir_y, not_horizontal, not_vertical, 0.0f};
-        players[id] = PlayerData{create_player_body(dir_x, dir_y, pos, "defaults"),
-                    MOVE_UP_RELEASED_STR, CarInfo{"defaults", DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP}, pos};
-        std::cout << "[GameLoop] add_player: player data inserted" << std::endl;
-        players_messanger[id] = player_outbox;
-        std::cout << "[GameLoop] add_player: messenger inserted" << std::endl;
-    }
-    else {
+    
+    // Verificar que no excedamos el máximo de jugadores
+    if (int(players.size()) >= MAX_PLAYERS) {
         std::cout << FULL_LOBBY_MSG << std::endl;
+        return;
     }
+    
+    // Agregar jugador al orden
+    player_order.push_back(id);
+    
+    // Calcular índice de spawn basado en la posición en el orden
+    int spawn_idx = static_cast<int>(player_order.size()) - 1;
+    const SpawnPoint& spawn = spawn_points[spawn_idx];
+    
+    std::cout << "[GameLoop] add_player: assigning spawn point " << spawn_idx 
+              << " at (" << spawn.x << "," << spawn.y << ")" << std::endl;
+    
+    Position pos = Position{spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
+    players[id] = PlayerData{
+        create_player_body(spawn.x, spawn.y, pos, "defaults"),
+        MOVE_UP_RELEASED_STR,
+        CarInfo{"defaults", DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP},
+        pos
+    };
+    players_messanger[id] = player_outbox;
+    
     std::cout << "[GameLoop] add_player: done. players.size()=" << players.size()
               << " messengers.size()=" << players_messanger.size() << std::endl;
 }
@@ -324,6 +332,8 @@ void GameLoop::remove_player(int client_id)
     {
         throw std::runtime_error("player not found");
     }
+    
+    // Destruir el body del jugador
     PlayerData &pd = it->second;
     b2Body *body = pd.body;
     if (body)
@@ -331,7 +341,6 @@ void GameLoop::remove_player(int client_id)
         b2World *w = body->GetWorld();
         if (w)
         {
-            // Destruir el body del mundo de Box2D
             try {
                 w->DestroyBody(body);
             } catch (...) {
@@ -339,15 +348,77 @@ void GameLoop::remove_player(int client_id)
             }
         }
     }
-    // Borrar del mapa de mensajería si existiera
+    
+    // Borrar del mapa de mensajería y players
     players_messanger.erase(client_id);
-    // Borrar del mapa de players
     players.erase(it);
+    
+    // Remover del orden de jugadores
+    auto order_it = std::find(player_order.begin(), player_order.end(), client_id);
+    if (order_it != player_order.end()) {
+        player_order.erase(order_it);
+    }
+    
     std::cout << "[GameLoop] remove_player: client " << client_id << " removed" << std::endl;
+    
+    // Si estamos en LOBBY, reordenar los jugadores restantes
+    if (game_state == GameState::LOBBY && !player_order.empty()) {
+        std::cout << "[GameLoop] remove_player: reordering remaining " << player_order.size() << " players in lobby" << std::endl;
+        
+        // Reposicionar cada jugador restante a su nuevo spawn point
+        for (size_t i = 0; i < player_order.size(); ++i) {
+            int player_id = player_order[i];
+            auto player_it = players.find(player_id);
+            if (player_it == players.end()) continue;
+            
+            PlayerData& player_data = player_it->second;
+            const SpawnPoint& spawn = spawn_points[i];
+            
+            std::cout << "[GameLoop] remove_player: moving player " << player_id 
+                      << " to spawn " << i << " at (" << spawn.x << "," << spawn.y << ")" << std::endl;
+            
+            // Destruir el body anterior
+            if (player_data.body) {
+                b2World* world = player_data.body->GetWorld();
+                if (world) {
+                    world->DestroyBody(player_data.body);
+                }
+            }
+            
+            // Crear nuevo body en la nueva posición
+            Position new_pos{spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
+            player_data.body = create_player_body(spawn.x, spawn.y, new_pos, player_data.car.car_name);
+            player_data.position = new_pos;
+        }
+    }
 }
 
 void GameLoop::start_game()
 {
+    std::lock_guard<std::mutex> lk(players_map_mutex);
+    if (game_state == GameState::LOBBY) {
+        game_state = GameState::PLAYING;
+        std::cout << "[GameLoop] Game started! Transitioning from LOBBY to PLAYING" << std::endl;
+        
+        // Reset velocities and positions to ensure clean start
+        for (auto &[id, player_data] : players) {
+            if (player_data.body) {
+                // Reset velocidades lineales y angulares
+                player_data.body->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
+                player_data.body->SetAngularVelocity(0.0f);
+                
+                // Sincronizar la posición del body con la posición almacenada
+                b2Vec2 current_pos = player_data.body->GetPosition();
+                float current_x_px = current_pos.x * SCALE;
+                float current_y_px = current_pos.y * SCALE;
+                
+                std::cout << "[GameLoop] start_game: Player " << id 
+                          << " at body_pos=(" << current_x_px << "," << current_y_px << ")"
+                          << " stored_pos=(" << player_data.position.new_X << "," << player_data.position.new_Y << ")"
+                          << std::endl;
+            }
+        }
+    }
     started = true;
 }
 

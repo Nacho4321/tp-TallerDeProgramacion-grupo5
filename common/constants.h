@@ -20,6 +20,8 @@ const std::uint8_t GAME_JOINED = 0x12;
 // Listar partidas existentes
 const std::uint8_t GET_GAMES = 0x13;
 const std::uint8_t GAMES_LIST = 0x14;
+// Start game (transition from lobby to playing)
+const std::uint8_t START_GAME = 0x15;
 
 // Game opcodes
 const std::uint8_t UPDATE_POSITIONS = 0x20;
@@ -60,6 +62,7 @@ const std::string MOVE_RIGHT_RELEASED_STR = "move_right_released";        // NOL
 const std::string CREATE_GAME_STR = "create_game";                        // NOLINT
 const std::string JOIN_GAME_STR = "join_game";                            // NOLINT
 const std::string GET_GAMES_STR = "get_games";                            // NOLINT
+const std::string START_GAME_STR = "start_game";                          // NOLINT
 const std::string LEAVE_GAME_STR = "leave_game";                          // NOLINT
 
 

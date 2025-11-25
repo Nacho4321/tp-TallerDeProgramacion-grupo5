@@ -78,6 +78,8 @@ std::string InputHandler::receive()
                 return ""; // No enviar nada aún
             case SDLK_c:
                 return CREATE_GAME_STR;
+            case SDLK_i:
+                return START_GAME_STR;
             case SDLK_LEFT:
                 return MOVE_LEFT_PRESSED_STR;
             case SDLK_RIGHT:
