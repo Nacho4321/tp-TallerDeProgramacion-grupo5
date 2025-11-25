@@ -225,6 +225,9 @@ void CheckpointEditorWindow::saveCheckpointsToJSON() {
         json j;
         j["checkpoints"] = json::array();
         
+        // sincronizo el vector de checkpoints con los items graficos
+        checkpoints.clear();
+        
         for (size_t i = 0; i < checkpointItems.size(); ++i) {
             QRectF rect = checkpointItems[i]->rect();
             QPointF pos = checkpointItems[i]->pos();
@@ -232,14 +235,17 @@ void CheckpointEditorWindow::saveCheckpointsToJSON() {
             float centerX = pos.x() + rect.x() + rect.width() / 2.0f;
             float centerY = pos.y() + rect.y() + rect.height() / 2.0f;
             
-            checkpoints[i].x = centerX;
-            checkpoints[i].y = centerY;
-            checkpoints[i].id = i + 1;
+            CheckpointData cp;
+            cp.id = i + 1;
+            cp.x = centerX;
+            cp.y = centerY;
+            
+            checkpoints.push_back(cp);
             
             json checkpoint;
-            checkpoint["id"] = checkpoints[i].id;
-            checkpoint["x"] = checkpoints[i].x;
-            checkpoint["y"] = checkpoints[i].y;
+            checkpoint["id"] = cp.id;
+            checkpoint["x"] = cp.x;
+            checkpoint["y"] = cp.y;
             
             j["checkpoints"].push_back(checkpoint);
         }
@@ -267,6 +273,13 @@ void CheckpointEditorWindow::addCheckpointItem(float x, float y) {
     
     mapScene->addItem(item);
     checkpointItems.push_back(item);
+    
+    // vector de datos
+    CheckpointData cp;
+    cp.id = index + 1;
+    cp.x = x;
+    cp.y = y;
+    checkpoints.push_back(cp);
     
     updateCheckpointList();
     updateCheckpointVisuals();
@@ -298,6 +311,10 @@ void CheckpointEditorWindow::removeSelectedCheckpoint() {
 }
 
 void CheckpointEditorWindow::updateCheckpointList() {
+    if (!checkpointList || !infoLabel) {
+        return;
+    }
+    
     checkpointList->clear();
     
     for (size_t i = 0; i < checkpoints.size(); ++i) {
@@ -335,6 +352,10 @@ void CheckpointEditorWindow::updateCheckpointVisuals() {
 }
 
 void CheckpointEditorWindow::updateRouteLine() {
+    if (!mapScene) {
+        return; 
+    }
+    
     if (routeLine) {
         mapScene->removeItem(routeLine);
         delete routeLine;
