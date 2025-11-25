@@ -3,17 +3,18 @@
 #include <QMessageBox>
 
 ConnectionMenu::ConnectionMenu(QWidget* parent)
-    : QDialog(parent), ui(new Ui::ConnectionMenu),
-      connection_(std::make_shared<ClientConnection>()) {
+    : QDialog(parent), ui(new Ui::ConnectionMenu), host_(), port_() {
     ui->setupUi(this);
     ui->btnConnect->setDefault(true);
     connect(ui->btnConnect, &QPushButton::clicked, this, &ConnectionMenu::onConnectClicked);
     connect(ui->btnExit,    &QPushButton::clicked, this, &QDialog::reject);
 }
 
+
 ConnectionMenu::~ConnectionMenu() { 
     delete ui; 
 }
+
 
 void ConnectionMenu::onConnectClicked() {
     const QString host = ui->lineHost->text().trimmed();
@@ -31,10 +32,17 @@ void ConnectionMenu::onConnectClicked() {
         return;
     }
 
-    connection_->setConnectionInfo(host.toStdString(), port.toStdString());
+    host_ = host.toStdString();
+    port_ = port.toStdString();
     accept();
 }
 
-std::shared_ptr<ClientConnection> ConnectionMenu::connection() const {
-    return connection_;
+
+std::string ConnectionMenu::getHost() const {
+    return host_;
+}
+
+
+std::string ConnectionMenu::getPort() const {
+    return port_;
 }

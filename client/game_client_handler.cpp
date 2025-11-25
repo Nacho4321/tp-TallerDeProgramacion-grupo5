@@ -1,4 +1,5 @@
 #include "game_client_handler.h"
+#include <iostream>
 
 GameClientHandler::GameClientHandler(Protocol& proto)
         : protocol(proto), incoming(), outgoing(), join_results(),
@@ -38,12 +39,17 @@ void GameClientHandler::set_game_id(int32_t id) {
     sender.set_game_id(id);
 }
 
-bool GameClientHandler::create_game_blocking(uint32_t& out_game_id, uint32_t& out_player_id) {
+bool GameClientHandler::create_game_blocking(uint32_t& out_game_id, uint32_t& out_player_id, const std::string& game_name) {
     // Reset IDs to -1 before solicitar creación
-    std::cout << "[Handler] Preparando CREATE_GAME..." << std::endl;
     sender.set_game_id(-1);
     sender.set_player_id(-1);
-    send("create_game");
+    
+    if (game_name.empty()) {
+        send("create_game");
+    } else {
+        send("create_game " + game_name);
+    }
+    
     std::cout << "[Handler] CREATE_GAME enviado, esperando respuesta..." << std::endl;
     try {
         ServerMessage resp = join_results.pop(); // bloquea hasta respuesta
@@ -89,5 +95,23 @@ bool GameClientHandler::join_game_blocking(int32_t game_id_to_join, uint32_t& ou
         return false;
     } catch (const ClosedQueue&) {
         return false;
+    }
+}
+
+std::vector<ServerMessage::GameSummary> GameClientHandler::get_games_blocking() {
+    std::vector<ServerMessage::GameSummary> games;
+    send(GET_GAMES_STR);
+    
+    try {
+        ServerMessage resp = incoming.pop();
+        
+        if (resp.opcode != GAMES_LIST) {
+            return games;
+        }
+        
+        return resp.games;
+    } catch (const ClosedQueue& e) {
+        std::cerr << "[Handler] ERROR: Cola cerrada antes de recibir GAMES_LIST" << std::endl;
+        return games;
     }
 }

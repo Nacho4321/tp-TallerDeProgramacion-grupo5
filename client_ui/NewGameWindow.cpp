@@ -5,8 +5,8 @@
 #include <QMessageBox>
 #include <iostream>
 
-NewGameWindow::NewGameWindow(std::shared_ptr<ClientConnection> conn, QWidget* parent)
-    : QDialog(parent), ui(new Ui::NewGameWindow), connection_(std::move(conn)) {
+NewGameWindow::NewGameWindow(std::shared_ptr<LobbyClient> lobby, QWidget* parent)
+    : QDialog(parent), ui(new Ui::NewGameWindow), lobbyClient_(std::move(lobby)) {
     ui->setupUi(this);
     ui->gameNameLineEdit->setText("Lobby");
     ui->maxPlayersSpinBox->setMinimum(1);
@@ -22,7 +22,7 @@ NewGameWindow::~NewGameWindow() {
 }
 
 void NewGameWindow::onCreate() {
-    if (!connection_) {
+    if (!lobbyClient_) {
         QMessageBox::warning(this, "New Game", "There is no connection information.");
         return;
     }
@@ -35,8 +35,8 @@ void NewGameWindow::onCreate() {
         return;
     }
 
-    std::string host = connection_->getAddress();
-    std::string port = connection_->getPort();
+    std::string host = lobbyClient_->getAddress();
+    std::string port = lobbyClient_->getPort();
     
     if (host.empty() || port.empty()) {
         QMessageBox::warning(this, "Error", "No server information configured.");
@@ -47,9 +47,12 @@ void NewGameWindow::onCreate() {
 
     std::cout << "Creating new game: " << gameName.toStdString()
               << " with max players: " << maxPlayers << std::endl;
+    
+    // Desconectar lobby antes de lanzar el juego
+    lobbyClient_->disconnect();
               
     // Lanzar el cliente SDL
-    GameLauncher::launchGame(host, port);
+    GameLauncher::launchGame(host, port, gameName.toStdString());
 }
 
 void NewGameWindow::onBack() { 
