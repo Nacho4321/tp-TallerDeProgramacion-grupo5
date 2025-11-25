@@ -11,6 +11,7 @@
 #include <box2d/b2_polygon_shape.h>
 #include <box2d/b2_fixture.h>
 #include "map_layout.h"
+#include "car_physics_config.h"
 #define INITIAL_ID 1
 
 
@@ -43,7 +44,9 @@ private:
 
     CheckpointContactListener contact_listener;
 
-    b2Body *create_player_body(float x, float y, Position &pos);
+    CarPhysicsConfig& physics_config;
+
+    b2Body *create_player_body(float x, float y, Position &pos, const std::string& car_name);
     void broadcast_positions(ServerMessage &msg);
     void update_player_positions(std::vector<PlayerPositionUpdate> &broadcast);
     void update_body_positions();

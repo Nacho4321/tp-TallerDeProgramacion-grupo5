@@ -18,7 +18,7 @@ class Car {
 private:
     CarPosition position;
     int spriteIndex;
-    double renderedAngle; // continuous angle used to compute spriteIndex, in radians
+    double renderedAngle; 
     int carType;
     bool exploding;
     int explosionFrame;

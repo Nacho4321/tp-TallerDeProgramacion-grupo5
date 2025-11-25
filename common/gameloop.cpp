@@ -95,8 +95,12 @@ void GameLoop::run()
 
 // Constructor para poder setear el contact listener del world
 GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events)
-    : players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), next_id(INITIAL_ID), map_layout(world)
+    : players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), next_id(INITIAL_ID), map_layout(world), physics_config(CarPhysicsConfig::getInstance())
 {
+    if (!physics_config.loadFromFile("config/car_physics.yaml")) {
+        std::cerr << "[GameLoop] WARNING: Failed to load car physics config, using defaults" << std::endl;
+    }
+
     // seteo el contact listener owner y lo registro con el world
     contact_listener.set_owner(this);
     world.SetContactListener(&contact_listener);
@@ -138,21 +142,22 @@ void GameLoop::update_friction_for_player(PlayerData &player_data)
     b2Body *body = player_data.body;
     if (!body) return;
 
+    const CarPhysics& car_physics = physics_config.getCarPhysics(player_data.car.car_name);
+
     // impulso lateral para reducir el deslizamiento lateral (limitado para permitir derrapes)
-    const float maxLateralImpulse = 2.5f;
     b2Vec2 impulse = body->GetMass() * -get_lateral_velocity(body);
     float ilen = impulse.Length();
-    if (ilen > maxLateralImpulse)
-        impulse *= maxLateralImpulse / ilen;
+    float maxImpulse = car_physics.max_lateral_impulse * body->GetMass();
+    if (ilen > maxImpulse)
+        impulse *= maxImpulse / ilen;
     body->ApplyLinearImpulse(impulse, body->GetWorldCenter(), true);
 
     // matar un poco la velocidad angular para evitar giros descontrolados
-    body->ApplyAngularImpulse(0.1f * body->GetInertia() * -body->GetAngularVelocity(), true);
+    body->ApplyAngularImpulse(car_physics.angular_friction * body->GetInertia() * -body->GetAngularVelocity(), true);
 
-    // forward drag
     b2Vec2 forwardDir = body->GetWorldVector(b2Vec2(0, 1));
     float currentForwardSpeed = b2Dot(body->GetLinearVelocity(), forwardDir);
-    b2Vec2 dragForce = -2.0f * currentForwardSpeed * forwardDir;
+    b2Vec2 dragForce = body->GetMass() * car_physics.forward_drag_coefficient * currentForwardSpeed * forwardDir;
     body->ApplyForce(dragForce, body->GetWorldCenter(), true);
 }
 
@@ -161,40 +166,39 @@ void GameLoop::update_drive_for_player(PlayerData &player_data)
     b2Body *body = player_data.body;
     if (!body) return;
 
+    const CarPhysics& car_physics = physics_config.getCarPhysics(player_data.car.car_name);
+
     bool wantUp = (player_data.position.direction_y == up);
     bool wantDown = (player_data.position.direction_y == down);
     bool wantLeft = (player_data.position.direction_x == left);
     bool wantRight = (player_data.position.direction_x == right);
 
-    float maxForwardSpeed_m = player_data.car.speed / SCALE;                 // m/s
-    float maxBackwardSpeed_m = -player_data.car.speed * 0.5f / SCALE;        // m/s
-    float maxAccel_m = player_data.car.acceleration / SCALE;                 // m/s^2
+    float maxForwardSpeed_m = car_physics.max_speed / SCALE;                 
+    float maxBackwardSpeed_m = -car_physics.max_speed * car_physics.backward_speed_multiplier / SCALE;        
+    float maxAccel_m = car_physics.max_acceleration / SCALE;                 
 
 
-    float desiredSpeed = 0.0f;
-    if (wantUp) desiredSpeed = maxForwardSpeed_m;
-    else if (wantDown) desiredSpeed = maxBackwardSpeed_m;
-    else return; 
+    if (wantUp || wantDown) {
+        float desiredSpeed = 0.0f;
+        if (wantUp) desiredSpeed = maxForwardSpeed_m;
+        else if (wantDown) desiredSpeed = maxBackwardSpeed_m;
 
+        b2Vec2 forwardNormal = body->GetWorldVector(b2Vec2(0, 1));
+        float currentSpeed = b2Dot(body->GetLinearVelocity(), forwardNormal);
 
-    b2Vec2 forwardNormal = body->GetWorldVector(b2Vec2(0, 1));
-    float currentSpeed = b2Dot(body->GetLinearVelocity(), forwardNormal);
+        float accelCmd = (desiredSpeed - currentSpeed) * car_physics.speed_controller_gain;
+        if (accelCmd > maxAccel_m) accelCmd = maxAccel_m;
+        if (accelCmd < -maxAccel_m) accelCmd = -maxAccel_m;
 
-    const float kp = 4.0f;
-    float accelCmd = (desiredSpeed - currentSpeed) * kp;
-    if (accelCmd > maxAccel_m) accelCmd = maxAccel_m;
-    if (accelCmd < -maxAccel_m) accelCmd = -maxAccel_m;
+        float desiredForce = body->GetMass() * accelCmd;
+        body->ApplyForce(desiredForce * forwardNormal, body->GetWorldCenter(), true);
+    }
 
-    // Force = mass * accel
-    float desiredForce = body->GetMass() * accelCmd;
-    body->ApplyForce(desiredForce * forwardNormal, body->GetWorldCenter(), true);
-
-    // aplica un torque modesto cuando se presionan las teclas izquierda/derecha.
-    const float turnTorque = 2.0f; // reduced from 15.0f
+    // aplica un torque cuando se presionan las teclas izquierda/derecha
     if (wantLeft)
-        body->ApplyTorque(-turnTorque, true);
+        body->ApplyTorque(-car_physics.torque, true);
     else if (wantRight)
-        body->ApplyTorque(turnTorque, true);
+        body->ApplyTorque(car_physics.torque, true);
 }
 
 void GameLoop::process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpointFix)
@@ -248,16 +252,14 @@ void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_o
               << " outbox.valid=" << std::boolalpha << static_cast<bool>(player_outbox)
               << std::endl;
     std::vector<PlayerPositionUpdate> broadcast;
-    if (int(players.size()) == 0)
-    {
+    if (int(players.size()) == 0) {
         Position pos = Position{INITIAL_X_POS, INITIAL_Y_POS, not_horizontal, not_vertical, 0.0f};
-        players[id] = PlayerData{create_player_body(INITIAL_X_POS, INITIAL_Y_POS, pos),
+        players[id] = PlayerData{create_player_body(INITIAL_X_POS, INITIAL_Y_POS, pos, "defaults"),
                                  MOVE_UP_RELEASED_STR,
-                                 CarInfo{"lambo", DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP}, pos};
+                                 CarInfo{"defaults", DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP}, pos};
         players_messanger[id] = player_outbox;
     }
-    else if (int(players.size()) < MAX_PLAYERS)
-    {
+    else if (int(players.size()) < MAX_PLAYERS) {
         std::cout << "[GameLoop] add_player: computing spawn near an existing player" << std::endl;
         auto anchor_it = players.begin();
         float dir_x = INITIAL_X_POS;
@@ -269,15 +271,14 @@ void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_o
             dir_y = anchor_it->second.position.new_Y;
         }
         std::cout << "[GameLoop] add_player: spawn at (" << dir_x << "," << dir_y << ")" << std::endl;
-    Position pos = Position{dir_x, dir_y, not_horizontal, not_vertical, 0.0f};
-    players[id] = PlayerData{create_player_body(dir_x, dir_y, pos),
-                MOVE_UP_RELEASED_STR, CarInfo{"lambo", DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP}, pos};
+        Position pos = Position{dir_x, dir_y, not_horizontal, not_vertical, 0.0f};
+        players[id] = PlayerData{create_player_body(dir_x, dir_y, pos, "defaults"),
+                    MOVE_UP_RELEASED_STR, CarInfo{"defaults", DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP}, pos};
         std::cout << "[GameLoop] add_player: player data inserted" << std::endl;
         players_messanger[id] = player_outbox;
         std::cout << "[GameLoop] add_player: messenger inserted" << std::endl;
     }
-    else
-    {
+    else {
         std::cout << FULL_LOBBY_MSG << std::endl;
     }
     std::cout << "[GameLoop] add_player: done. players.size()=" << players.size()
@@ -364,8 +365,10 @@ void GameLoop::broadcast_positions(ServerMessage &msg)
     }
 }
 
-b2Body *GameLoop::create_player_body(float x_px, float y_px, Position &pos)
+b2Body *GameLoop::create_player_body(float x_px, float y_px, Position &pos, const std::string& car_name)
 {
+    const CarPhysics& car_physics = physics_config.getCarPhysics(car_name);
+
     // Crecion del body
     b2BodyDef bd;
     bd.type = b2_dynamicBody;
@@ -377,25 +380,23 @@ b2Body *GameLoop::create_player_body(float x_px, float y_px, Position &pos)
     // Lo creamos en el world
     b2Body *b = world.CreateBody(&bd);
 
-    // Tamaño del sprite en metros (En teoría segun vi en renderer es 28x22 px)
-    float halfWidth = 22.0f / (2.0f * SCALE);
-    float halfHeight = 28.0f / (2.0f * SCALE);
+    float halfWidth = car_physics.width / (2.0f * SCALE);
+    float halfHeight = car_physics.height / (2.0f * SCALE);
 
     b2PolygonShape shape;
     shape.SetAsBox(halfWidth, halfHeight);
 
-    // Fixture son las propiedades físicas del body
     b2FixtureDef fd;
     fd.shape = &shape;
-    fd.density = 1.0f;
-    fd.friction = 0.3f;
-    fd.restitution = 0.1f;
+    fd.density = car_physics.density;
+    fd.friction = car_physics.friction;
+    fd.restitution = car_physics.restitution;
 
     b->CreateFixture(&fd);
 
-    b->SetBullet(true);        // mejora CCD para objetos rápidos
-    b->SetLinearDamping(1.0f); // frena un poco naturalmente
-    b->SetAngularDamping(1.0f);
+    b->SetBullet(true);  // mejora CCD para objetos rápidos
+    b->SetLinearDamping(car_physics.linear_damping);
+    b->SetAngularDamping(car_physics.angular_damping);
 
     return b;
 }
@@ -434,16 +435,6 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
         }
 
         broadcast.push_back(update);
-
-        int next_idx = player_data.next_checkpoint;
-        if (next_idx >= 0 && next_idx < static_cast<int>(checkpoint_centers.size()))
-        {
-            b2Vec2 c = checkpoint_centers[next_idx];
-            float cx_px = c.x * SCALE;
-            float cy_px = c.y * SCALE;
-            std::cout << "[GameLoop] Player " << id << " pos=(" << player_data.position.new_X << "," << player_data.position.new_Y << ") "
-                      << "angle_rad=" << player_data.position.angle << " next_checkpoint=(" << cx_px << "," << cy_px << ") idx=" << next_idx << std::endl;
-        }
     }
 }
 

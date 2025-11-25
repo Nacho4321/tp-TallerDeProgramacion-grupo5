@@ -44,6 +44,23 @@ set(BOX2D_BUILD_TESTBED OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(box2d)
 
+# Add yaml-cpp for configuration files
+FetchContent_Declare(
+    yaml-cpp
+    GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+    GIT_TAG 0.8.0
+    GIT_SHALLOW TRUE
+    GIT_PROGRESS TRUE
+)
+
+# Disable yaml-cpp tests and tools
+set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "" FORCE)
+set(YAML_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(yaml-cpp)
+
 # Define target: lib common between client, server and editor programs
 # HEY TODO XXX: change the name to something that you like
 add_library(taller_common STATIC)
@@ -64,6 +81,9 @@ target_include_directories(taller_common PUBLIC .)
 
 # Link Box2D to taller_common (así todos lo heredan)
 target_link_libraries(taller_common PUBLIC box2d)
+
+# Link yaml-cpp to taller_common
+target_link_libraries(taller_common PUBLIC yaml-cpp::yaml-cpp)
 
 # HEY!! TODO XXX: you need to install some runtime and dev libraries *before*
 # compiling the client/editor code.
