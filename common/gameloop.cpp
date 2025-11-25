@@ -3,6 +3,7 @@
 #include <thread>
 #include <chrono>
 #include <random>
+#include <algorithm>
 #define MAX_PLAYERS 8
 #define INITIAL_X_POS 960
 #define INITIAL_Y_POS 540
@@ -49,8 +50,20 @@ void GameLoop::run()
         std::cout << "[GameLoop] Created " << checkpoint_centers.size() << " checkpoint sensors (from base_liberty_city_checkpoints.json)." << std::endl;
     }
 
-    // Initialize NPCs after checkpoints are available
-    init_npcs();
+    // Extraigo waypoints de NPCs del archivo JSON dedicado
+    map_layout.extract_npc_waypoints("data/cities/npc_waypoints.json", street_waypoints);
+    
+    if (!street_waypoints.empty())
+    {
+        std::cout << "[GameLoop] Loaded " << street_waypoints.size() << " NPC waypoints (from npc_waypoints.json)." << std::endl;
+    }
+
+    // Extraigo autos estacionados del archivo JSON dedicado
+    std::vector<MapLayout::ParkedCarData> parked_data;
+    map_layout.extract_parked_cars("data/cities/parked_cars.json", parked_data);
+    
+    // Inicializo NPCs en el mundo
+    init_npcs(parked_data);
 
     while (should_keep_running())
     {
@@ -62,11 +75,10 @@ void GameLoop::run()
             acum += dt;
             if (!players.empty())
             {
-                // Update NPC movement even if there are players (NPCs depend only on waypoints)
                 update_npcs();
                 // Actualiza las propiedades de los bodies de los jugadores según su Position
                 update_body_positions();
-                // Step del mundo (Hace el cálculo de las físicas y demás, no es nuestra incumbencia como lo hace)
+                // Step del mundo (Hace el cálculo de las físicas y demás
                 while (acum >= FPS)
                 {
                     world.Step(FPS, VELOCITY_ITERS, COLLISION_ITERS);
@@ -496,10 +508,11 @@ void GameLoop::update_body_positions()
 
 // ---------------- NPC Implementation ----------------
 
-b2Body* GameLoop::create_npc_body(float x_px, float y_px) {
+b2Body* GameLoop::create_npc_body(float x_px, float y_px, bool is_static, float angle_rad) {
     b2BodyDef bd;
-    bd.type = b2_kinematicBody; // kinematic: controlamos la velocidad directamente
+    bd.type = is_static ? b2_staticBody : b2_kinematicBody; // static para estacionados, kinematic para móviles
     bd.position.Set(x_px / SCALE, y_px / SCALE);
+    bd.angle = angle_rad;  // Establecer la orientación inicial
     b2Body* b = world.CreateBody(&bd);
 
     // Igual q el jugador
@@ -511,54 +524,142 @@ b2Body* GameLoop::create_npc_body(float x_px, float y_px) {
     return b;
 }
 
-void GameLoop::init_npcs() {
+void GameLoop::init_npcs(const std::vector<MapLayout::ParkedCarData> &parked_data) {
     std::lock_guard<std::mutex> lk(players_map_mutex); 
-    if (checkpoint_centers.size() < 2) {
-        std::cout << "[GameLoop][NPC] Not enough checkpoints to spawn moving NPCs." << std::endl;
-        return;
-    }
-    int desired_npcs = std::min(MAX_NPCS, static_cast<int>(checkpoint_centers.size()));
-    std::random_device rd; std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> wp_dist(0, static_cast<int>(checkpoint_centers.size()) - 1);
-    std::uniform_real_distribution<float> dir_dist(0.0f, 1.0f);
-
+    
     int next_negative_id = -1; // -1, -2, -3 ...
-    for (int i = 0; i < desired_npcs; ++i) {
-        int start_wp = wp_dist(gen);
-        int step = (dir_dist(gen) < NPC_REVERSE_RATIO) ? -1 : 1;
-        b2Vec2 wp = checkpoint_centers[start_wp];
-        float speed_mps = NPC_SPEED_PX_S / SCALE;
-        b2Body* body = create_npc_body(wp.x * SCALE, wp.y * SCALE);
-        NPCData npc{body, next_negative_id--, start_wp, step, speed_mps};
+    
+    // 1. Crear NPCs estacionados desde parked_cars.json (limitado a MAX_PARKED_NPCS)
+    int parked_count = std::min(static_cast<int>(parked_data.size()), MAX_PARKED_NPCS);
+    
+    // Mezclar aleatoriamente las posiciones disponibles
+    std::random_device rd_parked;
+    std::mt19937 gen_parked(rd_parked());
+    
+    // Si hay más posiciones que el límite, seleccionar aleatoriamente
+    std::vector<size_t> parked_indices;
+    for (size_t i = 0; i < parked_data.size(); ++i) {
+        parked_indices.push_back(i);
+    }
+    std::shuffle(parked_indices.begin(), parked_indices.end(), gen_parked);
+    
+    // Inicializar NPCs estacionados
+    for (int i = 0; i < parked_count; ++i) {
+        const auto& parked = parked_data[parked_indices[i]];
+        
+        // Determinar ángulo según orientación
+        float angle_rad = parked.horizontal ? b2_pi / 2.0f : 0.0f;  // horizontal=true son 90°, horizontal=false es 0°
+        
+        b2Body* body = create_npc_body(parked.position.x * SCALE, parked.position.y * SCALE, true, angle_rad);
+        
+        NPCData npc;
+        npc.body = body;
+        npc.npc_id = next_negative_id--;
+        npc.current_waypoint = -1;  // No tiene waypoint asociado
+        npc.target_waypoint = -1;
+        npc.speed_mps = 0.0f;
+        npc.is_parked = true;
+        npc.is_horizontal = parked.horizontal;
+        
         npcs.push_back(npc);
     }
-    std::cout << "[GameLoop][NPC] Spawned " << npcs.size() << " NPCs." << std::endl;
+    
+    std::cout << "[GameLoop][NPC] Spawned " << parked_count << " parked NPCs (out of " << parked_data.size() << " available positions)." << std::endl;
+    
+    // 2. Crear NPCs móviles desde waypoints
+    if (street_waypoints.size() < 2) {
+        std::cout << "[GameLoop][NPC] Not enough waypoints to spawn moving NPCs." << std::endl;
+        return;
+    }
+    
+    // Spawnnear hasta MAX_MOVING_NPCS NPCs móviles
+    int moving_npcs_count = std::min(MAX_MOVING_NPCS, static_cast<int>(street_waypoints.size()));
+    
+    std::random_device rd; 
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> wp_dist(0, static_cast<int>(street_waypoints.size()) - 1);
+
+    for (int i = 0; i < moving_npcs_count; ++i) {
+        int start_wp_idx = wp_dist(gen);
+        const MapLayout::WaypointData& start_wp = street_waypoints[start_wp_idx];
+        
+        b2Vec2 spawn_pos = start_wp.position;
+        float speed_mps = NPC_SPEED_PX_S / SCALE;
+        
+        // Crear cuerpo kinematic (móvil)
+        b2Body* body = create_npc_body(spawn_pos.x * SCALE, spawn_pos.y * SCALE, false);
+        
+        // Elegir target inicial aleatorio de los waypoints conectados
+        int target_wp_idx = start_wp_idx;
+        if (!start_wp.connections.empty()) {
+            std::uniform_int_distribution<size_t> conn_dist(0, start_wp.connections.size() - 1);
+            target_wp_idx = start_wp.connections[conn_dist(gen)];
+        }
+        
+        NPCData npc;
+        npc.body = body;
+        npc.npc_id = next_negative_id--;
+        npc.current_waypoint = start_wp_idx;
+        npc.target_waypoint = target_wp_idx;
+        npc.speed_mps = speed_mps;
+        npc.is_parked = false;
+        npc.is_horizontal = false;  // No aplica para móviles
+        
+        npcs.push_back(npc);
+    }
+    
+    std::cout << "[GameLoop][NPC] Spawned " << moving_npcs_count << " moving NPCs." << std::endl;
+    std::cout << "[GameLoop][NPC] Total NPCs: " << npcs.size() << std::endl;
 }
 
 void GameLoop::update_npcs() {
     std::lock_guard<std::mutex> lk(players_map_mutex); 
-    if (checkpoint_centers.empty()) return;
+    if (street_waypoints.empty()) return;
+    
     const float arrival_threshold_m = 0.5f; // 0.5 metros para considerar "llegado" al waypoint
-    int total = static_cast<int>(checkpoint_centers.size());
+    std::random_device rd; 
+    std::mt19937 gen(rd());
+    
     for (auto &npc : npcs) {
         b2Body* body = npc.body;
-        if (!body) continue;
-        b2Vec2 target = checkpoint_centers[npc.waypoint_index];
-        b2Vec2 pos = body->GetPosition();
-        b2Vec2 to_target = target - pos;
-        float dist = to_target.Length();
-        if (dist < arrival_threshold_m) {
-            npc.waypoint_index = (npc.waypoint_index + npc.direction_step + total) % total;
-            target = checkpoint_centers[npc.waypoint_index];
-            to_target = target - pos;
-            dist = to_target.Length();
+        if (!body || npc.is_parked) continue; // NPCs estacionados no se mueven
+        
+        // Validar índices
+        if (npc.target_waypoint < 0 || npc.target_waypoint >= static_cast<int>(street_waypoints.size())) {
+            continue;
         }
+        
+        b2Vec2 target_pos = street_waypoints[npc.target_waypoint].position;
+        b2Vec2 pos = body->GetPosition();
+        b2Vec2 to_target = target_pos - pos;
+        float dist = to_target.Length();
+        
+        // Si llegó al waypoint objetivo, elegir siguiente destino aleatorio
+        if (dist < arrival_threshold_m) {
+            npc.current_waypoint = npc.target_waypoint;
+            const MapLayout::WaypointData& current_wp = street_waypoints[npc.current_waypoint];
+            
+            // Elegir aleatoriamente uno de los waypoints conectados
+            if (!current_wp.connections.empty()) {
+                std::uniform_int_distribution<size_t> conn_dist(0, current_wp.connections.size() - 1);
+                npc.target_waypoint = current_wp.connections[conn_dist(gen)];
+                
+                // Recalcular para el nuevo target
+                target_pos = street_waypoints[npc.target_waypoint].position;
+                to_target = target_pos - pos;
+                dist = to_target.Length();
+            }
+        }
+        
+        // Moverse hacia el target
         if (dist > 0.0001f) {
-            b2Vec2 dir = (1.0f / dist) * to_target; // normalizo
+            b2Vec2 dir = (1.0f / dist) * to_target; // normalizar
             b2Vec2 vel = npc.speed_mps * dir;
             body->SetLinearVelocity(vel);
+            
+            // Orientar el auto en la dirección del movimiento
             float movement_angle = std::atan2(vel.y, vel.x); 
-            float body_angle = movement_angle - b2_pi/2.0f; 
+            float body_angle = movement_angle - b2_pi/2.0f; // ajustar por sprite orientado hacia arriba
             body->SetTransform(pos, body_angle);
         } else {
             body->SetLinearVelocity(b2Vec2(0,0));

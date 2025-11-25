@@ -112,6 +112,97 @@ void MapLayout::extract_checkpoints(const std::string &jsonPath, std::vector<b2V
     }
 }
 
+void MapLayout::extract_npc_waypoints(const std::string &jsonPath, std::vector<WaypointData> &out)
+{
+    std::ifstream file(jsonPath);
+    if (!file)
+    {
+        std::cerr << "[MapLayout] Could not open JSON: " << jsonPath << std::endl;
+        return;
+    }
+    json data;
+    file >> data;
+    
+    if (!data.contains("waypoints") || !data["waypoints"].is_array())
+    {
+        std::cerr << "[MapLayout] extract_npc_waypoints: missing or invalid 'waypoints' array in " << jsonPath << std::endl;
+        return;
+    }
+
+    for (auto &obj : data["waypoints"])
+    {
+        if (!obj.contains("x") || !obj.contains("y"))
+            continue;
+        
+        float raw_x = obj["x"].get<float>();
+        float raw_y = obj["y"].get<float>();
+        float px = raw_x + OFFSET_X;
+        float py = raw_y + OFFSET_Y;
+        
+        WaypointData wp;
+        wp.position = b2Vec2(px / SCALE, py / SCALE);
+        
+        // Extract connections array
+        if (obj.contains("connections") && obj["connections"].is_array())
+        {
+            for (auto &conn : obj["connections"])
+            {
+                wp.connections.push_back(conn.get<int>());
+            }
+        }
+        
+        out.push_back(wp);
+    }
+    
+    std::cout << "[MapLayout] Loaded " << out.size() << " NPC waypoints from " << jsonPath << std::endl;
+}
+
+void MapLayout::extract_parked_cars(const std::string &jsonPath, std::vector<ParkedCarData> &out)
+{
+    out.clear();
+    
+    std::ifstream file(jsonPath);
+    if (!file.is_open())
+    {
+        std::cerr << "[MapLayout] ERROR: Cannot open parked cars file: " << jsonPath << std::endl;
+        return;
+    }
+    
+    nlohmann::json j;
+    file >> j;
+    file.close();
+    
+    if (!j.contains("parked_cars") || !j["parked_cars"].is_array())
+    {
+        std::cerr << "[MapLayout] ERROR: JSON missing 'parked_cars' array" << std::endl;
+        return;
+    }
+    
+    for (const auto &item : j["parked_cars"])
+    {
+        if (!item.contains("x") || !item.contains("y") || !item.contains("horizontal"))
+        {
+            std::cerr << "[MapLayout] WARNING: Parked car missing x, y or horizontal field" << std::endl;
+            continue;
+        }
+        
+        ParkedCarData pc;
+        float raw_x = item["x"].get<float>();
+        float raw_y = item["y"].get<float>();
+        
+        // Aplicar offset y escala
+        float x_m = (raw_x + static_cast<float>(OFFSET_X)) / static_cast<float>(SCALE);
+        float y_m = (raw_y + static_cast<float>(OFFSET_Y)) / static_cast<float>(SCALE);
+        
+        pc.position.Set(x_m, y_m);
+        pc.horizontal = item["horizontal"].get<bool>();
+        
+        out.push_back(pc);
+    }
+    
+    std::cout << "[MapLayout] Loaded " << out.size() << " parked cars from " << jsonPath << std::endl;
+}
+
 void MapLayout::create_polygon_layout(const std::vector<b2Vec2> &vertices)
 {
     if (vertices.size() < 3)
