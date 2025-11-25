@@ -13,6 +13,7 @@
 #include <box2d/b2_fixture.h>
 #include "map_layout.h"
 #include "car_physics_config.h"
+#include <atomic>
 #define INITIAL_ID 1
 
 enum class GameState {
@@ -76,8 +77,10 @@ private:
     };
     std::vector<MapLayout::WaypointData> street_waypoints;  // grafo de waypoints para navegación de NPCs
     std::vector<NPCData> npcs;               // lista activa de NPCs
+    std::atomic<bool> reset_accumulator{false}; // flag para resetear acumulador de física al iniciar
 
-    b2Body* create_npc_body(float x_px, float y_px, bool is_static, float angle_rad = 0.0f);
+    // Crea el cuerpo de un NPC. Recibe coordenadas ya en metros (el JSON se convierte a metros en MapLayout).
+    b2Body* create_npc_body(float x_m, float y_m, bool is_static, float angle_rad = 0.0f);
     void init_npcs(const std::vector<MapLayout::ParkedCarData> &parked_data);  // spawn NPCs en el mapa
     void update_npcs();                // avanzar movimiento de NPCs a lo largo de los waypoints
 
