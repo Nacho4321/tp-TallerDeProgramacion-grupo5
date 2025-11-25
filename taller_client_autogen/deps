@@ -3,7 +3,11 @@ taller_client_autogen/timestamp: \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/CMakeFiles/3.31.6/CMakeSystem.cmake \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/CMakeLists.txt \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/camera.h \
+	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/car.cpp \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/car.h \
+	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/carsprites.h \
+	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/checkpoint.cpp \
+	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/checkpoint.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/client.cpp \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/client.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/game_client_handler.cpp \
@@ -12,13 +16,18 @@ taller_client_autogen/timestamp: \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/game_client_receiver.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/game_client_sender.cpp \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/game_client_sender.h \
+	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/game_renderer.cpp \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/game_renderer.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/input_handler.cpp \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/input_handler.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/main.cpp \
+	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/minimap.cpp \
+	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/minimap.h \
+	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/vector2.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client_ui/resources.qrc \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/cmake/CompilerWarnings.cmake \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/Event.h \
+	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/car_physics_config.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/constants.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/eventDispatcher.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/eventloop.h \
@@ -26,6 +35,7 @@ taller_client_autogen/timestamp: \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/liberror.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/map_layout.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/messages.h \
+	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/npc_config.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/protocol.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/queue.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/resolver.h \
