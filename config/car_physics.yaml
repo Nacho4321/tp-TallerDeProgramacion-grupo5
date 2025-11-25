@@ -1,0 +1,140 @@
+# Car Physics Configuration
+# All values are tunable - experiment to find what feels right!
+
+# Default values used as fallback for all car types
+defaults:
+  turning:
+    # TORQUE: How much rotational force is applied when turning left/right
+    # - Higher = sharper, more responsive turns
+    # - Lower = sluggish, wide turns (like a truck)
+    # - Too high = car spins out easily, feels twitchy
+    torque: 10.0  # N·m
+
+    # ANGULAR FRICTION: Reduces unwanted spinning/rotation
+    # - Higher = car stops spinning faster, more stable
+    # - Lower = car continues spinning, feels slippery
+    # - Helps prevent uncontrolled rotation after turning
+    angular_friction: 0.5
+
+    # ANGULAR DAMPING: General resistance to all rotation over time
+    # - Higher = rotation slows down faster (more stable)
+    # - Lower = car keeps rotating longer (drifty feel)
+    # - Works passively even when not turning
+    angular_damping: 10.0  # 1/sec
+
+  movement:
+    # MAX SPEED: Top speed the car can reach
+    # - Higher = faster car (but harder to control)
+    # - Lower = slower car (easier to control)
+    # - Measured in pixels/second
+    max_speed: 500.0  # px/s
+
+    # MAX ACCELERATION: How quickly the car reaches max speed
+    # - Higher = faster acceleration, more responsive
+    # - Lower = slower acceleration, feels heavy/sluggish
+    # - Affects both speeding up and slowing down
+    max_acceleration: 300.0  # px/s²
+
+    # BACKWARD SPEED MULTIPLIER: Reverse speed as fraction of forward speed
+    # - 0.5 = reverse is half as fast as forward
+    # - Higher = faster reverse
+    # - Lower = slower reverse
+    backward_speed_multiplier: 0.5
+
+    # SPEED CONTROLLER GAIN: How aggressively the car tries to reach target speed
+    # - Higher = reaches desired speed faster (more responsive gas/brake)
+    # - Lower = gradual speed changes (feels floaty)
+    # - Too high can cause oscillation/jerky movement
+    speed_controller_gain: 30.0
+
+  friction:
+    # MAX LATERAL IMPULSE: Maximum sideways grip force
+    # - Higher = less drifting, car "sticks" to its direction
+    # - Lower = MORE drifting, slides sideways easily
+    # - Controls how much the car can slide laterally
+    max_lateral_impulse: 8.0  # N·s
+
+    # FORWARD DRAG COEFFICIENT: Air/rolling resistance against forward motion
+    # - More negative = stronger drag, car slows faster when not accelerating
+    # - Less negative = car coasts longer, feels slippery
+    # - Affects how quickly car decelerates when letting go of gas
+    forward_drag_coefficient: -0.5  # N/(m/s)
+
+    # LINEAR DAMPING: General resistance to all linear motion
+    # - Higher = car slows down faster overall
+    # - Lower = car maintains velocity longer (ice-like)
+    # - Applied constantly to all movement
+    linear_damping: 1.0  # 1/sec
+
+  body:
+    # DENSITY: Mass per unit area (affects total weight)
+    # - Higher = heavier car, harder to push around in collisions
+    # - Lower = lighter car, gets pushed easily
+    # - Also affects how much force is needed to accelerate
+    density: 1.0  # kg/m²
+
+    # FRICTION: Surface friction during collisions/contact
+    # - Higher = more grip when scraping walls/other cars
+    # - Lower = slides along surfaces easier
+    # - Only affects collisions, not driving
+    friction: 0.3  # 0.0-1.0
+
+    # RESTITUTION: Bounciness in collisions
+    # - 0.0 = no bounce (absorbs impact)
+    # - 1.0 = perfect bounce (like a rubber ball)
+    # - 0.1-0.3 is typical for cars
+    restitution: 0.3 
+
+    # WIDTH/HEIGHT: Physical collision box size
+    # - Should match sprite dimensions
+    # - Measured in pixels
+    width: 22.0   # pixels
+    height: 28.0  # pixels
+
+# Specific car type configurations
+# Each car inherits from defaults and can override specific values
+cars:
+  # Lamborghini - Balanced sports car, good all-arounder
+  lambo:
+    movement:
+      max_speed: 1000.0           # Fast but controllable
+      max_acceleration: 500.0    # Quick acceleration
+    turning:
+      torque: 15.0               # Responsive turning
+    friction:
+      max_lateral_impulse: 10.0   # Good grip, minimal drift
+
+  # Heavy Truck - Slow, stable, hard to move
+  truck:
+    movement:
+      max_speed: 600.0           # Lower top speed
+      max_acceleration: 250.0    # Sluggish acceleration
+    turning:
+      torque: 14.0                # Wide, slow turns
+    body:
+      density: 5.0               # Heavy = wins collisions
+    friction:
+      max_lateral_impulse: 20.0   # Extra grip from weight
+      linear_damping: 2.0
+
+  # Sports Car - Maximum speed and handling
+  sports_car:
+    movement:
+      max_speed: 2000.0           # Very fast
+      max_acceleration: 550.0    # Rapid acceleration
+    turning:
+      torque: 20.0               # Very sharp turns
+    friction:
+      max_lateral_impulse: 12.0   # Excellent grip
+      forward_drag_coefficient: -0.3  
+
+  # Rally Car - Designed for drifting
+  rally:
+    movement:
+      max_speed: 800.0           # Good speed
+      max_acceleration: 400.0    # Quick off the line
+    turning:
+      torque: 10.0               # Nimble turning
+    friction:
+      max_lateral_impulse: 1.0   # Low grip = fun drifts!
+      linear_damping: 0.1        # Slides around more

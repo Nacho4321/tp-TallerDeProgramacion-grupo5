@@ -12,6 +12,7 @@ target_sources(taller_common
     resolver.cpp
     socket.cpp
     map_layout.cpp
+    car_physics_config.cpp
     PUBLIC
     # .h files
     gameloop.h
@@ -29,4 +30,5 @@ target_sources(taller_common
     thread.h
     messages.h
     map_layout.h
+    car_physics_config.h
     )

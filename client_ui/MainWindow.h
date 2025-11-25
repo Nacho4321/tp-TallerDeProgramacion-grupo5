@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 #include <memory>
-#include "ClientConnection.h"
+#include "LobbyClient.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -22,12 +22,13 @@ public:
 private slots:
     void onNewGameClicked();
     void onJoinGameClicked();
+    void onExitClicked();
 
 private:
     Ui::MainWindow *ui;
-    std::shared_ptr<ClientConnection> connection;
+    std::shared_ptr<LobbyClient> lobbyClient;
     
     void showConnectionDialog();
 };
 
-#endif // MAINWINDOW_H
+#endif

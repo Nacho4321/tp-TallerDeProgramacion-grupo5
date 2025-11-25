@@ -45,6 +45,13 @@ ClientMessage Protocol::receiveClientMessage() {
                           << " game_id=" << msg.game_id << std::endl;
                 return msg;
             }
+        case GET_GAMES:
+            {
+                auto msg = receiveGetGames();
+                std::cout << "[Protocol(Server)] Decodificado GET_GAMES player_id=" << msg.player_id
+                          << " game_id=" << msg.game_id << std::endl;
+                return msg;
+            }
         default:
             return {};  // desconocido
     }
@@ -72,6 +79,10 @@ bool Protocol::receiveAnyServerPacket(ServerMessage& outServer,
     }
     if (outOpcode == GAME_JOINED) {
         outJoined = receiveGameJoinedResponse();
+        return true;
+    }
+    if (outOpcode == GAMES_LIST) {
+        outServer = receiveGamesList();
         return true;
     }
     return false;

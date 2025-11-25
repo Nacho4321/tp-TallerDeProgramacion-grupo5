@@ -20,7 +20,7 @@ private:
 public:
     ~GameMonitor();
     explicit GameMonitor(std::unordered_map<int, std::shared_ptr<Queue<Event>>> &game_qs, std::mutex &game_qs_mutex, OutboxMonitor &outbox) : games(), games_mutex(), games_queues(game_qs), game_queues_mutex(game_qs_mutex), outboxes(outbox), next_id(STARTING_ID) {}
-    int add_game(int &client_id, const std::string& name); // Devuelve el game_id asignado
+    int add_game(int &client_id, const std::string& name = ""); // Devuelve el game_id asignado
     void join_player(int &client_id, int &game_id);
     std::vector<ServerMessage::GameSummary> list_games();
     void remove_player(int client_id);

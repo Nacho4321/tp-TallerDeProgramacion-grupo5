@@ -18,14 +18,36 @@
     <string>
 #centralwidget {
   border-image: url(:/img/mainMenu.jpg) 0 0 0 0 stretch stretch;
-  background-color: #121418; /* fallback */
+  background-color: #121418;
 }
+
+#optionsFrame {
+  background: rgba(25, 28, 33, 0.75);
+  border: 1px solid rgba(58, 63, 74, 0.5);
+  border-radius: 10px;
+  padding: 10px;
+}
+
 QPushButton {
-  background: #2C2F36; border: 1px solid #3A3F47;
-  border-radius: 8px; padding: 10px 14px; font-weight: 600; color: #E8E8E8;
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #2d3139, stop:1 #24272e);
+  border: 2px solid #3a3f47;
+  border-radius: 8px;
+  padding: 0.7em 1.2em;
+  font-weight: 600;
+  color: #e8eaed;
+  font-size: 11pt;
 }
-QPushButton:hover { background: #343842; }
-QPushButton:pressed { background: #262A30; }
+
+QPushButton:hover {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #3a3f4a, stop:1 #2d3139);
+  border: 2px solid #4a5060;
+  color: #ffffff;
+}
+
+QPushButton:pressed {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #1d2027, stop:1 #23262e);
+  border: 2px solid #2a2f38;
+}
     </string>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayoutRoot">
@@ -46,18 +68,30 @@ QPushButton:pressed { background: #262A30; }
     </property>
     <item alignment="Qt::AlignLeft|Qt::AlignBottom">
      <widget class="QFrame" name="optionsFrame">
+      <property name="minimumSize">
+       <size>
+        <width>200</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="maximumSize">
        <size>
-        <width>220</width>
+        <width>350</width>
         <height>16777215</height>
        </size>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
       </property>
       <property name="frameShape">
        <enum>QFrame::NoFrame</enum>
       </property>
       <layout class="QVBoxLayout" name="verticalLayoutLeft">
        <property name="spacing">
-        <number>10</number>
+        <number>12</number>
        </property>
        <property name="leftMargin">
         <number>0</number>
@@ -73,6 +107,28 @@ QPushButton:pressed { background: #262A30; }
        </property>
        <item>
         <widget class="QPushButton" name="btnNewGame">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>1</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>45</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>11</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="cursor">
+          <cursorShape>PointingHandCursor</cursorShape>
+         </property>
          <property name="text">
           <string>New Game</string>
          </property>
@@ -80,6 +136,28 @@ QPushButton:pressed { background: #262A30; }
        </item>
        <item>
         <widget class="QPushButton" name="btnJoinGame">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>1</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>45</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>11</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="cursor">
+          <cursorShape>PointingHandCursor</cursorShape>
+         </property>
          <property name="text">
           <string>Join Game</string>
          </property>
@@ -87,6 +165,28 @@ QPushButton:pressed { background: #262A30; }
        </item>
        <item>
         <widget class="QPushButton" name="btnExit">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>1</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>45</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>11</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="cursor">
+          <cursorShape>PointingHandCursor</cursorShape>
+         </property>
          <property name="text">
           <string>Exit</string>
          </property>
