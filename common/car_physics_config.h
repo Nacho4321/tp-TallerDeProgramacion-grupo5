@@ -25,6 +25,7 @@ struct CarPhysics {
     float restitution;
     float width;
     float height;
+    float center_offset_y;  // Offset vertical del centro de colisión en píxeles
 };
 
 class CarPhysicsConfig {

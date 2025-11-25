@@ -76,6 +76,7 @@ private:
     ClientMessage receiveCreateGame();
     ClientMessage receiveJoinGame();
     ClientMessage receiveGetGames();
+    ClientMessage receiveChangeCar();
 
     ServerMessage receivePositionsUpdate();
     ServerMessage receiveGamesList();

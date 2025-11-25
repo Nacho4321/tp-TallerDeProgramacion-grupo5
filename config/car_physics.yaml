@@ -90,6 +90,13 @@ defaults:
     # - Measured in pixels
     width: 22.0   # pixels
     height: 28.0  # pixels
+    
+    # CENTER_OFFSET_Y: Shift collision box forward/backward relative to sprite center
+    # - Positive = shift collision forward (longer front)
+    # - Negative = shift collision backward (longer rear)
+    # - Zero = centered (default)
+    # - Measured in pixels
+    center_offset_y: 0.0  # pixels
 
 # Specific car type configurations
 # Each car inherits from defaults and can override specific values
@@ -103,6 +110,8 @@ cars:
       torque: 15.0               # Responsive turning
     friction:
       max_lateral_impulse: 10.0   # Good grip, minimal drift
+    body:
+      center_offset_y: 3.0       # Capó deportivo largo
 
   # Heavy Truck - Slow, stable, hard to move
   truck:
@@ -113,6 +122,9 @@ cars:
       torque: 14.0                # Wide, slow turns
     body:
       density: 5.0               # Heavy = wins collisions
+      center_offset_y: 5.0       # Cabina adelante, carga atrás
+      width: 22.0
+      height: 40.0
     friction:
       max_lateral_impulse: 20.0   # Extra grip from weight
       linear_damping: 2.0
@@ -126,7 +138,10 @@ cars:
       torque: 20.0               # Very sharp turns
     friction:
       max_lateral_impulse: 12.0   # Excellent grip
-      forward_drag_coefficient: -0.3  
+      forward_drag_coefficient: -0.3
+    body:
+      center_offset_y: -1.5       # Diseño deportivo aerodinámico
+      height: 40.0
 
   # Rally Car - Designed for drifting
   rally:
@@ -138,3 +153,6 @@ cars:
     friction:
       max_lateral_impulse: 1.0   # Low grip = fun drifts!
       linear_damping: 0.1        # Slides around more
+    body:
+      center_offset_y: -2.5       # Compacto y balanceado
+      height: 40.0

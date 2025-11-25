@@ -414,8 +414,11 @@ b2Body *GameLoop::create_player_body(float x_px, float y_px, Position &pos, cons
     float halfWidth = car_physics.width / (2.0f * SCALE);
     float halfHeight = car_physics.height / (2.0f * SCALE);
 
+    // Offset del centro de colisión (Y+ = hacia adelante del auto)
+    b2Vec2 center_offset(0.0f, car_physics.center_offset_y / SCALE);
+    
     b2PolygonShape shape;
-    shape.SetAsBox(halfWidth, halfHeight);
+    shape.SetAsBox(halfWidth, halfHeight, center_offset, 0.0f);
 
     b2FixtureDef fd;
     fd.shape = &shape;
@@ -449,6 +452,7 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
         PlayerPositionUpdate update;
         update.player_id = id;
         update.new_pos = player_data.position;
+    update.car_type = player_data.car.car_name;
 
         // Envio los 3 proximos checkpoints
         const int LOOKAHEAD = 3;
@@ -503,6 +507,7 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
         PlayerPositionUpdate update;
         update.player_id = npc.npc_id; // id negativo para NPC
         update.new_pos = pos;
+        update.car_type = "npc";
         broadcast.push_back(update);
     }
 }

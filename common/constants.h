@@ -43,6 +43,10 @@ constexpr int MAX_MOVING_NPCS = 20;          // NPCs circulando por waypoints
 constexpr int MAX_PARKED_NPCS = 10;          // NPCs estacionados
 constexpr float NPC_SPEED_PX_S = 120.0f;     // pixels/sec 
 
+// Car change (runtime swap during game)
+constexpr uint8_t CHANGE_CAR = 0x30;         // opcode para cambio de auto
+const std::string CHANGE_CAR_STR = "change_car"; // comando base
+
 const std::string MOVE_UP_PRESSED_STR = "move_up_pressed";              // NOLINT
 const std::string MOVE_UP_RELEASED_STR = "move_up_released";            // NOLINT
 const std::string MOVE_DOWN_PRESSED_STR = "move_down_pressed";          // NOLINT

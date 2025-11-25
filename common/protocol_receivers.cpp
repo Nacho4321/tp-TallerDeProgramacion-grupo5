@@ -48,6 +48,23 @@ ClientMessage Protocol::receiveJoinGame() { ClientMessage msg; msg.cmd = JOIN_GA
 
 ClientMessage Protocol::receiveGetGames() { ClientMessage msg; msg.cmd = GET_GAMES_STR; readClientIds(msg); return msg; }
 
+ClientMessage Protocol::receiveChangeCar() {
+    ClientMessage msg; msg.cmd = CHANGE_CAR_STR; readClientIds(msg);
+    // Leer car_type length + string
+    readBuffer.resize(sizeof(uint16_t));
+    if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0) return msg;
+    size_t idx = 0; uint16_t len = exportUint16(readBuffer, idx);
+    if (len > 0) {
+        std::vector<uint8_t> typeBuf(len);
+        if (skt.recvall(typeBuf.data(), typeBuf.size()) > 0) {
+            msg.car_type.assign(reinterpret_cast<char*>(typeBuf.data()), typeBuf.size());
+            // Reconstruir cmd completo para que llegue como evento legible: "change_car <tipo>"
+            msg.cmd = std::string(CHANGE_CAR_STR) + " " + msg.car_type;
+        }
+    }
+    return msg;
+}
+
 ServerMessage Protocol::receivePositionsUpdate() {
     ServerMessage msg;
     msg.opcode = UPDATE_POSITIONS;
@@ -74,7 +91,7 @@ ServerMessage Protocol::receivePositionsUpdate() {
     update.new_pos.direction_x = static_cast<MovementDirectionX>(exportInt(readBuffer, idx));
     update.new_pos.direction_y = static_cast<MovementDirectionY>(exportInt(readBuffer, idx));
         
-        // Leer cantidad de checkpoints siguientes enviada por el servidor
+    // Leer cantidad de checkpoints siguientes enviada por el servidor
         uint8_t next_count = 0;
         if (skt.recvall(&next_count, sizeof(next_count)) <= 0) return msg;
 
@@ -91,6 +108,15 @@ ServerMessage Protocol::receivePositionsUpdate() {
             update.next_checkpoints.push_back(cp);
         }
 
+        // Leer car_type (uint16 length + bytes)
+        readBuffer.resize(sizeof(uint16_t));
+        if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0) return msg;
+        size_t idx_len = 0; uint16_t carLen = exportUint16(readBuffer, idx_len);
+        if (carLen > 0) {
+            std::vector<uint8_t> carBuf(carLen);
+            if (skt.recvall(carBuf.data(), carBuf.size()) <= 0) return msg;
+            update.car_type.assign(reinterpret_cast<char*>(carBuf.data()), carBuf.size());
+        }
         msg.positions.push_back(update);
     }
     

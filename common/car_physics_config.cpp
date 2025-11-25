@@ -3,7 +3,10 @@
 #include <iostream>
 #include <vector>
 
-CarPhysicsConfig::CarPhysicsConfig() : config_path("config/car_physics.yaml") {}
+CarPhysicsConfig::CarPhysicsConfig() : config_path("config/car_physics.yaml") {
+    // Inicializar defaults con valores seguros
+    defaults.center_offset_y = 0.0f;
+}
 
 CarPhysicsConfig& CarPhysicsConfig::getInstance() {
     static CarPhysicsConfig instance;
@@ -121,5 +124,6 @@ void CarPhysicsConfig::loadCarPhysicsFromYAML(CarPhysics& physics, const void* n
         if (body["restitution"]) physics.restitution = body["restitution"].as<float>();
         if (body["width"]) physics.width = body["width"].as<float>();
         if (body["height"]) physics.height = body["height"].as<float>();
+        if (body["center_offset_y"]) physics.center_offset_y = body["center_offset_y"].as<float>();
     }
 }

@@ -48,6 +48,15 @@ void GameClientSender::run() {
                     client_msg.game_name = ""; // nombre vacío => server asigna por defecto
                 }
             }
+            // Parse change_car <tipo>
+            if (client_msg.cmd.rfind(CHANGE_CAR_STR, 0) == 0) {
+                size_t sp = client_msg.cmd.find(' ');
+                if (sp != std::string::npos && sp + 1 < client_msg.cmd.size()) {
+                    client_msg.car_type = client_msg.cmd.substr(sp + 1);
+                    // Keep full cmd (with tipo) for server event visibility, but protocol mapping uses base + payload
+                    // Optionally normalize to base command only for opcode mapping logic if needed
+                }
+            }
             if (client_msg.cmd == GET_GAMES_STR) {
                 // no payload extra
             }

@@ -146,25 +146,35 @@ void Client::start()
                 float(-std::sin(angle)),
                 float(std::cos(angle))
             };
+            auto mapCarType = [](const std::string& t)->int {
+                if (t == "lambo") return 0;
+                if (t == "truck") return 1;
+                if (t == "sports_car") return 2;
+                if (t == "rally") return 3;
+                return 0; // default
+            };
+            int mainTypeId = mapCarType(main_pos.car_type);
 
-            std::map<int, CarPosition> otherCars;
+            std::map<int, std::pair<CarPosition,int>> otherCars;
             for (size_t i = 0; i < latest_message.positions.size(); ++i)
             {
                 if (i == idx_main) continue;
                 const PlayerPositionUpdate& pos = latest_message.positions[i];
                 // Use server-provided body angle for other cars as well (forward = rotate((0,1), angle)).
                 double ang = pos.new_pos.angle;
-                otherCars[static_cast<int>(i)] = CarPosition{
+                CarPosition cp{
                     pos.new_pos.new_X,
                     pos.new_pos.new_Y,
                     float(-std::sin(ang)),
                     float(std::cos(ang))
                 };
+                int typeId = mapCarType(pos.car_type);
+                otherCars[pos.player_id] = std::make_pair(cp, typeId);
             }
 
             const std::vector<Position> &next_cps = main_pos.next_checkpoints;
 
-            game_renderer.render(mainCarPosition, otherCars, next_cps);
+            game_renderer.render(mainCarPosition, mainTypeId, otherCars, next_cps);
         }
 
         SDL_Delay(16);
