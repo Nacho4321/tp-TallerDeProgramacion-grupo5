@@ -8,14 +8,17 @@
 
 #include "client_handler_msg.h"
 
+// Forward declaration
+class MessageHandler;
+
 class ClientReceiver : public Thread
 {
     Protocol &protocol;
     int client_id;
-    Queue<ClientHandlerMessage> &global_inbox;
+    MessageHandler &message_handler;
 
 public:
-    ClientReceiver(Protocol &proto, int id, Queue<ClientHandlerMessage> &global_inbox);
+    ClientReceiver(Protocol &proto, int id, MessageHandler &msg_admin);
 
     void run() override;
 };

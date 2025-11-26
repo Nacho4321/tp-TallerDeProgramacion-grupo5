@@ -9,7 +9,7 @@ target_sources(taller_server
     main.cpp
     server.cpp
     game_monitor.cpp
-    message_admin.cpp
+    message_handler.cpp
     PUBLIC
     # .h files
     acceptor.h
@@ -19,5 +19,5 @@ target_sources(taller_server
     outbox_monitor.h
     server.h
     game_monitor.h
-    message_admin.h
+    message_handler.h
     )

@@ -1,8 +1,11 @@
 #include "acceptor.h"
+#include "message_handler.h"
 
-Acceptor::Acceptor(Socket &acc, Queue<ClientHandlerMessage> &global_inbox, OutboxMonitor &outboxes) : acceptor(std::move(acc)), global_inbox(global_inbox), outbox_monitor(outboxes) {}
+Acceptor::Acceptor(Socket &acc, MessageHandler &msg_admin, OutboxMonitor &outboxes) 
+    : acceptor(std::move(acc)), message_handler(msg_admin), outbox_monitor(outboxes) {}
 
-Acceptor::Acceptor(const char *port, Queue<ClientHandlerMessage> &global_inbox, OutboxMonitor &outboxes) : acceptor(Socket(port)), global_inbox(global_inbox), outbox_monitor(outboxes) {}
+Acceptor::Acceptor(const char *port, MessageHandler &msg_admin, OutboxMonitor &outboxes) 
+    : acceptor(Socket(port)), message_handler(msg_admin), outbox_monitor(outboxes) {}
 
 void Acceptor::run()
 {
@@ -17,7 +20,7 @@ void Acceptor::run()
 
             int id = next_id++;
             std::cout << "[Acceptor] Cliente conectado con ID: " << id << std::endl;
-            auto c = std::make_unique<ClientHandler>(std::move(peer), id, global_inbox);
+            auto c = std::make_unique<ClientHandler>(std::move(peer), id, message_handler);
 
             outbox_monitor.add(c->get_id(), c->get_outbox());
             c->start();

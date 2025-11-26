@@ -1,12 +1,14 @@
 #include "client_handler.h"
+#include "message_handler.h"
 
 // ---------------- ClientHandler ----------------
-ClientHandler::ClientHandler(Socket &&p, int id, Queue<ClientHandlerMessage> &global_inbox) : protocol(std::move(p)),
-                                                                                       outbox(std::make_shared<Queue<ServerMessage>>(100)), // bounded queue tamaño 100
-                                                                                       global_inbox(global_inbox),
-                                                                                       sender(protocol, *outbox),
-                                                                                       client_id(id),
-                                                                                       receiver(protocol, id, global_inbox)
+ClientHandler::ClientHandler(Socket &&p, int id, MessageHandler &msg_admin) 
+    : protocol(std::move(p)),
+      outbox(std::make_shared<Queue<ServerMessage>>(100)), // bounded queue tamaño 100
+      message_handler(msg_admin),
+      sender(protocol, *outbox),
+      client_id(id),
+      receiver(protocol, id, msg_admin)
 {
 }
 

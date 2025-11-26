@@ -14,17 +14,20 @@
 #include "client_handler_msg.h"
 #include "outbox_monitor.h"
 
+// Forward declaration para evitar dependencia circular
+class MessageHandler;
+
 class Acceptor : public Thread
 {
     Socket acceptor;
-    Queue<ClientHandlerMessage> &global_inbox;
+    MessageHandler &message_handler;
     std::vector<std::unique_ptr<ClientHandler>> clients;
     OutboxMonitor &outbox_monitor;
     int next_id = 0;
 
 public:
-    explicit Acceptor(const char *port, Queue<ClientHandlerMessage> &global_inbox, OutboxMonitor &outboxes);
-    explicit Acceptor(Socket &acc, Queue<ClientHandlerMessage> &global_inbox, OutboxMonitor &outboxes);
+    explicit Acceptor(const char *port, MessageHandler &msg_admin, OutboxMonitor &outboxes);
+    explicit Acceptor(Socket &acc, MessageHandler &msg_admin, OutboxMonitor &outboxes);
 
     void run() override;
     void stop() override;

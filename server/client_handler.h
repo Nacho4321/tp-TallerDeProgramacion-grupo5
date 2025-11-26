@@ -15,18 +15,21 @@
 #include "client_receiver.h"
 #include "client_sender.h"
 
+// Forward declaration
+class MessageHandler;
+
 // ---------------- ClientHandler ----------------
 class ClientHandler
 {
     Protocol protocol;
     std::shared_ptr<Queue<ServerMessage>> outbox;
-    Queue<ClientHandlerMessage> &global_inbox;
+    MessageHandler &message_handler;
     ClientSender sender;
     int client_id;
     ClientReceiver receiver;
 
 public:
-    ClientHandler(Socket &&p, int id, Queue<ClientHandlerMessage> &global_inbox);
+    ClientHandler(Socket &&p, int id, MessageHandler &msg_handler);
 
     void start();
     void stop();

@@ -8,10 +8,32 @@
 
 #include "../server/acceptor.h"
 #include "../server/outbox_monitor.h"
+#include "../server/message_handler.h"
+#include "../server/game_monitor.h"
 #include "../common/messages.h"
 #include "../common/queue.h"
 
 static const char *TEST_PORT = "50100"; // usa un puerto distinto de los tests anteriores
+
+// MessageHandler mock para tests que pushea a una cola
+class TestMessageHandler : public MessageHandler {
+private:
+    Queue<ClientHandlerMessage> *test_inbox;
+public:
+    TestMessageHandler(std::unordered_map<int, std::shared_ptr<Queue<Event>>> &game_qs,
+                    std::mutex &game_qs_mutex,
+                    GameMonitor &games_mon,
+                    OutboxMonitor &outbox,
+                    Queue<ClientHandlerMessage> *inbox_for_test = nullptr)
+        : MessageHandler(game_qs, game_qs_mutex, games_mon, outbox), test_inbox(inbox_for_test) {}
+    
+    void handle_message(ClientHandlerMessage &message) override {
+        if (test_inbox) {
+            test_inbox->push(message);
+        }
+        // No llamar a MessageHandler::handle_message para los tests simples
+    }
+};
 
 // ================================================================
 // TEST: Cliente se conecta y envía mensaje al Acceptor
@@ -20,9 +42,13 @@ TEST(AcceptorIntegrationTest, ClientConnectsAndSendsMessage)
 {
     Queue<ClientHandlerMessage> inbox;
     OutboxMonitor outboxes;
+    std::unordered_map<int, std::shared_ptr<Queue<Event>>> game_queues;
+    std::mutex game_queues_mutex;
+    GameMonitor games_monitor(game_queues, game_queues_mutex, outboxes);
+    TestMessageHandler message_handler(game_queues, game_queues_mutex, games_monitor, outboxes, &inbox);
 
     std::thread server_thread([&]() {
-        Acceptor acceptor(TEST_PORT, inbox, outboxes);
+        Acceptor acceptor(TEST_PORT, message_handler, outboxes);
         acceptor.start();
         
         // Esperamos a que llegue el mensaje del cliente
@@ -62,9 +88,13 @@ TEST(AcceptorIntegrationTest, BroadcastMessageToClient)
 {
     Queue<ClientHandlerMessage> inbox;
     OutboxMonitor outboxes;
+    std::unordered_map<int, std::shared_ptr<Queue<Event>>> game_queues;
+    std::mutex game_queues_mutex;
+    GameMonitor games_monitor(game_queues, game_queues_mutex, outboxes);
+    TestMessageHandler message_handler(game_queues, game_queues_mutex, games_monitor, outboxes, &inbox);
 
     std::thread server_thread2([&]() {
-        Acceptor acceptor(TEST_PORT, inbox, outboxes);
+        Acceptor acceptor(TEST_PORT, message_handler, outboxes);
         acceptor.start();
         
         // Esperamos un poco a que se conecte el cliente
@@ -136,9 +166,13 @@ TEST(AcceptorIntegrationTest, BroadcastToMultipleClients)
 {
     Queue<ClientHandlerMessage> inbox;
     OutboxMonitor outboxes;
+    std::unordered_map<int, std::shared_ptr<Queue<Event>>> game_queues;
+    std::mutex game_queues_mutex;
+    GameMonitor games_monitor(game_queues, game_queues_mutex, outboxes);
+    TestMessageHandler message_handler(game_queues, game_queues_mutex, games_monitor, outboxes, &inbox);
 
     std::thread server_thread3([&]() {
-        Acceptor acceptor(TEST_PORT, inbox, outboxes);
+        Acceptor acceptor(TEST_PORT, message_handler, outboxes);
         acceptor.start();
         
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
