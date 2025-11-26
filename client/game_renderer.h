@@ -11,6 +11,7 @@
 #include "car.h"
 #include "minimap.h"
 #include "checkpoint.h"
+#include "audio_manager.h"
 
 using namespace SDL2pp;
 
@@ -39,19 +40,45 @@ private:
     int logicalWidth;
     int logicalHeight;
     std::vector<UpperLayerRect> upperRects;
+    std::unique_ptr<AudioManager> audioManager;
+    std::map<int, CarPosition> previousCarPositions;
 
+    // --- Rendering ---
     void renderBackground();
     void renderCar(Car &car);
-    void updateCheckpoints(const std::vector<Position> &positions);
-    void renderCheckpoints();
-    void updateMainCar(const CarPosition &position);
-    void updateOtherCars(const std::map<int, std::pair<CarPosition, int>> &positions);
     void renderUpperLayer();
+    void renderCheckpoints();
+
+    void updateMainCar(const CarPosition &position);
+    void updateCheckpoints(const std::vector<Position> &positions);
+
+    void updateOtherCars(const std::map<int, std::pair<CarPosition, int>> &positions);
+
+    std::set<int> computeNearestCars(
+        const std::map<int, std::pair<CarPosition, int>> &positions,
+        const CarPosition &mainPos);
+
+    void updateOrCreateCars(
+        const std::map<int, std::pair<CarPosition, int>> &positions,
+        const std::set<int> &nearest4,
+        const CarPosition &mainPos);
+
+    void cleanupRemovedCars(
+        const std::map<int, std::pair<CarPosition, int>> &positions,
+        const CarPosition &mainPos);
+
+    void updateEngineStates(const std::set<int> &nearest4);
 
 public:
-    GameRenderer(const char *windowTitle, int windowWidth, int windowHeight, int mapId = 1, const std::string &tiledJsonPath = "");
+    GameRenderer(const char *windowTitle,
+                 int windowWidth,
+                 int windowHeight,
+                 int mapId = 1,
+                 const std::string &tiledJsonPath = "");
 
-    void render(const CarPosition &mainCarPos, int mainCarTypeId, const std::map<int, std::pair<CarPosition, int>> &otherCarPositions,
+    void render(const CarPosition &mainCarPos,
+                int mainCarTypeId,
+                const std::map<int, std::pair<CarPosition, int>> &otherCarPositions,
                 const std::vector<Position> &next_checkpoints);
 
     void setMainCarType(int typeId)
@@ -59,6 +86,8 @@ public:
         if (mainCar)
             mainCar->setCarType(typeId);
     }
+
+    AudioManager* getAudioManager() { return audioManager.get(); }
 };
 
 #endif // GAME_RENDERER_H

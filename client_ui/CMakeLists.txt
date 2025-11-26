@@ -37,6 +37,7 @@ target_sources(taller_client_ui PRIVATE
     ../client/checkpoint.cpp
     ../client/minimap.cpp
     ../client/game_renderer.cpp
+    ../client/audio_manager.cpp
 )
 
 target_include_directories(taller_client_ui PRIVATE 

@@ -17,6 +17,7 @@ Client::Client(const char *address, const char *port, StartMode mode, int join_g
       auto_create_game_name(game_name)
 {
     handler_core.start(); // iniciar handler (sender+receiver)
+    handler.setAudioManager(game_renderer.getAudioManager());  
 }
 
 Client::~Client()

@@ -152,13 +152,21 @@ if(TALLER_CLIENT OR TALLER_EDITOR)
     set(SDL2PP_WITH_IMAGE OFF CACHE BOOL "" FORCE)
     set(SDL2PP_WITH_MIXER OFF CACHE BOOL "" FORCE)
     set(SDL2PP_WITH_TTF OFF CACHE BOOL "" FORCE)
-    
+
     FetchContent_MakeAvailable(libSDL2pp)
-    
+
     # Manually add the SDL2_image definitions to SDL2pp target
     target_compile_definitions(SDL2pp PUBLIC SDL2PP_WITH_IMAGE)
     target_compile_definitions(SDL2pp PUBLIC SDL2PP_WITH_MIXER)
     target_compile_definitions(SDL2pp PUBLIC SDL2PP_WITH_TTF)
+
+    # Manually add Mixer and Music source files to SDL2pp (since WITH_MIXER was OFF)
+    target_sources(SDL2pp PRIVATE
+        ${libsdl2pp_SOURCE_DIR}/SDL2pp/Mixer.cc
+        ${libsdl2pp_SOURCE_DIR}/SDL2pp/Music.cc
+        ${libsdl2pp_SOURCE_DIR}/SDL2pp/Chunk.cc
+    )
+
     target_link_libraries(SDL2pp PUBLIC SDL2_image::SDL2_image SDL2_mixer::SDL2_mixer SDL2_ttf::SDL2_ttf)
 endif()
 
