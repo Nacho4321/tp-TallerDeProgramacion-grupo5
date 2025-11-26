@@ -34,6 +34,7 @@ target_sources(taller_client_ui PRIVATE
     ../client/game_client_sender.cpp
     ../client/input_handler.cpp
     ../client/car.cpp
+    ../client/camera.cpp
     ../client/checkpoint.cpp
     ../client/minimap.cpp
     ../client/game_renderer.cpp

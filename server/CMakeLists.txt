@@ -5,7 +5,6 @@ target_sources(taller_server
     client_handler.cpp
     client_sender.cpp
     client_receiver.cpp
-    outbox_monitor.cpp
     main.cpp
     server.cpp
     game_monitor.cpp
@@ -16,7 +15,6 @@ target_sources(taller_server
     client_handler.h
     client_sender.h
     client_receiver.h
-    outbox_monitor.h
     server.h
     game_monitor.h
     message_handler.h

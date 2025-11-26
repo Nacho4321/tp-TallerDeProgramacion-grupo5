@@ -1,8 +1,8 @@
 #include "client_receiver.h"
 #include "message_handler.h"
 
-ClientReceiver::ClientReceiver(Protocol &proto, int id, MessageHandler &msg_admin) 
-    : protocol(proto), client_id(id), message_handler(msg_admin) {}
+ClientReceiver::ClientReceiver(Protocol &proto, int id, MessageHandler &msg_admin, std::shared_ptr<Queue<ServerMessage>> out) 
+    : protocol(proto), client_id(id), message_handler(msg_admin), outbox(out) {}
 
 void ClientReceiver::run()
 {
@@ -19,6 +19,7 @@ void ClientReceiver::run()
                 leave_msg.msg.cmd = LEAVE_GAME_STR; 
                 leave_msg.msg.player_id = -1;
                 leave_msg.msg.game_id = -1;
+                leave_msg.outbox = outbox;  // Pasar outbox
                 
                 // Procesar directamente el mensaje de desconexión
                 message_handler.handle_message(leave_msg);
@@ -28,6 +29,7 @@ void ClientReceiver::run()
             ClientHandlerMessage msg;
             msg.client_id = client_id;
             msg.msg = client_msg;
+            msg.outbox = outbox;  // Pasar outbox
             
             // Procesar mensaje directamente en lugar de pushear a cola
             message_handler.handle_message(msg);

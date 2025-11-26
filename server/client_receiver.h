@@ -16,9 +16,10 @@ class ClientReceiver : public Thread
     Protocol &protocol;
     int client_id;
     MessageHandler &message_handler;
+    std::shared_ptr<Queue<ServerMessage>> outbox;
 
 public:
-    ClientReceiver(Protocol &proto, int id, MessageHandler &msg_admin);
+    ClientReceiver(Protocol &proto, int id, MessageHandler &msg_admin, std::shared_ptr<Queue<ServerMessage>> out);
 
     void run() override;
 };

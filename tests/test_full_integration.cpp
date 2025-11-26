@@ -8,7 +8,6 @@
 #include "../common/queue.h"
 #include "../common/constants.h"
 #include "../server/acceptor.h"
-#include "../server/outbox_monitor.h"
 #include "../server/message_handler.h"
 #include "../server/game_monitor.h"
 #include "../common/messages.h"
@@ -21,16 +20,26 @@ static const char *TEST_PORT = "50200";
 class TestMessageHandler : public MessageHandler {
 private:
     Queue<ClientHandlerMessage> *test_inbox;
+    std::vector<std::shared_ptr<Queue<ServerMessage>>> saved_outboxes;
 public:
     TestMessageHandler(GameMonitor &games_mon,
-                    OutboxMonitor &outbox,
                     Queue<ClientHandlerMessage> *inbox_for_test = nullptr)
-        : MessageHandler(games_mon, outbox), test_inbox(inbox_for_test) {}
+        : MessageHandler(games_mon), test_inbox(inbox_for_test) {}
     
     void handle_message(ClientHandlerMessage &message) override {
         if (test_inbox) {
+            if (message.outbox) {
+                saved_outboxes.push_back(message.outbox);
+            }
             test_inbox->push(message);
         }
+    }
+    
+    std::shared_ptr<Queue<ServerMessage>> get_outbox(size_t index) {
+        if (index < saved_outboxes.size()) {
+            return saved_outboxes[index];
+        }
+        return nullptr;
     }
 };
 
@@ -38,13 +47,12 @@ TEST(FullIntegrationTest, CompleteClientServerCommunication)
 {
     // Creamos las estructuras necesarias para el Acceptor
     Queue<ClientHandlerMessage> inbox;
-    OutboxMonitor outboxes;
     GameMonitor games_monitor;
-    TestMessageHandler message_handler(games_monitor, outboxes, &inbox);
+    TestMessageHandler message_handler(games_monitor, &inbox);
 
     // Levantamos el servidor con Acceptor en un hilo
     std::thread server_thread([&]() {
-        Acceptor acceptor(TEST_PORT, message_handler, outboxes);
+        Acceptor acceptor(TEST_PORT, message_handler);
         acceptor.start();
 
         // Esperamos a que el server reciba el mensaje del cliente
@@ -72,7 +80,7 @@ TEST(FullIntegrationTest, CompleteClientServerCommunication)
         
       
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        auto outbox = outboxes.get(0);  
+        auto outbox = message_handler.get_outbox(0);  // Desde TestMessageHandler
         if (outbox) {
             outbox->push(response_srv);
         }

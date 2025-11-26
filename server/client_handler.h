@@ -28,8 +28,11 @@ class ClientHandler
     int client_id;
     ClientReceiver receiver;
 
+    static int next_id;
+
 public:
-    ClientHandler(Socket &&p, int id, MessageHandler &msg_handler);
+    ClientHandler(Socket &&p, MessageHandler &msg_handler);
+    ~ClientHandler();
 
     void start();
     void stop();

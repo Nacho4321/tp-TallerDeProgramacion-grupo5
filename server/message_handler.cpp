@@ -1,17 +1,16 @@
 #include "message_handler.h"
 
-MessageHandler::MessageHandler(GameMonitor &games_mon, OutboxMonitor &outbox)
+MessageHandler::MessageHandler(GameMonitor &games_mon)
     : games_monitor(games_mon), 
-      cli_comm_dispatch(), 
-      outboxes(outbox) 
+      lobby_command_handlers()
 {
     init_dispatch();
 }
 
 void MessageHandler::handle_message(ClientHandlerMessage &message)
 {
-    auto it = cli_comm_dispatch.find(message.msg.cmd);
-    if (it != cli_comm_dispatch.end())
+    auto it = lobby_command_handlers.find(message.msg.cmd);
+    if (it != lobby_command_handlers.end())
     {
         it->second(message);
     }
@@ -40,15 +39,15 @@ void MessageHandler::handle_message(ClientHandlerMessage &message)
 
 void MessageHandler::init_dispatch()
 {
-    cli_comm_dispatch[CREATE_GAME_STR] = [this](ClientHandlerMessage &message)
+    lobby_command_handlers[CREATE_GAME_STR] = [this](ClientHandlerMessage &message)
     { create_game(message); };
-    cli_comm_dispatch[JOIN_GAME_STR] = [this](ClientHandlerMessage &message)
+    lobby_command_handlers[JOIN_GAME_STR] = [this](ClientHandlerMessage &message)
     { join_game(message); };
-    cli_comm_dispatch[GET_GAMES_STR] = [this](ClientHandlerMessage &message)
+    lobby_command_handlers[GET_GAMES_STR] = [this](ClientHandlerMessage &message)
     { get_games(message); };
-    cli_comm_dispatch[START_GAME_STR] = [this](ClientHandlerMessage &message)
+    lobby_command_handlers[START_GAME_STR] = [this](ClientHandlerMessage &message)
     { start_game(message); };
-    cli_comm_dispatch[LEAVE_GAME_STR] = [this](ClientHandlerMessage &message)
+    lobby_command_handlers[LEAVE_GAME_STR] = [this](ClientHandlerMessage &message)
     { leave_game(message); };
 }
 
@@ -56,10 +55,10 @@ void MessageHandler::create_game(ClientHandlerMessage &message)
 {
     std::cout << "[MessageHandler] Cliente " << message.client_id << " solicita crear partida" << std::endl;
     
-    // Obtener outbox del cliente
-    auto client_queue = outboxes.get(message.client_id);
+    // Obtener outbox del mensaje
+    auto client_queue = message.outbox;
     if (!client_queue) {
-        std::cerr << "[MessageHandler] ERROR: No se encontró cola para cliente " << message.client_id << std::endl;
+        std::cerr << "[MessageHandler] ERROR: No se encontró outbox en el mensaje" << std::endl;
         return;
     }
     
@@ -81,7 +80,6 @@ void MessageHandler::create_game(ClientHandlerMessage &message)
         std::cout << "[MessageHandler] Respuesta enviada a la cola del cliente" << std::endl;
     } catch (const ClosedQueue&) {
         std::cerr << "[MessageHandler] Cola cerrada para cliente " << message.client_id << ", descartando respuesta" << std::endl;
-        outboxes.remove(message.client_id);
     }
 }
 
@@ -90,10 +88,10 @@ void MessageHandler::join_game(ClientHandlerMessage &message)
     // Validar que el juego existe antes de intentar unirse
     ServerMessage response;
     
-    // Obtener outbox del cliente
-    auto client_queue = outboxes.get(message.client_id);
+    // Obtener outbox del mensaje
+    auto client_queue = message.outbox;
     if (!client_queue) {
-        std::cerr << "[MessageHandler] ERROR: No se encontró cola para cliente " << message.client_id << std::endl;
+        std::cerr << "[MessageHandler] ERROR: No se encontró outbox en el mensaje" << std::endl;
         response.opcode = GAME_JOINED;
         response.game_id = 0;
         response.player_id = 0;
@@ -123,7 +121,7 @@ void MessageHandler::join_game(ClientHandlerMessage &message)
         std::cout << "[MessageHandler] Pushing JoinGame (ServerMessage) al outbox del cliente " << message.client_id << std::endl;
         client_queue->push(response);
     } catch (const ClosedQueue&) {
-        outboxes.remove(message.client_id);
+        std::cerr << "[MessageHandler] Cola cerrada para cliente " << message.client_id << std::endl;
     }
 }
 
@@ -131,9 +129,9 @@ void MessageHandler::get_games(ClientHandlerMessage &message) {
     (void)message; // no necesitamos datos extra del cliente por ahora
     ServerMessage resp; resp.opcode = GAMES_LIST; resp.games = games_monitor.list_games();
     // Enviar listado a este cliente
-    auto client_queue = outboxes.get(message.client_id);
+    auto client_queue = message.outbox;
     if (client_queue) {
-        try { client_queue->push(resp); } catch (const ClosedQueue&) { outboxes.remove(message.client_id); }
+        try { client_queue->push(resp); } catch (const ClosedQueue&) { /* Cola cerrada */ }
     }
 }
 
@@ -159,10 +157,6 @@ void MessageHandler::leave_game(ClientHandlerMessage &message)
     std::cout << "[MessageHandler] Cliente " << message.client_id << " solicita dejar partida" << std::endl;
     
     // El GameLoop detecta automáticamente cuando un cliente cierra su cola
-    // Solo limpiamos el outbox
-    try {
-        outboxes.remove(message.client_id);
-    } catch (const std::exception &e) {
-        std::cerr << "[MessageHandler] outboxes.remove threw: " << e.what() << std::endl;
-    }
+    // Ya no hay nada que limpiar aquí (OutboxMonitor eliminado)
+    (void)message;
 }

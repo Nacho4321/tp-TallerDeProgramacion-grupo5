@@ -1,16 +1,22 @@
 #include "client_handler.h"
 #include "message_handler.h"
 
+// Inicialización del contador estático
+int ClientHandler::next_id = 0;
+
 // ---------------- ClientHandler ----------------
-ClientHandler::ClientHandler(Socket &&p, int id, MessageHandler &msg_admin) 
+ClientHandler::ClientHandler(Socket &&p, MessageHandler &msg_admin) 
     : protocol(std::move(p)),
       outbox(std::make_shared<Queue<ServerMessage>>(100)), // bounded queue tamaño 100
       message_handler(msg_admin),
       sender(protocol, *outbox),
-      client_id(id),
-      receiver(protocol, id, msg_admin)
+      client_id(next_id++),  // Auto-asigna ID
+      receiver(protocol, client_id, msg_admin, outbox)  // Pasar outbox a receiver
 {
+    std::cout << "[ClientHandler] Cliente creado con ID: " << client_id << std::endl;
 }
+
+ClientHandler::~ClientHandler() = default;
 
 void ClientHandler::start()
 {

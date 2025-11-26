@@ -6,7 +6,6 @@
 #include "../common/eventloop.h"
 #include "PlayerData.h"
 #include "../common/messages.h"
-#include "../server/outbox_monitor.h"
 #include "../server/client_handler_msg.h"
 #include <box2d/b2_world.h>
 #include <box2d/b2_polygon_shape.h>

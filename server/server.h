@@ -11,7 +11,6 @@
 class Server
 {
 private:
-    OutboxMonitor outboxes;  // Mantener por ahora para compatibilidad
     GameMonitor games_monitor;
     MessageHandler message_handler;
     Acceptor acceptor;
@@ -19,10 +18,9 @@ private:
 
 public:
     explicit Server(const char *port)
-        : outboxes(), 
-          games_monitor(),
-          message_handler(games_monitor, outboxes), 
-          acceptor(port, message_handler, outboxes)
+        : games_monitor(),
+          message_handler(games_monitor), 
+          acceptor(port, message_handler)
     {
     }
     void start();

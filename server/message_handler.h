@@ -11,8 +11,7 @@ class MessageHandler
 {
 private:
     GameMonitor &games_monitor;
-    std::unordered_map<std::string, std::function<void(ClientHandlerMessage &)>> cli_comm_dispatch;
-    OutboxMonitor &outboxes;
+    std::unordered_map<std::string, std::function<void(ClientHandlerMessage &)>> lobby_command_handlers;
     
     void init_dispatch();
     void create_game(ClientHandlerMessage &message);
@@ -22,7 +21,7 @@ private:
     void leave_game(ClientHandlerMessage &message);
 
 public:
-    explicit MessageHandler(GameMonitor &games_mon, OutboxMonitor &outbox);
+    explicit MessageHandler(GameMonitor &games_mon);
     
     virtual ~MessageHandler() = default;
     
