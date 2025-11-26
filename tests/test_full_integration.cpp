@@ -43,7 +43,7 @@ TEST(FullIntegrationTest, CompleteClientServerCommunication)
     OutboxMonitor outboxes;
     std::unordered_map<int, std::shared_ptr<Queue<Event>>> game_queues;
     std::mutex game_queues_mutex;
-    GameMonitor games_monitor(game_queues, game_queues_mutex, outboxes);
+    GameMonitor games_monitor(game_queues, game_queues_mutex);
     TestMessageHandler message_handler(game_queues, game_queues_mutex, games_monitor, outboxes, &inbox);
 
     // Levantamos el servidor con Acceptor en un hilo
