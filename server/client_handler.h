@@ -12,31 +12,8 @@
 #include "../common/messages.h"
 
 #include "client_handler_msg.h"
-
-// ---------------- ClientReceiver ----------------
-class ClientReceiver : public Thread
-{
-    Protocol &protocol;
-    int client_id;
-    Queue<ClientHandlerMessage> &global_inbox;
-
-public:
-    ClientReceiver(Protocol &proto, int id, Queue<ClientHandlerMessage> &global_inbox);
-
-    void run() override;
-};
-
-// ---------------- ClientSender ----------------
-class ClientSender : public Thread
-{
-    Protocol &protocol;
-    Queue<ServerMessage> &outbox;
-
-public:
-    ClientSender(Protocol &proto, Queue<ServerMessage> &ob);
-
-    void run() override;
-};
+#include "client_receiver.h"
+#include "client_sender.h"
 
 // ---------------- ClientHandler ----------------
 class ClientHandler
