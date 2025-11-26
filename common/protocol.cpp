@@ -5,68 +5,87 @@
 
 #include <netinet/in.h>
 
-Protocol::Protocol(Socket&& socket) noexcept: skt(std::move(socket)), buffer() {}
+Protocol::Protocol(Socket&& socket) noexcept: skt(std::move(socket)), buffer() {
+    init_handlers();
+    init_cmd_map();
+}
+
+void Protocol::init_handlers() {
+    // Inicializar mapa de handlers para receiveClientMessage
+    receive_handlers[MOVE_UP_PRESSED] = [this]() { return receiveUpPressed(); };
+    receive_handlers[MOVE_UP_RELEASED] = [this]() { return receiveUpRealesed(); };
+    receive_handlers[MOVE_DOWN_PRESSED] = [this]() { return receiveDownPressed(); };
+    receive_handlers[MOVE_DOWN_RELEASED] = [this]() { return receiveDownReleased(); };
+    receive_handlers[MOVE_LEFT_PRESSED] = [this]() { return receiveLeftPressed(); };
+    receive_handlers[MOVE_LEFT_RELEASED] = [this]() { return receiveLeftReleased(); };
+    receive_handlers[MOVE_RIGHT_PRESSED] = [this]() { return receiveRightPressed(); };
+    receive_handlers[MOVE_RIGHT_RELEASED] = [this]() { return receiveRightReleased(); };
+    
+    receive_handlers[CREATE_GAME] = [this]() {
+        auto msg = receiveCreateGame();
+        std::cout << "[Protocol(Server)] Decodificado CREATE_GAME player_id=" << msg.player_id
+                  << " game_id=" << msg.game_id << std::endl;
+        return msg;
+    };
+    
+    receive_handlers[JOIN_GAME] = [this]() {
+        auto msg = receiveJoinGame();
+        std::cout << "[Protocol(Server)] Decodificado JOIN_GAME player_id=" << msg.player_id
+                  << " game_id=" << msg.game_id << std::endl;
+        return msg;
+    };
+    
+    receive_handlers[GET_GAMES] = [this]() {
+        auto msg = receiveGetGames();
+        std::cout << "[Protocol(Server)] Decodificado GET_GAMES player_id=" << msg.player_id
+                  << " game_id=" << msg.game_id << std::endl;
+        return msg;
+    };
+    
+    receive_handlers[START_GAME] = [this]() {
+        auto msg = receiveStartGame();
+        std::cout << "[Protocol(Server)] Decodificado START_GAME player_id=" << msg.player_id
+                  << " game_id=" << msg.game_id << std::endl;
+        return msg;
+    };
+    
+    receive_handlers[CHANGE_CAR] = [this]() {
+        auto msg = receiveChangeCar();
+        std::cout << "[Protocol(Server)] Decodificado CHANGE_CAR player_id=" << msg.player_id
+                  << " game_id=" << msg.game_id << " car_type=" << msg.car_type << std::endl;
+        return msg;
+    };
+}
+
+void Protocol::init_cmd_map() {
+    // Inicializar mapa de comandos string -> opcode para encodeClientMessage
+    cmd_to_opcode[MOVE_UP_PRESSED_STR] = MOVE_UP_PRESSED;
+    cmd_to_opcode[MOVE_UP_RELEASED_STR] = MOVE_UP_RELEASED;
+    cmd_to_opcode[MOVE_DOWN_PRESSED_STR] = MOVE_DOWN_PRESSED;
+    cmd_to_opcode[MOVE_DOWN_RELEASED_STR] = MOVE_DOWN_RELEASED;
+    cmd_to_opcode[MOVE_LEFT_PRESSED_STR] = MOVE_LEFT_PRESSED;
+    cmd_to_opcode[MOVE_LEFT_RELEASED_STR] = MOVE_LEFT_RELEASED;
+    cmd_to_opcode[MOVE_RIGHT_PRESSED_STR] = MOVE_RIGHT_PRESSED;
+    cmd_to_opcode[MOVE_RIGHT_RELEASED_STR] = MOVE_RIGHT_RELEASED;
+    cmd_to_opcode[CREATE_GAME_STR] = CREATE_GAME;
+    cmd_to_opcode[JOIN_GAME_STR] = JOIN_GAME;
+    cmd_to_opcode[GET_GAMES_STR] = GET_GAMES;
+    cmd_to_opcode[START_GAME_STR] = START_GAME;
+    cmd_to_opcode[CHANGE_CAR_STR] = CHANGE_CAR;
+}
 
 ClientMessage Protocol::receiveClientMessage() {
     uint8_t opcode;
     if (skt.recvall(&opcode, sizeof(opcode)) <= 0)
         return {};
 
-    switch (opcode) {
-        case MOVE_UP_PRESSED:
-            return receiveUpPressed();
-        case MOVE_UP_RELEASED:
-            return receiveUpRealesed();
-        case MOVE_DOWN_PRESSED:
-            return receiveDownPressed();
-        case MOVE_DOWN_RELEASED:
-            return receiveDownReleased();
-        case MOVE_LEFT_PRESSED:
-            return receiveLeftPressed();
-        case MOVE_LEFT_RELEASED:
-            return receiveLeftReleased();
-        case MOVE_RIGHT_PRESSED:
-            return receiveRightPressed();
-        case MOVE_RIGHT_RELEASED:
-            return receiveRightReleased();
-        case CREATE_GAME:
-            {
-                auto msg = receiveCreateGame();
-                std::cout << "[Protocol(Server)] Decodificado CREATE_GAME player_id=" << msg.player_id
-                          << " game_id=" << msg.game_id << std::endl;
-                return msg;
-            }
-        case JOIN_GAME:
-            {
-                auto msg = receiveJoinGame();
-                std::cout << "[Protocol(Server)] Decodificado JOIN_GAME player_id=" << msg.player_id
-                          << " game_id=" << msg.game_id << std::endl;
-                return msg;
-            }
-        case GET_GAMES:
-            {
-                auto msg = receiveGetGames();
-                std::cout << "[Protocol(Server)] Decodificado GET_GAMES player_id=" << msg.player_id
-                          << " game_id=" << msg.game_id << std::endl;
-                return msg;
-            }
-        case START_GAME:
-            {
-                auto msg = receiveStartGame();
-                std::cout << "[Protocol(Server)] Decodificado START_GAME player_id=" << msg.player_id
-                          << " game_id=" << msg.game_id << std::endl;
-                return msg;
-            }
-        case CHANGE_CAR:
-            {
-                auto msg = receiveChangeCar();
-                std::cout << "[Protocol(Server)] Decodificado CHANGE_CAR player_id=" << msg.player_id
-                          << " game_id=" << msg.game_id << " car_type=" << msg.car_type << std::endl;
-                return msg;
-            }
-        default:
-            return {};  // desconocido
+    // Buscar handler en el mapa
+    auto it = receive_handlers.find(opcode);
+    if (it != receive_handlers.end()) {
+        return it->second();  // Invocar handler
     }
+    
+    return {};  // Opcode desconocido
 }
 
 ServerMessage Protocol::receiveServerMessage() {

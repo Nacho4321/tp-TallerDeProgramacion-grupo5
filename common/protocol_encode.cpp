@@ -4,41 +4,32 @@
 std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage& msg) {
     buffer.clear();
     uint8_t opcode = 0;
-    // Mapear el comando a opcode
+    
+    // Buscar opcode en el mapa
     const std::string& cmd = msg.cmd;
-    if (cmd == MOVE_UP_PRESSED_STR) opcode = MOVE_UP_PRESSED;
-    else if (cmd == MOVE_UP_RELEASED_STR) opcode = MOVE_UP_RELEASED;
-    else if (cmd == MOVE_DOWN_PRESSED_STR) opcode = MOVE_DOWN_PRESSED;
-    else if (cmd == MOVE_DOWN_RELEASED_STR) opcode = MOVE_DOWN_RELEASED;
-    else if (cmd == MOVE_LEFT_PRESSED_STR) opcode = MOVE_LEFT_PRESSED;
-    else if (cmd == MOVE_LEFT_RELEASED_STR) opcode = MOVE_LEFT_RELEASED;
-    else if (cmd == MOVE_RIGHT_PRESSED_STR) opcode = MOVE_RIGHT_PRESSED;
-    else if (cmd == MOVE_RIGHT_RELEASED_STR) opcode = MOVE_RIGHT_RELEASED;
-    else if (cmd == CREATE_GAME_STR) {
-        opcode = CREATE_GAME;
-        std::cout << "[Protocol(Client)] Encoding CREATE_GAME name='" << msg.game_name << "' p=" << msg.player_id << " g=" << msg.game_id << std::endl;
-    }
-    else if (cmd.rfind(JOIN_GAME_STR, 0) == 0) {
+    
+    // Casos especiales que requieren prefix matching
+    if (cmd.rfind(JOIN_GAME_STR, 0) == 0) {
         opcode = JOIN_GAME;
         std::cout << "[Protocol(Client)] Encoding JOIN_GAME with ids p=" << msg.player_id << " g=" << msg.game_id << std::endl;
-    }
-    else if (cmd == GET_GAMES_STR) {
-        opcode = GET_GAMES;
-        std::cout << "[Protocol(Client)] Encoding GET_GAMES" << std::endl;
-    }
-    else if (cmd == START_GAME_STR) {
-        opcode = START_GAME;
-        std::cout << "[Protocol(Client)] Encoding START_GAME" << std::endl;
-    }
-    else if (cmd.rfind(CHANGE_CAR_STR, 0) == 0) {
+    } else if (cmd.rfind(CHANGE_CAR_STR, 0) == 0) {
         opcode = CHANGE_CAR;
-        // Parse car_type after space
-        size_t sp = cmd.find(' ');
-        if (sp != std::string::npos && sp + 1 < cmd.size()) {
-            // store car type into a local copy; we rely on msg.car_type already set by sender fallback below if needed
+    } else {
+        // Búsqueda directa en el mapa
+        auto it = cmd_to_opcode.find(cmd);
+        if (it != cmd_to_opcode.end()) {
+            opcode = it->second;
+            
+            // Logs especiales para ciertos comandos
+            if (opcode == CREATE_GAME) {
+                std::cout << "[Protocol(Client)] Encoding CREATE_GAME name='" << msg.game_name << "' p=" << msg.player_id << " g=" << msg.game_id << std::endl;
+            } else if (opcode == GET_GAMES) {
+                std::cout << "[Protocol(Client)] Encoding GET_GAMES" << std::endl;
+            } else if (opcode == START_GAME) {
+                std::cout << "[Protocol(Client)] Encoding START_GAME" << std::endl;
+            }
         }
     }
-    else opcode = 0; // desconocido
 
     buffer.push_back(opcode);
     // Siempre incluimos player_id y game_id (8 bytes)

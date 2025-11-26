@@ -5,6 +5,8 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <functional>
 
 #include "constants.h"
 #include "messages.h"
@@ -16,6 +18,17 @@ private:
     Socket skt;
     std::vector<uint8_t> buffer;
     std::vector<uint8_t> readBuffer;
+
+    // Mapas de handlers
+    using ClientMessageHandler = std::function<ClientMessage()>;
+    std::unordered_map<uint8_t, ClientMessageHandler> receive_handlers;
+    
+    using CmdToOpcodeMap = std::unordered_map<std::string, uint8_t>;
+    CmdToOpcodeMap cmd_to_opcode;
+    
+    // Inicializa los mapas
+    void init_handlers();
+    void init_cmd_map();
 
     //
     // Helpers para armar y desarmar mensajes
