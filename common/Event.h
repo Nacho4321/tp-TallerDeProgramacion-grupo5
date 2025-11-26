@@ -4,15 +4,15 @@
 
 struct Event
 {
-    int client_id = -1;        // Valor por defecto
-    std::string action = "";   // Valor por defecto
-    
+    int client_id = -1;      // Valor por defecto
+    std::string action = ""; // Valor por defecto
+
     // Constructor sin parámetros (por defecto)
     Event() = default;
-    
+
     // Constructor con parámetros
     Event(int client, std::string act);
-    
+
     virtual ~Event() = default;
 };
 
@@ -31,6 +31,7 @@ enum MovementDirectionY
 
 struct Position
 {
+    bool on_bridge;
     float new_X;
     float new_Y;
     MovementDirectionX direction_x;

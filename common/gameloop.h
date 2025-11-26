@@ -81,6 +81,7 @@ private:
         float speed_mps{0.0f};     // velocidad de movimiento en metros/segundo
         bool is_parked{false};     // true = estacionado (cuerpo estático)
         bool is_horizontal{false}; // true = orientado horizontalmente (solo para estacionados)
+        bool on_bridge = false;
     };
     std::vector<MapLayout::WaypointData> street_waypoints; // grafo de waypoints para navegación de NPCs
     std::vector<NPCData> npcs;                             // lista activa de NPCs
@@ -114,7 +115,8 @@ private:
     void check_race_completion();
     // Ejecuta el reset al lobby cuando es seguro (fuera del callback de Box2D)
     void perform_race_reset();
-    void update_bridge_state_for_player(PlayerData &player_data);
+    bool update_bridge_state_for_player(PlayerData &player_data);
+    void set_car_category(PlayerData &player_data, uint16 newCategory);
 
 public:
     explicit GameLoop(std::shared_ptr<Queue<Event>> events);

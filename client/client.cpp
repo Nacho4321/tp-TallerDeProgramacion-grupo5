@@ -173,7 +173,8 @@ void Client::start()
                 main_pos.new_pos.new_X,
                 main_pos.new_pos.new_Y,
                 float(-std::sin(angle)),
-                float(std::cos(angle))};
+                float(std::cos(angle)),
+                main_pos.new_pos.on_bridge};
             auto mapCarType = [](const std::string &t) -> int
             {
                 if (t == "lambo")
@@ -200,7 +201,8 @@ void Client::start()
                     pos.new_pos.new_X,
                     pos.new_pos.new_Y,
                     float(-std::sin(ang)),
-                    float(std::cos(ang))};
+                    float(std::cos(ang)),
+                    pos.new_pos.on_bridge};
                 int typeId = mapCarType(pos.car_type);
                 otherCars[pos.player_id] = std::make_pair(cp, typeId);
             }
