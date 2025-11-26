@@ -172,6 +172,11 @@ void GameLoop::CheckpointContactListener::BeginContact(b2Contact *contact)
     owner->handle_begin_contact(a, b);
 }
 
+void GameLoop::CheckpointContactListener::set_owner(GameLoop *g)
+{
+    owner = g;
+}
+
 int GameLoop::find_player_by_body(b2Body *body)
 {
     for (auto &entry : players)

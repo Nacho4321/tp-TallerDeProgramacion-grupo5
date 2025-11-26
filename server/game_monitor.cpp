@@ -1,5 +1,10 @@
 #include "game_monitor.h"
 
+GameMonitor::GameMonitor()
+    : games(), games_queues(), game_names(), games_mutex(), next_id(STARTING_ID)
+{
+}
+
 int GameMonitor::add_game(int client_id, std::shared_ptr<Queue<ServerMessage>> player_outbox, const std::string& name)
 {
     std::lock_guard<std::mutex> lock(games_mutex);  // Un solo lock

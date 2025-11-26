@@ -39,7 +39,7 @@ public:
     bool isExploding() const;
     bool isExplosionComplete() const;
 
-    void setCarType(int newType) { carType = newType; spriteIndex = 0; updateSpriteIndex(); }
+    void setCarType(int newType);
 
 private:
     void updateSpriteIndex();

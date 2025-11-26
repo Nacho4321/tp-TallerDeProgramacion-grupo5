@@ -14,6 +14,7 @@ target_sources(taller_common
     map_layout.cpp
     car_physics_config.cpp
     npc_config.cpp
+    event.cpp
     PUBLIC
     # .h files
     gameloop.h

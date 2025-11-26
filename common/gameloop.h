@@ -30,7 +30,7 @@ private:
     private:
         GameLoop *owner = nullptr;
     public:
-        void set_owner(GameLoop *g) { owner = g; }
+    void set_owner(GameLoop *g);
         void BeginContact(b2Contact *contact) override;
     };
 

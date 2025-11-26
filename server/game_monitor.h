@@ -17,7 +17,7 @@ private:
 
 public:
     ~GameMonitor();
-    explicit GameMonitor() : games(), games_queues(), game_names(), games_mutex(), next_id(STARTING_ID) {}
+    explicit GameMonitor();
     int add_game(int client_id, std::shared_ptr<Queue<ServerMessage>> player_outbox, const std::string& name = ""); // Devuelve el game_id asignado
     void join_player(int player_id, int game_id, std::shared_ptr<Queue<ServerMessage>> player_outbox);
     std::vector<ServerMessage::GameSummary> list_games();

@@ -63,3 +63,9 @@ bool Car::isExploding() const {
 bool Car::isExplosionComplete() const {
     return exploding && explosionFrame >= NUM_EXPLOSION_SPRITES - 1;
 }
+
+void Car::setCarType(int newType) {
+    carType = newType;
+    spriteIndex = 0;
+    updateSpriteIndex();
+}

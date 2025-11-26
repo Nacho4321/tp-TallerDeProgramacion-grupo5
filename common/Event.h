@@ -11,7 +11,7 @@ struct Event
     Event() = default;
     
     // Constructor con parámetros
-    Event(int client, std::string act) : client_id(client), action(act) {}
+    Event(int client, std::string act);
     
     virtual ~Event() = default;
 };
@@ -40,11 +40,7 @@ struct Position
 struct PlayerMovedEvent : public Event
 {
     Position pos;
-    explicit PlayerMovedEvent(int client_id, std::string action, Position new_position)
-        : Event(client_id, action),
-          pos(new_position)
-    {
-    }
+    explicit PlayerMovedEvent(int client_id, std::string action, Position new_position);
 };
 
 #endif

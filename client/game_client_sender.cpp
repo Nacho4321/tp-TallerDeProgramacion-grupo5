@@ -78,3 +78,11 @@ void GameClientSender::stop() {
     Thread::stop(); 
     outgoing_messages.close();  // Cierra la cola para interrumpir pop()
 }
+
+void GameClientSender::set_player_id(int32_t id) {
+    player_id = id;
+}
+
+void GameClientSender::set_game_id(int32_t id) {
+    game_id = id;
+}

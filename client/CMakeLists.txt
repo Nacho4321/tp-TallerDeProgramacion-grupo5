@@ -8,6 +8,7 @@ target_sources(taller_client
     game_client_sender.cpp
     game_client_handler.cpp
     car.cpp
+    camera.cpp
     checkpoint.cpp
     minimap.cpp
     game_renderer.cpp
