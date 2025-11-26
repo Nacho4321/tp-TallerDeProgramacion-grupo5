@@ -6,7 +6,8 @@
 #include "../common/socket.h"
 #include "../common/constants.h"
 
-#include "../server/server_handler.h"
+#include "../server/acceptor.h"
+#include "../server/outbox_monitor.h"
 #include "../common/messages.h"
 #include "../common/queue.h"
 
@@ -17,22 +18,28 @@ static const char *TEST_PORT = "50100"; // usa un puerto distinto de los tests a
 // ================================================================
 TEST(AcceptorIntegrationTest, ClientConnectsAndSendsMessage)
 {
+    Queue<ClientHandlerMessage> inbox;
+    OutboxMonitor outboxes;
+
     std::thread server_thread([&]() {
-        ServerHandler server(TEST_PORT);
-        server.start();
-        // Esperamos a que llegue el mensaje al server handler
+        Acceptor acceptor(TEST_PORT, inbox, outboxes);
+        acceptor.start();
+        
+        // Esperamos a que llegue el mensaje del cliente
         ClientHandlerMessage ch_msg;
         bool got = false;
         for (int i = 0; i < 30 && !got; ++i) {
-            got = server.try_receive(ch_msg);
+            got = inbox.try_pop(ch_msg);
             if (!got)
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
         ASSERT_TRUE(got);
-    EXPECT_EQ(ch_msg.msg.cmd, MOVE_UP_PRESSED_STR);
-    EXPECT_EQ(ch_msg.msg.player_id, -1);
-    EXPECT_EQ(ch_msg.msg.game_id, -1);
-        server.stop();
+        EXPECT_EQ(ch_msg.msg.cmd, MOVE_UP_PRESSED_STR);
+        EXPECT_EQ(ch_msg.msg.player_id, -1);
+        EXPECT_EQ(ch_msg.msg.game_id, -1);
+        
+        acceptor.stop();
+        acceptor.join();
     });
 
     // Dejamos tiempo para que el servidor se levante
@@ -53,14 +60,19 @@ TEST(AcceptorIntegrationTest, ClientConnectsAndSendsMessage)
 // ================================================================
 TEST(AcceptorIntegrationTest, BroadcastMessageToClient)
 {
+    Queue<ClientHandlerMessage> inbox;
+    OutboxMonitor outboxes;
+
     std::thread server_thread2([&]() {
-        ServerHandler server(TEST_PORT);
-        server.start();
+        Acceptor acceptor(TEST_PORT, inbox, outboxes);
+        acceptor.start();
+        
         // Esperamos un poco a que se conecte el cliente
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
         // Enviamos un broadcast a todos los clientes
         ServerMessage msg;
+        msg.opcode = UPDATE_POSITIONS;
 
         Position pos1;
         pos1.new_X = 50.0f;
@@ -82,9 +94,11 @@ TEST(AcceptorIntegrationTest, BroadcastMessageToClient)
         update2.new_pos = pos2;
         msg.positions.push_back(update2);
 
-        server.broadcast(msg);
+        acceptor.broadcast(msg);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
-        server.stop();
+        
+        acceptor.stop();
+        acceptor.join();
     });
 
     // Cliente
@@ -115,12 +129,17 @@ TEST(AcceptorIntegrationTest, BroadcastMessageToClient)
 // ================================================================
 TEST(AcceptorIntegrationTest, BroadcastToMultipleClients)
 {
+    Queue<ClientHandlerMessage> inbox;
+    OutboxMonitor outboxes;
+
     std::thread server_thread3([&]() {
-        ServerHandler server(TEST_PORT);
-        server.start();
+        Acceptor acceptor(TEST_PORT, inbox, outboxes);
+        acceptor.start();
+        
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
         ServerMessage msg2;
+        msg2.opcode = UPDATE_POSITIONS;
 
         Position pos1b;
         pos1b.new_X = 50.0f;
@@ -142,9 +161,11 @@ TEST(AcceptorIntegrationTest, BroadcastToMultipleClients)
         update2b.new_pos = pos2b;
         msg2.positions.push_back(update2b);
 
-        server.broadcast(msg2);
+        acceptor.broadcast(msg2);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
-        server.stop();
+        
+        acceptor.stop();
+        acceptor.join();
     });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
