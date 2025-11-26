@@ -49,7 +49,12 @@ TEST(FullIntegrationTest, CompleteClientServerCommunication)
         update.new_pos.direction_y = MovementDirectionY::not_vertical;
         response_srv.positions.push_back(update);
         
-        acceptor.broadcast(response_srv);
+      
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        auto outbox = outboxes.get(0);  
+        if (outbox) {
+            outbox->push(response_srv);
+        }
 
         // El servidor espera que el cliente reciba
         std::this_thread::sleep_for(std::chrono::milliseconds(200));

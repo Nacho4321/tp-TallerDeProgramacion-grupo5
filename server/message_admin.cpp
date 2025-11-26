@@ -85,7 +85,7 @@ void MessageAdmin::create_game(ClientHandlerMessage &message)
     std::cout << "[MessageAdmin] Enviando respuesta: game_id=" << game_id 
               << " player_id=" << message.client_id << std::endl;
     
-    auto client_queue = outboxes.get_cliente_queue(message.client_id);
+    auto client_queue = outboxes.get(message.client_id);
     if (client_queue) {
         try {
             std::cout << "[MessageAdmin] Pushing GameJoined (ServerMessage) al outbox del cliente " << message.client_id << std::endl;
@@ -118,7 +118,7 @@ void MessageAdmin::join_game(ClientHandlerMessage &message)
         response.success = false;
     }
     
-    auto client_queue = outboxes.get_cliente_queue(message.client_id);
+    auto client_queue = outboxes.get(message.client_id);
     if (client_queue) {
         try {
             std::cout << "[MessageAdmin] JoinGame resp para cliente " << message.client_id
@@ -137,7 +137,7 @@ void MessageAdmin::get_games(ClientHandlerMessage &message) {
     (void)message; // no necesitamos datos extra del cliente por ahora
     ServerMessage resp; resp.opcode = GAMES_LIST; resp.games = games_monitor.list_games();
     // Enviar listado a este cliente
-    auto client_queue = outboxes.get_cliente_queue(message.client_id);
+    auto client_queue = outboxes.get(message.client_id);
     if (client_queue) {
         try { client_queue->push(resp); } catch (const ClosedQueue&) { outboxes.remove(message.client_id); }
     }

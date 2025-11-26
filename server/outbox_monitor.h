@@ -16,8 +16,7 @@ private:
 public:
     void add(int client_id, std::shared_ptr<Queue<ServerMessage>> q);
     void remove(int client_id);
-    void broadcast(const ServerMessage &msg);
-    std::shared_ptr<Queue<ServerMessage>> get_cliente_queue(int id);
+    std::shared_ptr<Queue<ServerMessage>> get(int id);
     void remove_all();
 };
 

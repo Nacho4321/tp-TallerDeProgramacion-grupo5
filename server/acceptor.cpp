@@ -54,8 +54,7 @@ void Acceptor::clear()
     {
         try
         {
-            client->stop();
-            client->join();
+            client->stop(); 
         }
         catch (...)
         {
@@ -72,9 +71,7 @@ void Acceptor::reap()
         if (!c->is_alive())
         {
             outbox_monitor.remove(c->get_id());
-            c->stop();
-            c->join();
-            // Eliminar del vector y continuar sin incrementar el iterador
+            c->stop(); 
             it = clients.erase(it);
         }
         else
@@ -82,9 +79,4 @@ void Acceptor::reap()
             ++it;
         }
     }
-}
-
-void Acceptor::broadcast(const ServerMessage &msg)
-{
-    outbox_monitor.broadcast(msg);
 }

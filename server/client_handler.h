@@ -31,7 +31,6 @@ public:
     void start();
     void stop();
     bool is_alive();
-    void join();
 
     std::shared_ptr<Queue<ServerMessage>> get_outbox();
     int get_id();

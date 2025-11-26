@@ -94,7 +94,12 @@ TEST(AcceptorIntegrationTest, BroadcastMessageToClient)
         update2.new_pos = pos2;
         msg.positions.push_back(update2);
 
-        acceptor.broadcast(msg);
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        auto outbox = outboxes.get(0);  
+        if (outbox) {
+            outbox->push(msg);
+        }
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
         
         acceptor.stop();
@@ -161,7 +166,15 @@ TEST(AcceptorIntegrationTest, BroadcastToMultipleClients)
         update2b.new_pos = pos2b;
         msg2.positions.push_back(update2b);
 
-        acceptor.broadcast(msg2);
+
+        auto outbox0 = outboxes.get(0);  
+        auto outbox1 = outboxes.get(1);  
+        if (outbox0) {
+            outbox0->push(msg2);
+        }
+        if (outbox1) {
+            outbox1->push(msg2);
+        }
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
         
         acceptor.stop();

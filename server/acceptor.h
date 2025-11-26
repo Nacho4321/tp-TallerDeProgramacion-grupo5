@@ -14,9 +14,6 @@
 #include "client_handler_msg.h"
 #include "outbox_monitor.h"
 
-// TODO: -Usar monitor y dejar de usar mutexes en el acceptor
-//       -Dejar al acceptor con unica responsabilidad, q deje de hacer broadcast y demas
-
 class Acceptor : public Thread
 {
     Socket acceptor;
@@ -31,8 +28,6 @@ public:
 
     void run() override;
     void stop() override;
-
-    void broadcast(const ServerMessage &msg);
 
 private:
     void clear();

@@ -25,7 +25,6 @@ void ClientHandler::stop()
     catch (...)
     {
     }
-
     try
     {
         if (outbox) {
@@ -38,17 +37,14 @@ void ClientHandler::stop()
 
     sender.stop();
     receiver.stop();
+
+    sender.join();
+    receiver.join();
+
+    outbox.reset();
 }
 
 bool ClientHandler::is_alive() { return sender.is_alive() && receiver.is_alive(); }
-
-void ClientHandler::join()
-{
-    sender.join();
-    receiver.join();
-    // liberar la outbox para que GameLoop ya no la use
-    outbox.reset();
-}
 
 std::shared_ptr<Queue<ServerMessage>> ClientHandler::get_outbox() { return outbox; }
 

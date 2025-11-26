@@ -18,17 +18,12 @@ void OutboxMonitor::remove_all()
     outboxes.clear();
 }
 
-std::shared_ptr<Queue<ServerMessage>> OutboxMonitor::get_cliente_queue(int id)
+std::shared_ptr<Queue<ServerMessage>> OutboxMonitor::get(int id)
 {
     std::lock_guard<std::mutex> lock(mtx);
-    return outboxes[id];
-}
-
-void OutboxMonitor::broadcast(const ServerMessage &msg)
-{
-    std::lock_guard<std::mutex> lock(mtx);
-    for (auto &[id, q] : outboxes)
-    {
-        q->push(msg);
+    auto it = outboxes.find(id);
+    if (it != outboxes.end()) {
+        return it->second;
     }
+    return nullptr;
 }

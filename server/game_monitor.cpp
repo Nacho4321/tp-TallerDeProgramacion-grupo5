@@ -11,7 +11,7 @@ int GameMonitor::add_game(int &client_id, const std::string& name)
 
     auto new_game = std::make_unique<GameLoop>(new_queue);
 
-    auto player_outbox = outboxes.get_cliente_queue(client_id);
+    auto player_outbox = outboxes.get(client_id);
     if (!player_outbox) {
         throw std::runtime_error("Outbox not found for creator client");
     }
@@ -52,7 +52,7 @@ void GameMonitor::join_player(int &player_id, int &game_id)
     if (it == games.end() || !it->second) {
         throw std::runtime_error("Game not found");
     }
-    auto q = outboxes.get_cliente_queue(player_id);
+    auto q = outboxes.get(player_id);
     if (!q) {
         throw std::runtime_error("Outbox not found for joining client");
     }
