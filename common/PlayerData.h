@@ -12,6 +12,7 @@ struct CarInfo
 };
 struct PlayerData
 {
+    bool on_bridge;
     b2Body *body;
     std::string state;
     CarInfo car;

@@ -86,7 +86,7 @@ void GameLoop::run()
         {
             // Procesar eventos disponibles antes de actualizar física
             event_loop.process_available_events();
-            
+
             auto now = std::chrono::steady_clock::now();
             float dt = std::chrono::duration<float>(now - last_tick).count(); // segundos
             last_tick = now;
@@ -110,10 +110,10 @@ void GameLoop::run()
                     world.Step(FPS, VELOCITY_ITERS, COLLISION_ITERS);
                     acum -= FPS;
                 }
-                
+
                 // Ahora es seguro modificar Box2D (world.Step() completó)
                 perform_race_reset();
-                
+
                 std::vector<PlayerPositionUpdate> broadcast;
                 // Actulza las posiciones de los jugadores según los bodies y reescala para enviar a clientes
                 update_player_positions(broadcast);
@@ -146,7 +146,6 @@ void GameLoop::run()
         // Throttle tick rate to ~60 FPS to avoid flooding network/CPU
         std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
-
 }
 
 // Constructor para poder setear el contact listener del world
@@ -285,12 +284,13 @@ void GameLoop::process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpoin
 
     int checkpointIndex = it->second;
     PlayerData &pd = players[playerId];
-    
+
     // Si el jugador ya terminó la carrera, ignorar checkpoints
-    if (pd.race_finished) {
+    if (pd.race_finished)
+    {
         return;
     }
-    
+
     // Si el checkpoint que acaba de tocar es el siguiente que debe pasar
     if (pd.next_checkpoint == checkpointIndex)
     {
@@ -315,7 +315,7 @@ void GameLoop::process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpoin
             std::cout << "   Waiting for other players..." << std::endl;
             std::cout << "========================================\n"
                       << std::endl;
-            
+
             // Verificar si todos terminaron
             check_race_completion();
         }
@@ -362,6 +362,7 @@ void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_o
     Position pos = Position{spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
     PlayerData player_data;
     // Usar 'lambo' como auto por defecto inicial
+    player_data.on_bridge = false;
     player_data.body = create_player_body(spawn.x, spawn.y, pos, "lambo");
     player_data.state = MOVE_UP_RELEASED_STR;
     player_data.car = CarInfo{"lambo", DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP};
@@ -583,9 +584,12 @@ b2Body *GameLoop::create_player_body(float x_px, float y_px, Position &pos, cons
     fd.friction = car_physics.friction;
     fd.restitution = car_physics.restitution;
     fd.filter.categoryBits = 0x0008; // Categoria: autos
-    fd.filter.maskBits = 0x0001 |    // Solo colisiona con: Collisions normales
-                         0x0008;     // y otros autos
-                                     // NO colisiona con 0x0002 (puentes) ni 0x0004 (collisions_under)
+    fd.filter.maskBits =
+        0x0001 | // collisions normales
+        0x0008 | // autos
+        0x0005 | // Start_Bridge
+        0x0003;  // End_Bridge
+
     b->CreateFixture(&fd);
 
     b->SetBullet(true); // mejora CCD para objetos rápidos
@@ -615,6 +619,7 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
         update.player_id = id;
         update.new_pos = player_data.position;
         update.car_type = player_data.car.car_name;
+        update.on_bridge = player_data.on_bridge;
 
         // Solo enviar checkpoints si el jugador no ha terminado la carrera
         const int LOOKAHEAD = 3;
@@ -695,6 +700,8 @@ void GameLoop::update_body_positions()
 
         // Aplicar fuerza de conducción / torque basado en la entrada
         update_drive_for_player(player_data);
+
+        update_bridge_state_for_player(player_data);
     }
 }
 
@@ -952,24 +959,28 @@ void GameLoop::check_race_completion()
 {
     // Asume que ya estamos bajo players_map_mutex lock (llamado desde process_pair)
     // IMPORTANTE: No podemos modificar Box2D aquí (estamos en callback de contacto)
-    
+
     // Contar cuántos jugadores terminaron
     int finished_count = 0;
     int total_players = static_cast<int>(players.size());
-    
-    for (const auto &[id, player_data] : players) {
-        if (player_data.race_finished) {
+
+    for (const auto &[id, player_data] : players)
+    {
+        if (player_data.race_finished)
+        {
             finished_count++;
         }
     }
-    
+
     // Si todos los jugadores terminaron, marcar flag para resetear después
-    if (finished_count == total_players && total_players > 0) {
+    if (finished_count == total_players && total_players > 0)
+    {
         std::cout << "\n======================================" << std::endl;
         std::cout << "   ALL PLAYERS FINISHED!" << std::endl;
         std::cout << "   Preparing to return to lobby..." << std::endl;
-        std::cout << "======================================\n" << std::endl;
-        
+        std::cout << "======================================\n"
+                  << std::endl;
+
         pending_race_reset.store(true);
     }
 }
@@ -978,42 +989,101 @@ void GameLoop::perform_race_reset()
 {
     // Esta función se llama desde run(), fuera de callbacks de Box2D
     std::lock_guard<std::mutex> lk(players_map_mutex);
-    
-    if (!pending_race_reset.load()) {
+
+    if (!pending_race_reset.load())
+    {
         return;
     }
-    
+
     std::cout << "[GameLoop] Executing race reset..." << std::endl;
-    
+
     // Cambiar estado a LOBBY
     game_state = GameState::LOBBY;
-    
+
     // Resetear cada jugador a su spawn point
-    for (size_t i = 0; i < player_order.size(); ++i) {
+    for (size_t i = 0; i < player_order.size(); ++i)
+    {
         int player_id = player_order[i];
         auto player_it = players.find(player_id);
-        if (player_it == players.end()) continue;
-        
-        PlayerData& player_data = player_it->second;
-        const SpawnPoint& spawn = spawn_points[i];
-        
+        if (player_it == players.end())
+            continue;
+
+        PlayerData &player_data = player_it->second;
+        const SpawnPoint &spawn = spawn_points[i];
+
         // Destruir el body anterior (ahora es seguro, no estamos en callback)
-        if (player_data.body) {
+        if (player_data.body)
+        {
             world.DestroyBody(player_data.body);
         }
-        
+
         // Crear nuevo body en la posición de spawn
         Position new_pos{spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
         player_data.body = create_player_body(spawn.x, spawn.y, new_pos, player_data.car.car_name);
         player_data.position = new_pos;
-        
+
         // Resetear estado de carrera
         player_data.next_checkpoint = 0;
         player_data.laps_completed = 0;
         player_data.race_finished = false;
         player_data.lap_start_time = std::chrono::steady_clock::now();
     }
-    
+
     pending_race_reset.store(false);
     std::cout << "[GameLoop] Race reset complete. Returning to LOBBY." << std::endl;
+}
+
+void GameLoop::update_bridge_state_for_player(PlayerData &player_data)
+{
+    if (!player_data.body)
+    {
+        player_data.on_bridge = false;
+        return;
+    }
+
+    bool touching_start = false;
+    bool touching_end = false;
+
+    b2ContactEdge *ce = player_data.body->GetContactList();
+    while (ce)
+    {
+        b2Contact *c = ce->contact;
+
+        if (c->IsTouching())
+        {
+            b2Fixture *a = c->GetFixtureA();
+            b2Fixture *b = c->GetFixtureB();
+
+            uint16 fcA = a->GetFilterData().categoryBits;
+            uint16 fcB = b->GetFilterData().categoryBits;
+
+            if (fcA == 0x0005 || fcB == 0x0005)
+            {
+                touching_start = true;
+            }
+
+            if (fcA == 0x0003 || fcB == 0x0003)
+            {
+                touching_end = true;
+            }
+        }
+
+        ce = ce->next;
+    }
+
+    // END tiene prioridad
+    if (touching_end)
+    {
+        player_data.on_bridge = false;
+        std::cout << "[GameLoop] Player on_bridge set to FALSE (touching end)" << std::endl;
+    }
+    else if (touching_start)
+    {
+        player_data.on_bridge = true;
+        std::cout << "[GameLoop] Player on_bridge set to TRUE (touching start)" << std::endl;
+    }
+    else
+    {
+        player_data.on_bridge = false;
+    }
 }

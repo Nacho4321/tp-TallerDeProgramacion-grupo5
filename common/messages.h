@@ -27,6 +27,7 @@ struct PlayerPositionUpdate
 {
     int player_id;
     Position new_pos;
+    bool on_bridge;
     // Tipo de auto actual de este jugador (para que el cliente elija sprite); para NPCs puede ser "npc".
     std::string car_type;
     // Up to N next checkpoints (in pixels) that the client can draw as guidance.
@@ -50,7 +51,8 @@ struct ServerMessage
     bool success = false;
 
     // Payload para listado de partidas (GAMES_LIST)
-    struct GameSummary {
+    struct GameSummary
+    {
         uint32_t game_id;
         std::string name;
         uint32_t player_count;

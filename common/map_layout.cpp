@@ -31,9 +31,17 @@ void MapLayout::create_map_layout(const std::string &jsonPath)
         {
             category = 0x0002; // puentes
         }
+        if (layer["name"] == "End_Bridge")
+        {
+            category = 0x0003; // puentes
+        }
         if (layer["name"] == "Collisions_under")
         {
             category = 0x0004; // cosas que no son puente pero estan por arriba
+        }
+        if (layer["name"] == "Start_Bridge")
+        {
+            category = 0x0005; // puentes
         }
 
         if (category == 0)
@@ -237,17 +245,17 @@ void MapLayout::create_polygon_layout(const std::vector<b2Vec2> &vertices, uint1
 
     fd.filter.categoryBits = category;
 
-    if (category == 0x0001) // Collisions
+    if (category == 0x0004) // Collisions_Under
+    {
+        fd.filter.maskBits = 0xFFFF & ~0x0008; // Colisiona con todo EXCEPTO autos (0x0008)
+    }
+    else
     {
         fd.filter.maskBits = 0xFFFF; // Colisiona con todo
     }
-    else if (category == 0x0002) // Collisions_Bridge
+    if (category == 0x0005 || category == 0x0003)
     {
-        fd.filter.maskBits = 0xFFFF & ~0x0008; // Colisiona con todo EXCEPTO autos (0x0008)
-    }
-    else if (category == 0x0004) // Collisions_Under
-    {
-        fd.filter.maskBits = 0xFFFF & ~0x0008; // Colisiona con todo EXCEPTO autos (0x0008)
+        fd.isSensor = true;
     }
 
     body->CreateFixture(&fd);
