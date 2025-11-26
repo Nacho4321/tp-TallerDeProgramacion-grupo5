@@ -156,7 +156,14 @@ void MessageHandler::leave_game(ClientHandlerMessage &message)
 {
     std::cout << "[MessageHandler] Cliente " << message.client_id << " solicita dejar partida" << std::endl;
     
-    // El GameLoop detecta automáticamente cuando un cliente cierra su cola
-    // Ya no hay nada que limpiar aquí (OutboxMonitor eliminado)
-    (void)message;
+    // Cerrar la outbox del cliente para que el GameLoop detecte la desconexión
+    // en el próximo broadcast (lanza ClosedQueue y se limpia el player).
+    if (message.outbox) {
+        try {
+            message.outbox->close();
+            std::cout << "[MessageHandler] Outbox del cliente " << message.client_id << " cerrada" << std::endl;
+        } catch (const std::exception &e) {
+            std::cerr << "[MessageHandler] WARNING: outbox->close() lanzó excepción: " << e.what() << std::endl;
+        }
+    }
 }
