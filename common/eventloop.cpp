@@ -3,28 +3,20 @@
 #include <mutex>
 #include <condition_variable>
 
-void EventLoop::run()
+// Procesa todos los eventos disponibles en la cola sin bloquear
+void EventLoop::process_available_events()
 {
-    while (should_keep_running())
+    Event ev;
+    // Procesar todos los eventos disponibles usando try_pop
+    while (event_queue->try_pop(ev))
     {
         try
         {
-            Event ev = event_queue->pop();
             dispatcher.handle_event(ev);
-        }
-        catch (const ClosedQueue &)
-        {
-            break;
         }
         catch (const std::exception &e)
         {
-            std::cerr << "Error en event loop: " << e.what() << std::endl;
+            std::cerr << "[EventLoop] Error procesando evento: " << e.what() << std::endl;
         }
     }
-}
-
-void EventLoop::stop()
-{
-    event_queue->close();
-    Thread::stop();
 }

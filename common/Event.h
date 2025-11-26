@@ -4,9 +4,15 @@
 
 struct Event
 {
-    int client_id;
-    std::string action;
-    explicit Event(int client, std::string act) : client_id(client), action(act) {}
+    int client_id = -1;        // Valor por defecto
+    std::string action = "";   // Valor por defecto
+    
+    // Constructor sin parámetros (por defecto)
+    Event() = default;
+    
+    // Constructor con parámetros
+    Event(int client, std::string act) : client_id(client), action(act) {}
+    
     virtual ~Event() = default;
 };
 

@@ -17,7 +17,6 @@
 
 void GameLoop::run()
 {
-    event_loop.start();
     auto last_tick = std::chrono::steady_clock::now();
     float acum = 0.0f;
     map_layout.create_map_layout("data/cities/liberty_city.json");
@@ -85,6 +84,9 @@ void GameLoop::run()
     {
         try
         {
+            // Procesar eventos disponibles antes de actualizar física
+            event_loop.process_available_events();
+            
             auto now = std::chrono::steady_clock::now();
             float dt = std::chrono::duration<float>(now - last_tick).count(); // segundos
             last_tick = now;
@@ -145,8 +147,6 @@ void GameLoop::run()
         std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
 
-    event_loop.stop();
-    event_loop.join();
 }
 
 // Constructor para poder setear el contact listener del world
