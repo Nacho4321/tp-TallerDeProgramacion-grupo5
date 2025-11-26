@@ -2,8 +2,7 @@
 
 int GameMonitor::add_game(int client_id, std::shared_ptr<Queue<ServerMessage>> player_outbox, const std::string& name)
 {
-    std::lock_guard<std::mutex> lock1(games_mutex);
-    std::lock_guard<std::mutex> lock2(game_queues_mutex);
+    std::lock_guard<std::mutex> lock(games_mutex);  // Un solo lock
 
     int game_id = next_id++;
     auto new_queue = std::make_shared<Queue<Event>>();
@@ -22,7 +21,7 @@ int GameMonitor::add_game(int client_id, std::shared_ptr<Queue<ServerMessage>> p
 
     std::cout << "GameMonitor: juego " << game_id << " creado para cliente " << client_id << std::endl;
     
-    return game_id; // Devolver el game_id asignado
+    return game_id;
 }
 
 std::vector<ServerMessage::GameSummary> GameMonitor::list_games() {
@@ -46,7 +45,7 @@ std::vector<ServerMessage::GameSummary> GameMonitor::list_games() {
 
 void GameMonitor::join_player(int player_id, int game_id, std::shared_ptr<Queue<ServerMessage>> player_outbox)
 {
-    std::lock_guard<std::mutex> lock1(games_mutex);
+    std::lock_guard<std::mutex> lock(games_mutex);  // Un solo lock
     auto it = games.find(game_id);
     if (it == games.end() || !it->second) {
         throw std::runtime_error("Game not found");
@@ -59,6 +58,15 @@ void GameMonitor::join_player(int player_id, int game_id, std::shared_ptr<Queue<
               << " outbox.valid=" << std::boolalpha << static_cast<bool>(player_outbox) << std::endl;
     it->second->add_player(player_id, player_outbox);
     std::cout << "[GameMonitor] join_player: add_player() OK" << std::endl;
+}
+
+std::shared_ptr<Queue<Event>> GameMonitor::get_game_queue(int game_id) {
+    std::lock_guard<std::mutex> lock(games_mutex);
+    auto it = games_queues.find(game_id);
+    if (it != games_queues.end()) {
+        return it->second;
+    }
+    return nullptr;
 }
 
 GameLoop* GameMonitor::get_game(int game_id) {

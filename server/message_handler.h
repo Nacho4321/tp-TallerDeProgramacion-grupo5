@@ -10,8 +10,6 @@
 class MessageHandler
 {
 private:
-    std::unordered_map<int, std::shared_ptr<Queue<Event>>> &game_queues;
-    std::mutex &game_queues_mutex;
     GameMonitor &games_monitor;
     std::unordered_map<std::string, std::function<void(ClientHandlerMessage &)>> cli_comm_dispatch;
     OutboxMonitor &outboxes;
@@ -24,10 +22,7 @@ private:
     void leave_game(ClientHandlerMessage &message);
 
 public:
-    explicit MessageHandler(std::unordered_map<int, std::shared_ptr<Queue<Event>>> &game_qs, 
-                         std::mutex &game_qs_mutex, 
-                         GameMonitor &games_mon, 
-                         OutboxMonitor &outbox);
+    explicit MessageHandler(GameMonitor &games_mon, OutboxMonitor &outbox);
     
     virtual ~MessageHandler() = default;
     

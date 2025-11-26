@@ -11,9 +11,7 @@
 class Server
 {
 private:
-    OutboxMonitor outboxes;
-    std::unordered_map<int, std::shared_ptr<Queue<Event>>> game_queues;
-    std::mutex games_queues_mutex;
+    OutboxMonitor outboxes;  // Mantener por ahora para compatibilidad
     GameMonitor games_monitor;
     MessageHandler message_handler;
     Acceptor acceptor;
@@ -21,9 +19,9 @@ private:
 
 public:
     explicit Server(const char *port)
-        : outboxes(), game_queues(), games_queues_mutex(), 
-          games_monitor(game_queues, games_queues_mutex),
-          message_handler(game_queues, games_queues_mutex, games_monitor, outboxes), 
+        : outboxes(), 
+          games_monitor(),
+          message_handler(games_monitor, outboxes), 
           acceptor(port, message_handler, outboxes)
     {
     }

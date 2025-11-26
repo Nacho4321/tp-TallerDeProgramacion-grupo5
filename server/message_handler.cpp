@@ -1,12 +1,7 @@
 #include "message_handler.h"
 
-MessageHandler::MessageHandler(std::unordered_map<int, std::shared_ptr<Queue<Event>>> &game_qs,
-                           std::mutex &game_qs_mutex,
-                           GameMonitor &games_mon,
-                           OutboxMonitor &outbox)
-    : game_queues(game_qs), 
-      game_queues_mutex(game_qs_mutex), 
-      games_monitor(games_mon), 
+MessageHandler::MessageHandler(GameMonitor &games_mon, OutboxMonitor &outbox)
+    : games_monitor(games_mon), 
       cli_comm_dispatch(), 
       outboxes(outbox) 
 {
@@ -25,18 +20,10 @@ void MessageHandler::handle_message(ClientHandlerMessage &message)
         // Eventos de juego (movimientos, etc.)
         Event event = Event{message.client_id, message.msg.cmd};
         int target_gid = message.msg.game_id;
-        std::shared_ptr<Queue<Event>> target_q;
-        {
-            std::lock_guard<std::mutex> lk(game_queues_mutex);
-            if (target_gid > 0) {
-                auto itq = game_queues.find(target_gid);
-                if (itq != game_queues.end()) target_q = itq->second;
-            }
-            // Fallback: si no vino game_id o no existe, y hay exactamente 1 juego, usar ese
-            if (!target_q && game_queues.size() == 1) {
-                target_q = game_queues.begin()->second;
-            }
-        }
+        
+        // Obtener la cola del juego desde el GameMonitor
+        std::shared_ptr<Queue<Event>> target_q = games_monitor.get_game_queue(target_gid);
+        
         if (target_q) {
             try {
                 target_q->push(event);
@@ -171,24 +158,8 @@ void MessageHandler::leave_game(ClientHandlerMessage &message)
 {
     std::cout << "[MessageHandler] Cliente " << message.client_id << " solicita dejar partida" << std::endl;
     
-    // Buscar en qué juego está el jugador y removerlo
-    // Como no tenemos un mapa player->game, iteramos por los juegos
-    std::lock_guard<std::mutex> lk(game_queues_mutex);
-    for (auto &[game_id, queue] : game_queues) {
-        GameLoop* game = games_monitor.get_game(game_id);
-        if (game) {
-            try {
-                game->remove_player(message.client_id);
-                std::cout << "[MessageHandler] Cliente " << message.client_id 
-                         << " removido del juego " << game_id << std::endl;
-                break; // Asumimos que el jugador está en un solo juego
-            } catch (...) {
-                // No está en este juego, continuar
-            }
-        }
-    }
-    
-    // Siempre intentar limpiar el outbox del cliente
+    // El GameLoop detecta automáticamente cuando un cliente cierra su cola
+    // Solo limpiamos el outbox
     try {
         outboxes.remove(message.client_id);
     } catch (const std::exception &e) {

@@ -22,12 +22,10 @@ class TestMessageHandler : public MessageHandler {
 private:
     Queue<ClientHandlerMessage> *test_inbox;
 public:
-    TestMessageHandler(std::unordered_map<int, std::shared_ptr<Queue<Event>>> &game_qs,
-                    std::mutex &game_qs_mutex,
-                    GameMonitor &games_mon,
+    TestMessageHandler(GameMonitor &games_mon,
                     OutboxMonitor &outbox,
                     Queue<ClientHandlerMessage> *inbox_for_test = nullptr)
-        : MessageHandler(game_qs, game_qs_mutex, games_mon, outbox), test_inbox(inbox_for_test) {}
+        : MessageHandler(games_mon, outbox), test_inbox(inbox_for_test) {}
     
     void handle_message(ClientHandlerMessage &message) override {
         if (test_inbox) {
@@ -41,10 +39,8 @@ TEST(FullIntegrationTest, CompleteClientServerCommunication)
     // Creamos las estructuras necesarias para el Acceptor
     Queue<ClientHandlerMessage> inbox;
     OutboxMonitor outboxes;
-    std::unordered_map<int, std::shared_ptr<Queue<Event>>> game_queues;
-    std::mutex game_queues_mutex;
-    GameMonitor games_monitor(game_queues, game_queues_mutex);
-    TestMessageHandler message_handler(game_queues, game_queues_mutex, games_monitor, outboxes, &inbox);
+    GameMonitor games_monitor;
+    TestMessageHandler message_handler(games_monitor, outboxes, &inbox);
 
     // Levantamos el servidor con Acceptor en un hilo
     std::thread server_thread([&]() {
