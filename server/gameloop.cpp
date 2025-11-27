@@ -186,6 +186,39 @@ int GameLoop::find_player_by_body(b2Body *body)
     return -1;
 }
 
+float GameLoop::normalize_angle(double angle) const
+{
+    while (angle < 0.0)
+        angle += 2.0 * M_PI;
+    while (angle >= 2.0 * M_PI)
+        angle -= 2.0 * M_PI;
+    return static_cast<float>(angle);
+}
+
+void GameLoop::safe_destroy_body(b2Body *&body)
+{
+    if (!body)
+        return;
+
+    b2World *w = body->GetWorld();
+    if (!w)
+        return;
+
+    try
+    {
+        w->DestroyBody(body);
+        body = nullptr;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "[GameLoop] Error destroying body: " << e.what() << std::endl;
+    }
+    catch (...)
+    {
+        std::cerr << "[GameLoop] Unknown error destroying body" << std::endl;
+    }
+}
+
 b2Vec2 GameLoop::get_lateral_velocity(b2Body *body) const
 {
     b2Vec2 currentRightNormal = body->GetWorldVector(b2Vec2(1, 0));
@@ -389,22 +422,7 @@ void GameLoop::remove_player(int client_id)
 
     // Destruir el body del jugador
     PlayerData &pd = it->second;
-    b2Body *body = pd.body;
-    if (body)
-    {
-        b2World *w = body->GetWorld();
-        if (w)
-        {
-            try
-            {
-                w->DestroyBody(body);
-            }
-            catch (...)
-            {
-                std::cerr << "[GameLoop] Warning: DestroyBody threw for client " << client_id << std::endl;
-            }
-        }
-    }
+    safe_destroy_body(pd.body);
 
     // Borrar del mapa de mensajería y players
     players_messanger.erase(client_id);
@@ -438,17 +456,8 @@ void GameLoop::remove_player(int client_id)
             std::cout << "[GameLoop] remove_player: moving player " << player_id
                       << " to spawn " << i << " at (" << spawn.x << "," << spawn.y << ")" << std::endl;
 
-            // Destruir el body anterior
-            if (player_data.body)
-            {
-                b2World *world = player_data.body->GetWorld();
-                if (world)
-                {
-                    world->DestroyBody(player_data.body);
-                }
-            }
-
-            // Crear nuevo body en la nueva posición
+            // Destruir el body anterior y crear nuevo body en la nueva posición
+            safe_destroy_body(player_data.body);
             Position new_pos{false, spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
             player_data.body = create_player_body(spawn.x, spawn.y, new_pos, player_data.car.car_name);
             player_data.position = new_pos;
@@ -606,13 +615,7 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
         // Actualizar posición básica
         player_data.position.new_X = p.x * SCALE;
         player_data.position.new_Y = p.y * SCALE;
-
-        double ang = body->GetAngle();
-        while (ang < 0.0)
-            ang += 2.0 * M_PI;
-        while (ang >= 2.0 * M_PI)
-            ang -= 2.0 * M_PI;
-        player_data.position.angle = static_cast<float>(ang);
+        player_data.position.angle = normalize_angle(body->GetAngle());
 
         // IMPORTANTE: Actualizar el estado del puente ANTES de copiar la posición
         update_bridge_state_for_player(player_data);
@@ -624,11 +627,10 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
         update.car_type = player_data.car.car_name;
 
         // Solo enviar checkpoints si el jugador no ha terminado la carrera
-        const int LOOKAHEAD = 3;
         if (!player_data.race_finished && !checkpoint_centers.empty())
         {
             int total = static_cast<int>(checkpoint_centers.size());
-            for (int k = 0; k < LOOKAHEAD; ++k)
+            for (int k = 0; k < CHECKPOINT_LOOKAHEAD; ++k)
             {
                 int idx = (player_data.next_checkpoint + k) % total;
                 b2Vec2 c = checkpoint_centers[idx];
@@ -639,17 +641,6 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
 
         broadcast.push_back(update);
     }
-
-    // Printeo la posición del jugador y su próximo checkpoint
-    // int next_idx = player_data.next_checkpoint;
-    // if (next_idx >= 0 && next_idx < static_cast<int>(checkpoint_centers.size()))
-    // {
-    //     b2Vec2 c = checkpoint_centers[next_idx];
-    //     float cx_px = c.x * SCALE;
-    //     float cy_px = c.y * SCALE;
-    //     std::cout << "[GameLoop] Player " << id << " pos=(" << player_data.position.new_X << "," << player_data.position.new_Y << ") "
-    //               << "next_checkpoint=(" << cx_px << "," << cy_px << ") idx=" << next_idx << std::endl;
-    // }
 
     // Apendear también las posiciones de los NPCs
     for (auto &npc : npcs)
@@ -662,26 +653,19 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
         pos.new_Y = p.y * SCALE;
 
         b2Vec2 vel = npc.body->GetLinearVelocity();
-        const float DIR_THRESH = 0.05f; // umbral para considerar movimiento significativo
         MovementDirectionX dx = not_horizontal;
         MovementDirectionY dy = not_vertical;
-        if (vel.x > DIR_THRESH)
+        if (vel.x > NPC_DIRECTION_THRESHOLD)
             dx = right;
-        else if (vel.x < -DIR_THRESH)
+        else if (vel.x < -NPC_DIRECTION_THRESHOLD)
             dx = left;
-        if (vel.y > DIR_THRESH)
+        if (vel.y > NPC_DIRECTION_THRESHOLD)
             dy = down;
-        else if (vel.y < -DIR_THRESH)
+        else if (vel.y < -NPC_DIRECTION_THRESHOLD)
             dy = up;
         pos.direction_x = dx;
         pos.direction_y = dy;
-        // usar ángulo real del body (normalizar a [0,2PI)) para que el cliente pueda orientar correctamente
-        double ang = npc.body->GetAngle();
-        while (ang < 0.0)
-            ang += 2.0 * M_PI;
-        while (ang >= 2.0 * M_PI)
-            ang -= 2.0 * M_PI;
-        pos.angle = static_cast<float>(ang);
+        pos.angle = normalize_angle(npc.body->GetAngle());
 
         PlayerPositionUpdate update;
         update.player_id = npc.npc_id; // id negativo para NPC
@@ -790,7 +774,6 @@ void GameLoop::init_npcs(const std::vector<MapLayout::ParkedCarData> &parked_dat
     }
 
     // Preparar lista de waypoints válidos (excluir los demasiado cerca de autos estacionados)
-    const float min_distance_from_parked_m = 1.0f; // distancia mínima para no superponerse (1 metro)
     std::vector<int> candidate_waypoints;
     candidate_waypoints.reserve(street_waypoints.size());
     for (int idx = 0; idx < static_cast<int>(street_waypoints.size()); ++idx)
@@ -800,7 +783,7 @@ void GameLoop::init_npcs(const std::vector<MapLayout::ParkedCarData> &parked_dat
         for (const auto &pc : parked_data)
         {
             float d = (wp_pos - pc.position).Length();
-            if (d < min_distance_from_parked_m)
+            if (d < MIN_DISTANCE_FROM_PARKED_M)
             {
                 too_close = true;
                 break;
@@ -891,7 +874,6 @@ void GameLoop::update_npcs()
     if (street_waypoints.empty())
         return;
 
-    const float arrival_threshold_m = 0.5f; // 0.5 metros para considerar "llegado" al waypoint
     std::random_device rd;
     std::mt19937 gen(rd());
 
@@ -913,7 +895,7 @@ void GameLoop::update_npcs()
         float dist = to_target.Length();
 
         // Si llegó al waypoint objetivo, elegir siguiente destino aleatorio
-        if (dist < arrival_threshold_m)
+        if (dist < NPC_ARRIVAL_THRESHOLD_M)
         {
             npc.current_waypoint = npc.target_waypoint;
             const MapLayout::WaypointData &current_wp = street_waypoints[npc.current_waypoint];
@@ -952,7 +934,7 @@ void GameLoop::update_npcs()
 
 size_t GameLoop::get_player_count() const
 {
-    std::lock_guard<std::mutex> lk(const_cast<std::mutex &>(players_map_mutex));
+    std::lock_guard<std::mutex> lk(players_map_mutex);
     return players.size();
 }
 
@@ -1012,13 +994,8 @@ void GameLoop::perform_race_reset()
         PlayerData &player_data = player_it->second;
         const SpawnPoint &spawn = spawn_points[i];
 
-        // Destruir el body anterior (ahora es seguro, no estamos en callback)
-        if (player_data.body)
-        {
-            world.DestroyBody(player_data.body);
-        }
-
-        // Crear nuevo body en la posición de spawn
+        // Destruir el body anterior (ahora es seguro, no estamos en callback) y crear nuevo
+        safe_destroy_body(player_data.body);
         Position new_pos{false, spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
         player_data.body = create_player_body(spawn.x, spawn.y, new_pos, player_data.car.car_name);
         player_data.position = new_pos;

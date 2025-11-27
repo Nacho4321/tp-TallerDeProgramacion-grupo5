@@ -53,6 +53,13 @@ private:
         float angle;
     };
     static constexpr int MAX_PLAYERS = 8;
+    
+    // Configuración de checkpoints y NPCs
+    static constexpr int CHECKPOINT_LOOKAHEAD = 3;
+    static constexpr float NPC_DIRECTION_THRESHOLD = 0.05f;
+    static constexpr float NPC_ARRIVAL_THRESHOLD_M = 0.5f;
+    static constexpr float MIN_DISTANCE_FROM_PARKED_M = 1.0f;
+    
     std::array<SpawnPoint, MAX_PLAYERS> spawn_points = {{
         {890.0f, 700.0f, 0.0f}, // Spawn 0
         {910.0f, 660.0f, 0.0f}, // Spawn 1
@@ -105,6 +112,10 @@ private:
     // Helpers usados por el contact listener
     int find_player_by_body(b2Body *body);
     void process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpointFix);
+
+    // Utility helpers
+    float normalize_angle(double angle) const;
+    void safe_destroy_body(b2Body *&body);
 
     b2Vec2 get_lateral_velocity(b2Body *body) const;
     b2Vec2 get_forward_velocity(b2Body *body) const;
