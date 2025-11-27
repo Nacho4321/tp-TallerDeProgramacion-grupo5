@@ -43,7 +43,7 @@ void GameLoop::setup_checkpoints_from_file(const std::string &json_path)
         checkpoint_fixtures[fixture] = static_cast<int>(i);
     }
 
-    std::cout << "[GameLoop] Created " << checkpoint_centers.size() 
+    std::cout << "[GameLoop] Created " << checkpoint_centers.size()
               << " checkpoint sensors (from " << json_path << ")." << std::endl;
 }
 
@@ -68,7 +68,7 @@ void GameLoop::setup_npc_waypoints(const std::string &json_path)
 
     if (!street_waypoints.empty())
     {
-        std::cout << "[GameLoop] Loaded " << street_waypoints.size() 
+        std::cout << "[GameLoop] Loaded " << street_waypoints.size()
                   << " NPC waypoints (from " << json_path << ")." << std::endl;
     }
 }
@@ -76,7 +76,7 @@ void GameLoop::setup_npc_waypoints(const std::string &json_path)
 void GameLoop::setup_world()
 {
     map_layout.create_map_layout("data/cities/liberty_city.json");
-    
+
     setup_checkpoints_from_file("data/cities/base_liberty_city_checkpoints.json");
     setup_npc_config();
     setup_npc_waypoints("data/cities/npc_waypoints.json");
@@ -89,7 +89,7 @@ void GameLoop::setup_world()
 void GameLoop::process_playing_state(float dt, float &acum)
 {
     (void)dt; // dt is accumulated before calling this method
-    
+
     if (players.empty())
         return;
 
@@ -113,7 +113,7 @@ void GameLoop::process_playing_state(float dt, float &acum)
 
     std::vector<PlayerPositionUpdate> broadcast;
     update_player_positions(broadcast);
-    
+
     ServerMessage msg;
     msg.opcode = UPDATE_POSITIONS;
     msg.positions = broadcast;
@@ -127,7 +127,7 @@ void GameLoop::process_lobby_state()
 
     std::vector<PlayerPositionUpdate> broadcast;
     update_player_positions(broadcast);
-    
+
     ServerMessage msg;
     msg.opcode = UPDATE_POSITIONS;
     msg.positions = broadcast;
@@ -138,7 +138,7 @@ void GameLoop::run()
 {
     auto last_tick = std::chrono::steady_clock::now();
     float acum = 0.0f;
-    
+
     setup_world();
 
     while (should_keep_running())
@@ -298,7 +298,7 @@ void GameLoop::apply_forward_drive_force(b2Body *body, float desired_speed, cons
 
     float max_accel_m = car_physics.max_acceleration / SCALE;
     float accel_command = (desired_speed - current_speed) * car_physics.speed_controller_gain;
-    
+
     if (accel_command > max_accel_m)
         accel_command = max_accel_m;
     else if (accel_command < -max_accel_m)
@@ -339,7 +339,7 @@ void GameLoop::update_drive_for_player(PlayerData &player_data)
 }
 
 bool GameLoop::is_valid_checkpoint_collision(b2Fixture *player_fixture, b2Fixture *checkpoint_fixture,
-                                              int &out_player_id, int &out_checkpoint_index)
+                                             int &out_player_id, int &out_checkpoint_index)
 {
     if (!player_fixture || !checkpoint_fixture)
         return false;
@@ -372,7 +372,8 @@ void GameLoop::complete_player_race(PlayerData &player_data, int player_id)
     std::cout << "   PLAYER " << player_id << " FINISHED THE RACE!" << std::endl;
     std::cout << "   Time: " << minutes << ":" << std::fixed << std::setprecision(3) << seconds << std::endl;
     std::cout << "   Waiting for other players..." << std::endl;
-    std::cout << "========================================\n" << std::endl;
+    std::cout << "========================================\n"
+              << std::endl;
 
     check_race_completion();
 }
@@ -395,7 +396,7 @@ void GameLoop::handle_checkpoint_reached(PlayerData &player_data, int player_id,
     else
     {
         player_data.next_checkpoint = new_next;
-        std::cout << "[GameLoop] Player " << player_id << " passed checkpoint " 
+        std::cout << "[GameLoop] Player " << player_id << " passed checkpoint "
                   << checkpoint_index << " next=" << player_data.next_checkpoint << std::endl;
     }
 }
@@ -521,12 +522,12 @@ void GameLoop::reposition_remaining_players()
 void GameLoop::remove_player(int client_id)
 {
     std::lock_guard<std::mutex> lk(players_map_mutex);
-    
+
     cleanup_player_data(client_id);
     remove_from_player_order(client_id);
-    
+
     std::cout << "[GameLoop] remove_player: client " << client_id << " removed" << std::endl;
-    
+
     if (game_state == GameState::LOBBY && !player_order.empty())
         reposition_remaining_players();
 }
@@ -581,14 +582,14 @@ void GameLoop::reset_npcs_velocities()
 void GameLoop::start_game()
 {
     std::lock_guard<std::mutex> lk(players_map_mutex);
-    
+
     if (game_state != GameState::LOBBY)
         return;
-    
+
     transition_to_playing_state();
     reset_players_for_race_start();
     reset_npcs_velocities();
-    
+
     started = true;
 }
 
@@ -707,7 +708,6 @@ b2Body *GameLoop::create_player_body(float x_px, float y_px, Position &pos, cons
     fd.filter.maskBits =
         COLLISION_FLOOR |     // Colisiones del suelo
         CAR_GROUND |          // Otros jugadores en el suelo
-        CAR_NPC |             // ← NUEVO: Colisionar con NPCs
         SENSOR_START_BRIDGE | // Sensores de entrada
         SENSOR_END_BRIDGE;    // Sensores de salida
 
@@ -758,7 +758,7 @@ void GameLoop::add_npc_to_broadcast(std::vector<PlayerPositionUpdate> &broadcast
 {
     if (!npc.body)
         return;
-    
+
     b2Vec2 position = npc.body->GetPosition();
     Position pos{};
     pos.new_X = position.x * SCALE;
@@ -778,7 +778,8 @@ void GameLoop::add_npc_to_broadcast(std::vector<PlayerPositionUpdate> &broadcast
     pos.direction_x = dx;
     pos.direction_y = dy;
     pos.angle = normalize_angle(npc.body->GetAngle());
-
+    update_bridge_state_for_npc(npc);
+    pos.on_bridge = npc.on_bridge;
     PlayerPositionUpdate update;
     update.player_id = npc.npc_id; // id negativo para NPC
     update.new_pos = pos;
@@ -789,7 +790,7 @@ void GameLoop::add_npc_to_broadcast(std::vector<PlayerPositionUpdate> &broadcast
 void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadcast)
 {
     std::lock_guard<std::mutex> lk(players_map_mutex);
-    
+
     for (auto &[id, player_data] : players)
     {
         add_player_to_broadcast(broadcast, id, player_data);
@@ -820,7 +821,7 @@ void GameLoop::update_body_positions()
 b2Body *GameLoop::create_npc_body(float x_m, float y_m, bool is_static, float angle_rad)
 {
     b2BodyDef bd;
-    bd.type = is_static ? b2_staticBody : b2_kinematicBody;
+    bd.type = is_static ? b2_staticBody : b2_dynamicBody;
     bd.position.Set(x_m, y_m);
     bd.angle = angle_rad;
     b2Body *npc_body = world.CreateBody(&bd);
@@ -836,11 +837,13 @@ b2Body *GameLoop::create_npc_body(float x_m, float y_m, bool is_static, float an
     fd.friction = 0.3f;
     fd.restitution = 0.0f;
 
-    fd.filter.categoryBits = CAR_NPC;
+    fd.filter.categoryBits = CAR_GROUND;
+
     fd.filter.maskBits =
-        COLLISION_FLOOR | // Suelo
-        CAR_GROUND |      // Jugadores en el suelo
-        CAR_NPC;          // Otros NPCs
+        COLLISION_FLOOR |     // Colisiones del suelo
+        CAR_GROUND |          // Otros jugadores en el suelo
+        SENSOR_START_BRIDGE | // Sensores de entrada
+        SENSOR_END_BRIDGE;    // Sensores de salida
 
     npc_body->CreateFixture(&fd);
     return npc_body;
@@ -874,11 +877,12 @@ void GameLoop::spawn_parked_npcs(const std::vector<MapLayout::ParkedCarData> &pa
         npc.speed_mps = 0.0f;
         npc.is_parked = true;
         npc.is_horizontal = parked.horizontal;
+        npc.on_bridge = false;
 
         npcs.push_back(npc);
     }
 
-    std::cout << "[GameLoop][NPC] Spawned " << parked_count << " parked NPCs (out of " 
+    std::cout << "[GameLoop][NPC] Spawned " << parked_count << " parked NPCs (out of "
               << parked_data.size() << " available positions)." << std::endl;
 }
 
@@ -920,7 +924,7 @@ int GameLoop::select_closest_waypoint_connection(int start_waypoint_idx)
 {
     const MapLayout::WaypointData &start_wp = street_waypoints[start_waypoint_idx];
     b2Vec2 spawn_pos = start_wp.position;
-    
+
     if (start_wp.connections.empty())
         return start_waypoint_idx;
 
@@ -931,10 +935,10 @@ int GameLoop::select_closest_waypoint_connection(int start_waypoint_idx)
     {
         if (candidate_idx < 0 || candidate_idx >= static_cast<int>(street_waypoints.size()))
             continue;
-        
+
         b2Vec2 candidate_pos = street_waypoints[candidate_idx].position;
         float distance = (candidate_pos - spawn_pos).Length();
-        
+
         if (distance < best_dist)
         {
             best_dist = distance;
@@ -949,10 +953,10 @@ float GameLoop::calculate_initial_npc_angle(const b2Vec2 &spawn_pos, const b2Vec
 {
     b2Vec2 direction = target_pos - spawn_pos;
     float length = direction.Length();
-    
+
     if (length <= 0.0001f)
         return 0.0f;
-    
+
     float movement_angle = std::atan2(direction.y, direction.x);
     return movement_angle - b2_pi / 2.0f; // sprite orientado hacia arriba
 }
@@ -985,7 +989,7 @@ void GameLoop::spawn_moving_npcs(const std::vector<MapLayout::ParkedCarData> &pa
     }
 
     std::vector<int> candidate_waypoints = get_valid_waypoints_away_from_parked(parked_data);
-    int moving_npcs_count = std::min(NPCConfig::getInstance().getMaxMoving(), 
+    int moving_npcs_count = std::min(NPCConfig::getInstance().getMaxMoving(),
                                      static_cast<int>(candidate_waypoints.size()));
 
     std::random_device rd;
@@ -996,7 +1000,7 @@ void GameLoop::spawn_moving_npcs(const std::vector<MapLayout::ParkedCarData> &pa
     {
         int start_wp_idx = candidate_waypoints[i];
         int target_wp_idx = select_closest_waypoint_connection(start_wp_idx);
-        
+
         float initial_angle = 0.0f;
         if (target_wp_idx != start_wp_idx)
         {
@@ -1161,28 +1165,26 @@ bool GameLoop::update_bridge_state_for_player(PlayerData &player_data)
     b2ContactEdge *ce = player_data.body->GetContactList();
     while (ce)
     {
-        b2Contact *contact = ce->contact;
+        b2Contact *c = ce->contact;
 
-        if (contact->IsTouching())
+        if (c->IsTouching())
         {
-            b2Fixture *fixture_a = contact->GetFixtureA();
-            b2Fixture *fixture_b = contact->GetFixtureB();
+            b2Fixture *a = c->GetFixtureA();
+            b2Fixture *b = c->GetFixtureB();
 
-            uint16 category_a = fixture_a->GetFilterData().categoryBits;
-            uint16 category_b = fixture_b->GetFilterData().categoryBits;
+            uint16 fcA = a->GetFilterData().categoryBits;
+            uint16 fcB = b->GetFilterData().categoryBits;
 
             // Detectar entrada al puente
-            if (category_a == SENSOR_START_BRIDGE || category_b == SENSOR_START_BRIDGE)
+            if (fcA == SENSOR_START_BRIDGE || fcB == SENSOR_START_BRIDGE)
             {
                 entering_bridge = true;
-                std::cout << "[BRIDGE] Detected START_BRIDGE sensor!" << std::endl;
             }
 
             // Detectar salida del puente
-            if (category_a == SENSOR_END_BRIDGE || category_b == SENSOR_END_BRIDGE)
+            if (fcA == SENSOR_END_BRIDGE || fcB == SENSOR_END_BRIDGE)
             {
                 leaving_bridge = true;
-                std::cout << "[BRIDGE] Detected END_BRIDGE sensor!" << std::endl;
             }
         }
 
@@ -1208,6 +1210,62 @@ bool GameLoop::update_bridge_state_for_player(PlayerData &player_data)
     return player_data.position.on_bridge;
 }
 
+void GameLoop::update_bridge_state_for_npc(NPCData &npc_data)
+{
+    if (!npc_data.body)
+    {
+        return;
+    }
+
+    bool entering_bridge = false;
+    bool leaving_bridge = false;
+
+    b2ContactEdge *ce = npc_data.body->GetContactList();
+    while (ce)
+    {
+        b2Contact *c = ce->contact;
+
+        if (c->IsTouching())
+        {
+            b2Fixture *a = c->GetFixtureA();
+            b2Fixture *b = c->GetFixtureB();
+
+            uint16 fcA = a->GetFilterData().categoryBits;
+            uint16 fcB = b->GetFilterData().categoryBits;
+
+            // Detectar entrada al puente
+            if (fcA == SENSOR_START_BRIDGE || fcB == SENSOR_START_BRIDGE)
+            {
+                entering_bridge = true;
+            }
+
+            // Detectar salida del puente
+            if (fcA == SENSOR_END_BRIDGE || fcB == SENSOR_END_BRIDGE)
+            {
+                leaving_bridge = true;
+            }
+        }
+
+        ce = ce->next;
+    }
+
+    // Actualizar el estado del puente
+    if (entering_bridge && !npc_data.on_bridge)
+    {
+        // Entrando al puente
+        std::cout << "[BRIDGE] Player entering bridge (CAR_GROUND -> CAR_BRIDGE)" << std::endl;
+        set_npc_category(npc_data, CAR_BRIDGE);
+        npc_data.on_bridge = true;
+    }
+    else if (leaving_bridge && npc_data.on_bridge)
+    {
+        // Saliendo del puente
+        std::cout << "[BRIDGE] Player leaving bridge (CAR_BRIDGE -> CAR_GROUND)" << std::endl;
+        set_npc_category(npc_data, CAR_GROUND);
+        npc_data.on_bridge = false;
+    }
+}
+
 void GameLoop::set_car_category(PlayerData &player_data, uint16 newCategory)
 {
     b2Body *body = player_data.body;
@@ -1223,7 +1281,6 @@ void GameLoop::set_car_category(PlayerData &player_data, uint16 newCategory)
             filter.maskBits =
                 COLLISION_FLOOR |     // Colisiones del suelo
                 CAR_GROUND |          // Otros jugadores en el suelo
-                CAR_NPC |             // ← NUEVO: NPCs
                 SENSOR_START_BRIDGE | // Sensor de entrada al puente
                 SENSOR_END_BRIDGE;    // Sensor de salida del puente
         }
@@ -1231,12 +1288,44 @@ void GameLoop::set_car_category(PlayerData &player_data, uint16 newCategory)
         {
             // Auto EN EL PUENTE: ve puente, cosas sobre puente, otros autos en puente, y sensores
             filter.maskBits =
-                COLLISION_BRIDGE |    // El puente mismo
-                COLLISION_UNDER |     // Objetos sobre el puente
-                CAR_BRIDGE |          // Otros jugadores en el puente
-                SENSOR_START_BRIDGE | // Sensor de entrada
-                SENSOR_END_BRIDGE;    // Sensor de salida
-                                      // ❌ NO ve COLLISION_FLOOR ni CAR_NPC (NPCs están abajo)
+                COLLISION_BRIDGE |
+                COLLISION_UNDER |
+                CAR_BRIDGE |
+                SENSOR_START_BRIDGE |
+                SENSOR_END_BRIDGE;
+        }
+
+        f->SetFilterData(filter);
+    }
+}
+
+void GameLoop::set_npc_category(NPCData &npc_data, uint16 newCategory)
+{
+    b2Body *body = npc_data.body;
+
+    for (b2Fixture *f = body->GetFixtureList(); f; f = f->GetNext())
+    {
+        b2Filter filter = f->GetFilterData();
+        filter.categoryBits = newCategory;
+
+        if (newCategory == CAR_GROUND)
+        {
+            // Auto en el SUELO: ve suelo, otros autos en suelo, NPCs, y sensores
+            filter.maskBits =
+                COLLISION_FLOOR |     // Colisiones del suelo
+                CAR_GROUND |          // Otros jugadores en el suelo
+                SENSOR_START_BRIDGE | // Sensor de entrada al puente
+                SENSOR_END_BRIDGE;    // Sensor de salida del puente
+        }
+        else if (newCategory == CAR_BRIDGE)
+        {
+            // Auto EN EL PUENTE: ve puente, cosas sobre puente, otros autos en puente, y sensores
+            filter.maskBits =
+                COLLISION_BRIDGE |
+                COLLISION_UNDER |
+                CAR_BRIDGE |
+                SENSOR_START_BRIDGE |
+                SENSOR_END_BRIDGE;
         }
 
         f->SetFilterData(filter);

@@ -264,7 +264,6 @@ void MapLayout::create_polygon_layout(const std::vector<b2Vec2> &vertices, uint1
     {
         fd.filter.maskBits =
             CAR_GROUND |
-            CAR_NPC |
             SENSOR_START_BRIDGE |
             SENSOR_END_BRIDGE;
     }
@@ -276,7 +275,6 @@ void MapLayout::create_polygon_layout(const std::vector<b2Vec2> &vertices, uint1
         fd.filter.maskBits =
             CAR_GROUND |
             CAR_BRIDGE |
-            CAR_NPC |
             COLLISION_FLOOR |
             COLLISION_BRIDGE |
             COLLISION_UNDER;

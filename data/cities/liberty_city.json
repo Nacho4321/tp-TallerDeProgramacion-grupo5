@@ -28840,26 +28840,26 @@
                  "y":4152
                 }, 
                 {
-                 "height":95,
-                 "id":3115,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":7,
-                 "x":296,
-                 "y":785
-                }, 
-                {
-                 "height":95,
-                 "id":3116,
+                 "height":96,
+                 "id":3124,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
                  "width":8,
-                 "x":464,
-                 "y":785
+                 "x":296,
+                 "y":784
+                }, 
+                {
+                 "height":96,
+                 "id":3127,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":9,
+                 "x":463,
+                 "y":784
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -32403,26 +32403,26 @@
          "name":"End_Bridge",
          "objects":[
                 {
-                 "height":80,
+                 "height":111.9375,
                  "id":3106,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":2,
-                 "x":237,
-                 "y":792
+                 "width":2.38164893617021,
+                 "x":203,
+                 "y":776
                 }, 
                 {
-                 "height":88,
-                 "id":3109,
+                 "height":120,
+                 "id":3118,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":3,
-                 "x":520,
-                 "y":792
+                 "width":1,
+                 "x":541,
+                 "y":776
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -32443,18 +32443,18 @@
                  "type":"",
                  "visible":true,
                  "width":2,
-                 "x":246,
+                 "x":248,
                  "y":792
                 }, 
                 {
                  "height":80,
-                 "id":3108,
+                 "id":3120,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
                  "width":2,
-                 "x":512,
+                 "x":510,
                  "y":792
                 }],
          "opacity":1,
@@ -34143,7 +34143,7 @@
          "y":0
         }],
  "nextlayerid":13,
- "nextobjectid":3117,
+ "nextobjectid":3129,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
