@@ -1323,6 +1323,7 @@ void GameLoop::set_npc_category(NPCData &npc_data, uint16 newCategory)
             filter.maskBits =
                 COLLISION_BRIDGE |
                 COLLISION_UNDER |
+                COLLISION_FLOOR |
                 CAR_BRIDGE |
                 SENSOR_START_BRIDGE |
                 SENSOR_END_BRIDGE;
