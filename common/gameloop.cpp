@@ -86,7 +86,7 @@ void GameLoop::run()
         {
             // Procesar eventos disponibles antes de actualizar física
             event_loop.process_available_events();
-            
+
             auto now = std::chrono::steady_clock::now();
             float dt = std::chrono::duration<float>(now - last_tick).count(); // segundos
             last_tick = now;
@@ -110,10 +110,10 @@ void GameLoop::run()
                     world.Step(FPS, VELOCITY_ITERS, COLLISION_ITERS);
                     acum -= FPS;
                 }
-                
+
                 // Ahora es seguro modificar Box2D (world.Step() completó)
                 perform_race_reset();
-                
+
                 std::vector<PlayerPositionUpdate> broadcast;
                 // Actulza las posiciones de los jugadores según los bodies y reescala para enviar a clientes
                 update_player_positions(broadcast);
@@ -146,7 +146,6 @@ void GameLoop::run()
         // Throttle tick rate to ~60 FPS to avoid flooding network/CPU
         std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
-
 }
 
 // Constructor para poder setear el contact listener del world
@@ -285,12 +284,13 @@ void GameLoop::process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpoin
 
     int checkpointIndex = it->second;
     PlayerData &pd = players[playerId];
-    
+
     // Si el jugador ya terminó la carrera, ignorar checkpoints
-    if (pd.race_finished) {
+    if (pd.race_finished)
+    {
         return;
     }
-    
+
     // Si el checkpoint que acaba de tocar es el siguiente que debe pasar
     if (pd.next_checkpoint == checkpointIndex)
     {
@@ -315,7 +315,7 @@ void GameLoop::process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpoin
             std::cout << "   Waiting for other players..." << std::endl;
             std::cout << "========================================\n"
                       << std::endl;
-            
+
             // Verificar si todos terminaron
             check_race_completion();
         }
@@ -359,7 +359,7 @@ void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_o
     std::cout << "[GameLoop] add_player: assigning spawn point " << spawn_idx
               << " at (" << spawn.x << "," << spawn.y << ")" << std::endl;
 
-    Position pos = Position{spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
+    Position pos = Position{false, spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
     PlayerData player_data;
     // Usar 'lambo' como auto por defecto inicial
     player_data.body = create_player_body(spawn.x, spawn.y, pos, "lambo");
@@ -449,7 +449,7 @@ void GameLoop::remove_player(int client_id)
             }
 
             // Crear nuevo body en la nueva posición
-            Position new_pos{spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
+            Position new_pos{false, spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
             player_data.body = create_player_body(spawn.x, spawn.y, new_pos, player_data.car.car_name);
             player_data.position = new_pos;
         }
@@ -482,6 +482,7 @@ void GameLoop::start_game()
                 player_data.next_checkpoint = 0;
                 player_data.laps_completed = 0;
                 player_data.race_finished = false;
+                player_data.position.on_bridge = false;
 
                 // Sincronizar la posición del body con la posición almacenada
                 b2Vec2 current_pos = player_data.body->GetPosition();
@@ -557,21 +558,15 @@ b2Body *GameLoop::create_player_body(float x_px, float y_px, Position &pos, cons
 {
     const CarPhysics &car_physics = physics_config.getCarPhysics(car_name);
 
-    // Crecion del body
     b2BodyDef bd;
     bd.type = b2_dynamicBody;
     bd.position.Set(x_px / SCALE, y_px / SCALE);
-
-    // Rotacion del body: use explicit angle provided in Position (radians)
     bd.angle = pos.angle;
 
-    // Lo creamos en el world
     b2Body *b = world.CreateBody(&bd);
 
     float halfWidth = car_physics.width / (2.0f * SCALE);
     float halfHeight = car_physics.height / (2.0f * SCALE);
-
-    // Offset del centro de colisión (Y+ = hacia adelante del auto)
     b2Vec2 center_offset(0.0f, car_physics.center_offset_y / SCALE);
 
     b2PolygonShape shape;
@@ -582,13 +577,18 @@ b2Body *GameLoop::create_player_body(float x_px, float y_px, Position &pos, cons
     fd.density = car_physics.density;
     fd.friction = car_physics.friction;
     fd.restitution = car_physics.restitution;
-    fd.filter.categoryBits = 0x0008; // Categoria: autos
-    fd.filter.maskBits = 0x0001 |    // Solo colisiona con: Collisions normales
-                         0x0008;     // y otros autos
-                                     // NO colisiona con 0x0002 (puentes) ni 0x0004 (collisions_under)
-    b->CreateFixture(&fd);
 
-    b->SetBullet(true); // mejora CCD para objetos rápidos
+    fd.filter.categoryBits = CAR_GROUND;
+
+    fd.filter.maskBits =
+        COLLISION_FLOOR |     // Colisiones del suelo
+        CAR_GROUND |          // Otros jugadores en el suelo
+        CAR_NPC |             // ← NUEVO: Colisionar con NPCs
+        SENSOR_START_BRIDGE | // Sensores de entrada
+        SENSOR_END_BRIDGE;    // Sensores de salida
+
+    b->CreateFixture(&fd);
+    b->SetBullet(true);
     b->SetLinearDamping(car_physics.linear_damping);
     b->SetAngularDamping(car_physics.angular_damping);
 
@@ -602,8 +602,11 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
     {
         b2Body *body = player_data.body;
         b2Vec2 p = body->GetPosition();
-        player_data.position.new_X = p.x * SCALE; // reconvertir a píxeles
+
+        // Actualizar posición básica
+        player_data.position.new_X = p.x * SCALE;
         player_data.position.new_Y = p.y * SCALE;
+
         double ang = body->GetAngle();
         while (ang < 0.0)
             ang += 2.0 * M_PI;
@@ -611,9 +614,13 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
             ang -= 2.0 * M_PI;
         player_data.position.angle = static_cast<float>(ang);
 
+        // IMPORTANTE: Actualizar el estado del puente ANTES de copiar la posición
+        update_bridge_state_for_player(player_data);
+
+        // Ahora crear el update con los datos correctos
         PlayerPositionUpdate update;
         update.player_id = id;
-        update.new_pos = player_data.position;
+        update.new_pos = player_data.position; // Ahora incluye on_bridge actualizado
         update.car_type = player_data.car.car_name;
 
         // Solo enviar checkpoints si el jugador no ha terminado la carrera
@@ -625,24 +632,24 @@ void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadc
             {
                 int idx = (player_data.next_checkpoint + k) % total;
                 b2Vec2 c = checkpoint_centers[idx];
-                Position cp_pos{c.x * SCALE, c.y * SCALE, not_horizontal, not_vertical, 0.0f};
+                Position cp_pos{false, c.x * SCALE, c.y * SCALE, not_horizontal, not_vertical, 0.0f};
                 update.next_checkpoints.push_back(cp_pos);
             }
         }
 
         broadcast.push_back(update);
-
-        // Printeo la posición del jugador y su próximo checkpoint
-        // int next_idx = player_data.next_checkpoint;
-        // if (next_idx >= 0 && next_idx < static_cast<int>(checkpoint_centers.size()))
-        // {
-        //     b2Vec2 c = checkpoint_centers[next_idx];
-        //     float cx_px = c.x * SCALE;
-        //     float cy_px = c.y * SCALE;
-        //     std::cout << "[GameLoop] Player " << id << " pos=(" << player_data.position.new_X << "," << player_data.position.new_Y << ") "
-        //               << "next_checkpoint=(" << cx_px << "," << cy_px << ") idx=" << next_idx << std::endl;
-        // }
     }
+
+    // Printeo la posición del jugador y su próximo checkpoint
+    // int next_idx = player_data.next_checkpoint;
+    // if (next_idx >= 0 && next_idx < static_cast<int>(checkpoint_centers.size()))
+    // {
+    //     b2Vec2 c = checkpoint_centers[next_idx];
+    //     float cx_px = c.x * SCALE;
+    //     float cy_px = c.y * SCALE;
+    //     std::cout << "[GameLoop] Player " << id << " pos=(" << player_data.position.new_X << "," << player_data.position.new_Y << ") "
+    //               << "next_checkpoint=(" << cx_px << "," << cy_px << ") idx=" << next_idx << std::endl;
+    // }
 
     // Apendear también las posiciones de los NPCs
     for (auto &npc : npcs)
@@ -704,12 +711,10 @@ b2Body *GameLoop::create_npc_body(float x_m, float y_m, bool is_static, float an
 {
     b2BodyDef bd;
     bd.type = is_static ? b2_staticBody : b2_kinematicBody;
-    // Las posiciones que llegan desde MapLayout ya están convertidas a metros
     bd.position.Set(x_m, y_m);
     bd.angle = angle_rad;
     b2Body *b = world.CreateBody(&bd);
 
-    // Dimensiones del auto en metros (convertido desde píxeles con SCALE)
     float halfWidth = 22.0f / (2.0f * SCALE);
     float halfHeight = 28.0f / (2.0f * SCALE);
     b2PolygonShape shape;
@@ -720,10 +725,13 @@ b2Body *GameLoop::create_npc_body(float x_m, float y_m, bool is_static, float an
     fd.density = 1.0f;
     fd.friction = 0.3f;
     fd.restitution = 0.0f;
-    fd.filter.categoryBits = 0x0008; // Categoria: NPCs (misma que autos)
-    fd.filter.maskBits = 0x0001 |    // Solo colisiona con: Collisions normales
-                         0x0008;     // y otros autos/NPCs
-                                     // NO colisiona con 0x0002 (puentes) ni 0x0004 (collisions_under)
+
+    fd.filter.categoryBits = CAR_NPC;
+    fd.filter.maskBits =
+        COLLISION_FLOOR | // Suelo
+        CAR_GROUND |      // Jugadores en el suelo
+        CAR_NPC;          // Otros NPCs
+
     b->CreateFixture(&fd);
     return b;
 }
@@ -952,24 +960,28 @@ void GameLoop::check_race_completion()
 {
     // Asume que ya estamos bajo players_map_mutex lock (llamado desde process_pair)
     // IMPORTANTE: No podemos modificar Box2D aquí (estamos en callback de contacto)
-    
+
     // Contar cuántos jugadores terminaron
     int finished_count = 0;
     int total_players = static_cast<int>(players.size());
-    
-    for (const auto &[id, player_data] : players) {
-        if (player_data.race_finished) {
+
+    for (const auto &[id, player_data] : players)
+    {
+        if (player_data.race_finished)
+        {
             finished_count++;
         }
     }
-    
+
     // Si todos los jugadores terminaron, marcar flag para resetear después
-    if (finished_count == total_players && total_players > 0) {
+    if (finished_count == total_players && total_players > 0)
+    {
         std::cout << "\n======================================" << std::endl;
         std::cout << "   ALL PLAYERS FINISHED!" << std::endl;
         std::cout << "   Preparing to return to lobby..." << std::endl;
-        std::cout << "======================================\n" << std::endl;
-        
+        std::cout << "======================================\n"
+                  << std::endl;
+
         pending_race_reset.store(true);
     }
 }
@@ -978,42 +990,141 @@ void GameLoop::perform_race_reset()
 {
     // Esta función se llama desde run(), fuera de callbacks de Box2D
     std::lock_guard<std::mutex> lk(players_map_mutex);
-    
-    if (!pending_race_reset.load()) {
+
+    if (!pending_race_reset.load())
+    {
         return;
     }
-    
+
     std::cout << "[GameLoop] Executing race reset..." << std::endl;
-    
+
     // Cambiar estado a LOBBY
     game_state = GameState::LOBBY;
-    
+
     // Resetear cada jugador a su spawn point
-    for (size_t i = 0; i < player_order.size(); ++i) {
+    for (size_t i = 0; i < player_order.size(); ++i)
+    {
         int player_id = player_order[i];
         auto player_it = players.find(player_id);
-        if (player_it == players.end()) continue;
-        
-        PlayerData& player_data = player_it->second;
-        const SpawnPoint& spawn = spawn_points[i];
-        
+        if (player_it == players.end())
+            continue;
+
+        PlayerData &player_data = player_it->second;
+        const SpawnPoint &spawn = spawn_points[i];
+
         // Destruir el body anterior (ahora es seguro, no estamos en callback)
-        if (player_data.body) {
+        if (player_data.body)
+        {
             world.DestroyBody(player_data.body);
         }
-        
+
         // Crear nuevo body en la posición de spawn
-        Position new_pos{spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
+        Position new_pos{false, spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
         player_data.body = create_player_body(spawn.x, spawn.y, new_pos, player_data.car.car_name);
         player_data.position = new_pos;
-        
+
         // Resetear estado de carrera
         player_data.next_checkpoint = 0;
         player_data.laps_completed = 0;
         player_data.race_finished = false;
         player_data.lap_start_time = std::chrono::steady_clock::now();
     }
-    
+
     pending_race_reset.store(false);
     std::cout << "[GameLoop] Race reset complete. Returning to LOBBY." << std::endl;
+}
+
+bool GameLoop::update_bridge_state_for_player(PlayerData &player_data)
+{
+    if (!player_data.body)
+    {
+        return false;
+    }
+
+    bool entering_bridge = false;
+    bool leaving_bridge = false;
+
+    b2ContactEdge *ce = player_data.body->GetContactList();
+    while (ce)
+    {
+        b2Contact *c = ce->contact;
+
+        if (c->IsTouching())
+        {
+            b2Fixture *a = c->GetFixtureA();
+            b2Fixture *b = c->GetFixtureB();
+
+            uint16 fcA = a->GetFilterData().categoryBits;
+            uint16 fcB = b->GetFilterData().categoryBits;
+
+            // Detectar entrada al puente
+            if (fcA == SENSOR_START_BRIDGE || fcB == SENSOR_START_BRIDGE)
+            {
+                entering_bridge = true;
+                std::cout << "[BRIDGE] Detected START_BRIDGE sensor!" << std::endl;
+            }
+
+            // Detectar salida del puente
+            if (fcA == SENSOR_END_BRIDGE || fcB == SENSOR_END_BRIDGE)
+            {
+                leaving_bridge = true;
+                std::cout << "[BRIDGE] Detected END_BRIDGE sensor!" << std::endl;
+            }
+        }
+
+        ce = ce->next;
+    }
+
+    // Actualizar el estado del puente
+    if (entering_bridge && !player_data.position.on_bridge)
+    {
+        // Entrando al puente
+        std::cout << "[BRIDGE] Player entering bridge (CAR_GROUND -> CAR_BRIDGE)" << std::endl;
+        set_car_category(player_data, CAR_BRIDGE);
+        player_data.position.on_bridge = true;
+    }
+    else if (leaving_bridge && player_data.position.on_bridge)
+    {
+        // Saliendo del puente
+        std::cout << "[BRIDGE] Player leaving bridge (CAR_BRIDGE -> CAR_GROUND)" << std::endl;
+        set_car_category(player_data, CAR_GROUND);
+        player_data.position.on_bridge = false;
+    }
+
+    return player_data.position.on_bridge;
+}
+
+void GameLoop::set_car_category(PlayerData &player_data, uint16 newCategory)
+{
+    b2Body *body = player_data.body;
+
+    for (b2Fixture *f = body->GetFixtureList(); f; f = f->GetNext())
+    {
+        b2Filter filter = f->GetFilterData();
+        filter.categoryBits = newCategory;
+
+        if (newCategory == CAR_GROUND)
+        {
+            // Auto en el SUELO: ve suelo, otros autos en suelo, NPCs, y sensores
+            filter.maskBits =
+                COLLISION_FLOOR |     // Colisiones del suelo
+                CAR_GROUND |          // Otros jugadores en el suelo
+                CAR_NPC |             // ← NUEVO: NPCs
+                SENSOR_START_BRIDGE | // Sensor de entrada al puente
+                SENSOR_END_BRIDGE;    // Sensor de salida del puente
+        }
+        else if (newCategory == CAR_BRIDGE)
+        {
+            // Auto EN EL PUENTE: ve puente, cosas sobre puente, otros autos en puente, y sensores
+            filter.maskBits =
+                COLLISION_BRIDGE |    // El puente mismo
+                COLLISION_UNDER |     // Objetos sobre el puente
+                CAR_BRIDGE |          // Otros jugadores en el puente
+                SENSOR_START_BRIDGE | // Sensor de entrada
+                SENSOR_END_BRIDGE;    // Sensor de salida
+                                      // ❌ NO ve COLLISION_FLOOR ni CAR_NPC (NPCs están abajo)
+        }
+
+        f->SetFilterData(filter);
+    }
 }

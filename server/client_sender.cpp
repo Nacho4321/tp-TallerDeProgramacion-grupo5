@@ -5,13 +5,19 @@
 ClientSender::ClientSender(Protocol &proto, Queue<ServerMessage> &ob)
 	: protocol(proto), outbox(ob) {}
 
-void ClientSender::run() {
-	try {
-		while (should_keep_running()) {
+void ClientSender::run()
+{
+	try
+	{
+		while (should_keep_running())
+		{
 			ServerMessage response;
-			try {
+			try
+			{
 				response = outbox.pop(); // bloqueante
-			} catch (const ClosedQueue &) {
+			}
+			catch (const ClosedQueue &)
+			{
 				// La cola fue cerrada: salimos del loop
 				break;
 			}
@@ -19,8 +25,9 @@ void ClientSender::run() {
 			// Enviar directamente el mensaje unificado
 			protocol.sendMessage(response);
 		}
-	} catch (const std::exception &e) {
+	}
+	catch (const std::exception &e)
+	{
 		std::cerr << "[Sender] Exception: " << e.what() << std::endl;
 	}
 }
-

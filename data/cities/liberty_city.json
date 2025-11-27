@@ -28838,6 +28838,28 @@
                  "width":48,
                  "x":4192,
                  "y":4152
+                }, 
+                {
+                 "height":95,
+                 "id":3115,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":7,
+                 "x":296,
+                 "y":785
+                }, 
+                {
+                 "height":95,
+                 "id":3116,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":8,
+                 "x":464,
+                 "y":785
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -32357,6 +32379,83 @@
                  "width":24,
                  "x":3280,
                  "y":2536
+                }, 
+                {
+                 "height":80,
+                 "id":3113,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":264,
+                 "x":248,
+                 "y":792
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":false,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":11,
+         "name":"End_Bridge",
+         "objects":[
+                {
+                 "height":80,
+                 "id":3106,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":2,
+                 "x":237,
+                 "y":792
+                }, 
+                {
+                 "height":88,
+                 "id":3109,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":3,
+                 "x":520,
+                 "y":792
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":12,
+         "name":"Start_Bridge",
+         "objects":[
+                {
+                 "height":80,
+                 "id":3104,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":2,
+                 "x":246,
+                 "y":792
+                }, 
+                {
+                 "height":80,
+                 "id":3108,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":2,
+                 "x":512,
+                 "y":792
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -34009,9 +34108,42 @@
          "visible":false,
          "x":0,
          "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":10,
+         "name":"Collisions_Bridge",
+         "objects":[
+                {
+                 "height":8,
+                 "id":3111,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":264,
+                 "x":248,
+                 "y":784
+                }, 
+                {
+                 "height":8,
+                 "id":3112,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":264,
+                 "x":248,
+                 "y":872
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":false,
+         "x":0,
+         "y":0
         }],
- "nextlayerid":10,
- "nextobjectid":3082,
+ "nextlayerid":13,
+ "nextobjectid":3117,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

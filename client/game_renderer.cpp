@@ -207,9 +207,17 @@ void GameRenderer::render(const CarPosition &mainCarPos, int mainCarTypeId, cons
     renderer.Clear();
     renderBackground();
 
-    // 1. DIBUJAR: auto principal
-    renderCar(*mainCar);
+    renderUpperLayer();
 
+    std::vector<Car> on_bridge_cars;
+    if (mainCar->getPosition().on_bridge)
+    {
+        on_bridge_cars.push_back(*mainCar);
+    }
+    else
+    {
+        renderCar(*mainCar);
+    }
     // 2. DIBUJAR: checkpoints
     renderCheckpoints();
 
@@ -218,13 +226,23 @@ void GameRenderer::render(const CarPosition &mainCarPos, int mainCarTypeId, cons
     otherCarsVec.reserve(otherCars.size());
     for (auto &[id, car] : otherCars)
     {
-        renderCar(car);
+        if (car.getPosition().on_bridge)
+        {
+            on_bridge_cars.push_back(car);
+        }
+        else
+        {
+            renderCar(car);
+        }
         otherCarsVec.push_back(car);
     }
 
     // 4. DIBUJAR LAYER SUPERIOR (tapa autos y checkpoints)
     renderUpperLayer();
-
+    for (auto &car : on_bridge_cars)
+    {
+        renderCar(car);
+    }
     minimap.render(renderer, *mainCar, otherCarsVec, next_checkpoints, logicalWidth, logicalHeight);
 
     renderer.Present();
