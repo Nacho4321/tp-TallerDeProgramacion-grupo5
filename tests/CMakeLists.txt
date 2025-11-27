@@ -15,6 +15,14 @@ target_sources(taller_tests
     ${CMAKE_SOURCE_DIR}/client/game_client_receiver.cpp
     ${CMAKE_SOURCE_DIR}/client/game_client_sender.cpp
     ${CMAKE_SOURCE_DIR}/client/game_client_handler.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop.cpp          
+    ${CMAKE_SOURCE_DIR}/server/event.cpp   
+    ${CMAKE_SOURCE_DIR}/server/map_layout.cpp
+    ${CMAKE_SOURCE_DIR}/server/npc_config.cpp
+    ${CMAKE_SOURCE_DIR}/server/eventloop.cpp
+    ${CMAKE_SOURCE_DIR}/server/car_physics_config.cpp
+    ${CMAKE_SOURCE_DIR}/server/eventDispatcher.cpp
+
     PUBLIC
     # .h files
     ${CMAKE_SOURCE_DIR}/server/client_sender.h

@@ -24,10 +24,14 @@ void EventDispatcher::init_handlers()
     listeners[MOVE_RIGHT_RELEASED_STR] = [this](Event &e)
     { move_right_released(e); };
     // Handlers de cambio de auto (prefijos change_car <tipo>)
-    listeners[std::string(CHANGE_CAR_STR) + " lambo"] = [this](Event &e){ change_car(e, "lambo"); };
-    listeners[std::string(CHANGE_CAR_STR) + " truck"] = [this](Event &e){ change_car(e, "truck"); };
-    listeners[std::string(CHANGE_CAR_STR) + " sports_car"] = [this](Event &e){ change_car(e, "sports_car"); };
-    listeners[std::string(CHANGE_CAR_STR) + " rally"] = [this](Event &e){ change_car(e, "rally"); };
+    listeners[std::string(CHANGE_CAR_STR) + " lambo"] = [this](Event &e)
+    { change_car(e, "lambo"); };
+    listeners[std::string(CHANGE_CAR_STR) + " truck"] = [this](Event &e)
+    { change_car(e, "truck"); };
+    listeners[std::string(CHANGE_CAR_STR) + " sports_car"] = [this](Event &e)
+    { change_car(e, "sports_car"); };
+    listeners[std::string(CHANGE_CAR_STR) + " rally"] = [this](Event &e)
+    { change_car(e, "rally"); };
 }
 
 void EventDispatcher::move_up(Event &event)
@@ -97,20 +101,23 @@ void EventDispatcher::move_right_released(Event &event)
         players[event.client_id].state = event.action;
     }
 }
-void EventDispatcher::change_car(Event &event, const std::string& car_type) {
+void EventDispatcher::change_car(Event &event, const std::string &car_type)
+{
     std::lock_guard<std::mutex> lock(players_map_mutex);
     auto it = players.find(event.client_id);
-    if (it == players.end()) return;
-    const CarPhysics& phys = CarPhysicsConfig::getInstance().getCarPhysics(car_type);
+    if (it == players.end())
+        return;
+    const CarPhysics &phys = CarPhysicsConfig::getInstance().getCarPhysics(car_type);
     it->second.car.car_name = car_type;
     // Map physics to simple CarInfo used by drive logic
-    it->second.car.speed = phys.max_speed; // already in px/s
+    it->second.car.speed = phys.max_speed;               // already in px/s
     it->second.car.acceleration = phys.max_acceleration; // px/s^2
     it->second.car.hp = phys.max_hp;  // Set HP from physics config
     // Re-crear el body para que el fixture (hitbox) coincida con el tamaño físico del nuevo auto.
-    b2Body* oldBody = it->second.body;
-    if (oldBody) {
-        b2World* world = oldBody->GetWorld();
+    b2Body *oldBody = it->second.body;
+    if (oldBody)
+    {
+        b2World *world = oldBody->GetWorld();
         b2Vec2 prevPos = oldBody->GetPosition();
         float prevAngle = oldBody->GetAngle();
         b2Vec2 prevLinearVel = oldBody->GetLinearVelocity();
@@ -119,25 +126,31 @@ void EventDispatcher::change_car(Event &event, const std::string& car_type) {
         world->DestroyBody(oldBody);
 
         // Crear nuevo body con dimensiones del nuevo auto
-        b2BodyDef bd; bd.type = b2_dynamicBody; bd.position = prevPos; bd.angle = prevAngle; b2Body* newBody = world->CreateBody(&bd);
+        b2BodyDef bd;
+        bd.type = b2_dynamicBody;
+        bd.position = prevPos;
+        bd.angle = prevAngle;
+        b2Body *newBody = world->CreateBody(&bd);
         // Convertir de pixeles a metros (SCALE fijo = 32.0f usado en gameloop)
         const float SCALE_LOCAL = 32.0f;
         float halfW = phys.width / (2.0f * SCALE_LOCAL);
         float halfH = phys.height / (2.0f * SCALE_LOCAL);
         // Offset del centro de colisión en coordenadas locales (Y positivo = hacia adelante del auto)
         b2Vec2 center_offset(0.0f, phys.center_offset_y / SCALE_LOCAL);
-        b2PolygonShape shape; 
-        shape.SetAsBox(halfW, halfH, center_offset, 0.0f);  // último parámetro es ángulo (0 = sin rotación)
-        b2FixtureDef fd; 
-        fd.shape = &shape; 
-        fd.density = phys.density; 
-        fd.friction = phys.friction; 
+        b2PolygonShape shape;
+        shape.SetAsBox(halfW, halfH, center_offset, 0.0f); // último parámetro es ángulo (0 = sin rotación)
+        b2FixtureDef fd;
+        fd.shape = &shape;
+        fd.density = phys.density;
+        fd.friction = phys.friction;
         fd.restitution = phys.restitution;
         // Configurar máscaras de colisión para que NO colisione con puentes ni objetos superiores
-        fd.filter.categoryBits = 0x0008; // Categoria: autos
-        fd.filter.maskBits = 0x0001 |    // Solo colisiona con: Collisions normales
-                     0x0008;     // y otros autos
-                         // NO colisiona con 0x0002 (puentes) ni 0x0004 (collisions_under)
+        fd.filter.categoryBits = CAR_GROUND;
+        fd.filter.maskBits =
+            COLLISION_FLOOR |     // Colisiones del suelo
+            CAR_GROUND |          // Otros jugadores en el suelo
+            SENSOR_START_BRIDGE | // Sensores de entrada
+            SENSOR_END_BRIDGE;    // Sensores de salida
         newBody->CreateFixture(&fd);
         newBody->SetBullet(true);
         newBody->SetLinearDamping(phys.linear_damping);

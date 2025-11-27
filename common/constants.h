@@ -73,6 +73,5 @@ const std::string LEAVE_GAME_STR = "leave_game";   // NOLINT
 
 #define CAR_GROUND 0x0020 // 32
 #define CAR_BRIDGE 0x0040 // 64
-#define CAR_NPC 0x0080    // 128
 
 #endif
