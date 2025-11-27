@@ -6,14 +6,25 @@ target_sources(taller_tests
     test_client_communication.cpp
     test_full_integration.cpp
     test_lobby_protocol.cpp
-    foo.cpp
     ${CMAKE_SOURCE_DIR}/server/acceptor.cpp
     ${CMAKE_SOURCE_DIR}/server/client_handler.cpp
-    ${CMAKE_SOURCE_DIR}/server/outbox_monitor.cpp
-    ${CMAKE_SOURCE_DIR}/server/server_handler.cpp
+    ${CMAKE_SOURCE_DIR}/server/client_sender.cpp
+    ${CMAKE_SOURCE_DIR}/server/client_receiver.cpp
+    ${CMAKE_SOURCE_DIR}/server/message_handler.cpp
+    ${CMAKE_SOURCE_DIR}/server/game_monitor.cpp
     ${CMAKE_SOURCE_DIR}/client/game_client_receiver.cpp
     ${CMAKE_SOURCE_DIR}/client/game_client_sender.cpp
     ${CMAKE_SOURCE_DIR}/client/game_client_handler.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop.cpp          
+    ${CMAKE_SOURCE_DIR}/server/event.cpp   
+    ${CMAKE_SOURCE_DIR}/server/map_layout.cpp
+    ${CMAKE_SOURCE_DIR}/server/npc_config.cpp
+    ${CMAKE_SOURCE_DIR}/server/eventloop.cpp
+    ${CMAKE_SOURCE_DIR}/server/car_physics_config.cpp
+    ${CMAKE_SOURCE_DIR}/server/eventDispatcher.cpp
+
     PUBLIC
     # .h files
+    ${CMAKE_SOURCE_DIR}/server/client_sender.h
+    ${CMAKE_SOURCE_DIR}/server/client_receiver.h
     )

@@ -20,8 +20,8 @@ public:
     explicit GameClientSender(Protocol& proto, Queue<std::string>& messages);
     
     // Opcional: setters para futuro uso (no requeridos ahora)
-    void set_player_id(int32_t id) { player_id = id; }
-    void set_game_id(int32_t id) { game_id = id; }
+    void set_player_id(int32_t id);
+    void set_game_id(int32_t id);
     
     void run() override;
     void stop() override;  

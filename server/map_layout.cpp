@@ -2,6 +2,7 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <iostream>
+#include "../common/constants.h"
 #define MAP_WIDTH (4640.0f / 32.0f)
 #define MAP_HEIGHT (4672.0f / 32.0f)
 #define SCALE 32.0f
@@ -25,15 +26,23 @@ void MapLayout::create_map_layout(const std::string &jsonPath)
         uint16_t category = 0;
         if (layer["name"] == "Collisions")
         {
-            category = 0x0001;
+            category = COLLISION_FLOOR;
         }
         if (layer["name"] == "Collisions_Bridge")
         {
-            category = 0x0002; // puentes
+            category = COLLISION_BRIDGE;
+        }
+        if (layer["name"] == "End_Bridge")
+        {
+            category = SENSOR_END_BRIDGE;
         }
         if (layer["name"] == "Collisions_under")
         {
-            category = 0x0004; // cosas que no son puente pero estan por arriba
+            category = COLLISION_UNDER; // cosas que no son puente pero estan por arriba
+        }
+        if (layer["name"] == "Start_Bridge")
+        {
+            category = SENSOR_START_BRIDGE;
         }
 
         if (category == 0)
@@ -237,17 +246,38 @@ void MapLayout::create_polygon_layout(const std::vector<b2Vec2> &vertices, uint1
 
     fd.filter.categoryBits = category;
 
-    if (category == 0x0001) // Collisions
+    if (category == COLLISION_UNDER)
     {
-        fd.filter.maskBits = 0xFFFF; // Colisiona con todo
+        fd.filter.maskBits =
+            SENSOR_START_BRIDGE |
+            SENSOR_END_BRIDGE |
+            COLLISION_UNDER;
     }
-    else if (category == 0x0002) // Collisions_Bridge
+    else if (category == COLLISION_BRIDGE)
     {
-        fd.filter.maskBits = 0xFFFF & ~0x0008; // Colisiona con todo EXCEPTO autos (0x0008)
+        fd.filter.maskBits =
+            CAR_BRIDGE |
+            SENSOR_START_BRIDGE |
+            SENSOR_END_BRIDGE;
     }
-    else if (category == 0x0004) // Collisions_Under
+    else if (category == COLLISION_FLOOR)
     {
-        fd.filter.maskBits = 0xFFFF & ~0x0008; // Colisiona con todo EXCEPTO autos (0x0008)
+        fd.filter.maskBits =
+            CAR_GROUND |
+            SENSOR_START_BRIDGE |
+            SENSOR_END_BRIDGE;
+    }
+
+    if (category == SENSOR_START_BRIDGE || category == SENSOR_END_BRIDGE)
+    {
+        fd.isSensor = true;
+
+        fd.filter.maskBits =
+            CAR_GROUND |
+            CAR_BRIDGE |
+            COLLISION_FLOOR |
+            COLLISION_BRIDGE |
+            COLLISION_UNDER;
     }
 
     body->CreateFixture(&fd);

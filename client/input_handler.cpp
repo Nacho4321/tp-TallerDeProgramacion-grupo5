@@ -3,7 +3,33 @@
 #include "../common/protocol.h" // To access the string constants
 #include <iostream>
 
-InputHandler::InputHandler() : prev_ticks(SDL_GetTicks()) {}
+InputHandler::InputHandler() : prev_ticks(SDL_GetTicks()) {
+    init_key_maps();
+}
+
+void InputHandler::init_key_maps() {
+    // Mapeo de teclas presionadas (KEYPRESSED)
+    keydown_actions[SDLK_LEFT] = MOVE_LEFT_PRESSED_STR;
+    keydown_actions[SDLK_RIGHT] = MOVE_RIGHT_PRESSED_STR;
+    keydown_actions[SDLK_UP] = MOVE_UP_PRESSED_STR;
+    keydown_actions[SDLK_DOWN] = MOVE_DOWN_PRESSED_STR;
+    keydown_actions[SDLK_c] = CREATE_GAME_STR;
+    keydown_actions[SDLK_i] = START_GAME_STR;
+    
+    // Teclas de cambio de auto
+    keydown_special[SDLK_1] = []() { return std::string(CHANGE_CAR_STR) + " lambo"; };
+    keydown_special[SDLK_2] = []() { return std::string(CHANGE_CAR_STR) + " truck"; };
+    keydown_special[SDLK_3] = []() { return std::string(CHANGE_CAR_STR) + " sports_car"; };
+    keydown_special[SDLK_4] = []() { return std::string(CHANGE_CAR_STR) + " rally"; };
+    keydown_special[SDLK_5] = []() { return std::string(CHANGE_CAR_STR) + " lambo"; }; // futuro tipo
+    keydown_special[SDLK_6] = []() { return std::string(CHANGE_CAR_STR) + " truck"; }; // futuro tipo
+    
+    // Mapeo de teclas soltadas (KEYRELEASED)
+    keyup_actions[SDLK_LEFT] = MOVE_LEFT_RELEASED_STR;
+    keyup_actions[SDLK_RIGHT] = MOVE_RIGHT_RELEASED_STR;
+    keyup_actions[SDLK_UP] = MOVE_UP_RELEASED_STR;
+    keyup_actions[SDLK_DOWN] = MOVE_DOWN_RELEASED_STR;
+}
 
 std::string InputHandler::receive()
 {
@@ -66,77 +92,58 @@ std::string InputHandler::receive()
         }
         else if (event.type == SDL_KEYDOWN && event.key.repeat == 0)
         {
-            switch (event.key.keysym.sym)
-            {
-            case SDLK_ESCAPE:
-            case SDLK_q:
+            SDL_Keycode key = event.key.keysym.sym;
+            
+            // Casos especiales: QUIT y JOIN
+            if (key == SDLK_ESCAPE || key == SDLK_q) {
                 return "QUIT";
-            case SDLK_w:
+            }
+            if (key == SDLK_w) {
                 if (audioManager) {
                     audioManager->increaseMasterVolume();
                 }
                 return "";  // Don't send to server
-            case SDLK_s:
+            }
+            if (key == SDLK_s) {
                 if (audioManager) {
                     audioManager->decreaseMasterVolume();
                 }
                 return "";  // Don't send to server
-            case SDLK_j:
+            }
+            if (key == SDLK_j) {
                 // Activar modo para ingresar id de JOIN GAME
                 awaiting_join_id = true;
                 join_id_buffer.clear();
                 std::cout << "[Input] Ingresá el id de partida y presioná Enter..." << std::endl;
                 return ""; // No enviar nada aún
-            case SDLK_c:
-                return CREATE_GAME_STR;
-            case SDLK_i:
-                return START_GAME_STR;
-            case SDLK_LEFT:
-                return MOVE_LEFT_PRESSED_STR;
-            case SDLK_RIGHT:
-                return MOVE_RIGHT_PRESSED_STR;
-            case SDLK_UP:
-                return MOVE_UP_PRESSED_STR;
-            case SDLK_DOWN:
-                return MOVE_DOWN_PRESSED_STR;
-            case SDLK_1:
-                return std::string(CHANGE_CAR_STR) + " lambo";
-            case SDLK_2:
-                return std::string(CHANGE_CAR_STR) + " truck";
-            case SDLK_3:
-                return std::string(CHANGE_CAR_STR) + " sports_car";
-            case SDLK_4:
-                return std::string(CHANGE_CAR_STR) + " rally";
-            case SDLK_5:
-                return std::string(CHANGE_CAR_STR) + " lambo"; // futuro tipo
-            case SDLK_6:
-                return std::string(CHANGE_CAR_STR) + " truck"; // futuro tipo
-            default:
-                break;
+            }
+            
+            // Buscar en acciones especiales (lambdas)
+            auto special_it = keydown_special.find(key);
+            if (special_it != keydown_special.end()) {
+                return special_it->second(); // Invocar lambda
+            }
+            
+            // Buscar en acciones simples
+            auto action_it = keydown_actions.find(key);
+            if (action_it != keydown_actions.end()) {
+                return action_it->second;
             }
         }
         else if (event.type == SDL_KEYUP)
         {
-            switch (event.key.keysym.sym)
-            {
-            case SDLK_LEFT:
-                return MOVE_LEFT_RELEASED_STR;
-            case SDLK_RIGHT:
-                return MOVE_RIGHT_RELEASED_STR;
-            case SDLK_UP:
-                return MOVE_UP_RELEASED_STR;
-            case SDLK_DOWN:
-                return MOVE_DOWN_RELEASED_STR;
-            case SDLK_1:
-            case SDLK_2:
-            case SDLK_3:
-            case SDLK_4:
-            case SDLK_5:
-            case SDLK_6:
-                // Ignorar keyup para cambio de auto (solo en keydown)
-                break;
-            default:
-                break;
+            SDL_Keycode key = event.key.keysym.sym;
+            
+            // Buscar en acciones de keyup
+            auto it = keyup_actions.find(key);
+            if (it != keyup_actions.end()) {
+                return it->second;
+            }
+            
+            // Ignorar keyup de teclas de cambio de auto (solo actúan en keydown)
+            if (keydown_special.find(key) != keydown_special.end()) {
+                // Es una tecla de cambio de auto, ignorar el keyup
+                return "";
             }
         }
     }

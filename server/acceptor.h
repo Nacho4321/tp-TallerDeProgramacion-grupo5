@@ -12,30 +12,25 @@
 
 #include "client_handler.h"
 #include "client_handler_msg.h"
-#include "outbox_monitor.h"
 
-// TODO: -Usar monitor y dejar de usar mutexes en el acceptor
-//       -Dejar al acceptor con unica responsabilidad, q deje de hacer broadcast y demas
+// Forward declaration para evitar dependencia circular
+class MessageHandler;
 
 class Acceptor : public Thread
 {
     Socket acceptor;
-    Queue<ClientHandlerMessage> &global_inbox;
+    MessageHandler &message_handler;
     std::vector<std::unique_ptr<ClientHandler>> clients;
-    OutboxMonitor &outbox_monitor;
-    int next_id = 0;
 
 public:
-    explicit Acceptor(const char *port, Queue<ClientHandlerMessage> &global_inbox, OutboxMonitor &outboxes);
-    explicit Acceptor(Socket &acc, Queue<ClientHandlerMessage> &global_inbox, OutboxMonitor &outboxes);
+    explicit Acceptor(const char *port, MessageHandler &msg_admin);
+    explicit Acceptor(Socket &acc, MessageHandler &msg_admin);
 
     void run() override;
     void stop() override;
 
-    void broadcast(const ServerMessage &msg);
-
 private:
-    void clear();
+    void kill_all();
     void reap();
 };
 

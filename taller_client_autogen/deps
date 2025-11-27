@@ -2,6 +2,9 @@ taller_client_autogen/timestamp: \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/CMakeFiles/3.31.6/CMakeCXXCompiler.cmake \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/CMakeFiles/3.31.6/CMakeSystem.cmake \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/CMakeLists.txt \
+	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/audio_manager.cpp \
+	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/audio_manager.h \
+	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/camera.cpp \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/camera.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/car.cpp \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/car.h \
@@ -26,16 +29,10 @@ taller_client_autogen/timestamp: \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client/vector2.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/client_ui/resources.qrc \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/cmake/CompilerWarnings.cmake \
-	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/Event.h \
-	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/car_physics_config.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/constants.h \
-	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/eventDispatcher.h \
-	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/eventloop.h \
-	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/gameloop.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/liberror.h \
-	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/map_layout.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/messages.h \
-	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/npc_config.h \
+	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/position.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/protocol.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/queue.h \
 	/home/agusdubo/Desktop/TallerDeProgramacion/tp-TallerDeProgramacion-grupo5/common/resolver.h \

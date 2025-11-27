@@ -36,34 +36,42 @@ constexpr float CHECKPOINT_RADIUS_PX = 20.0f;
 constexpr int LOGICAL_SCREEN_WIDTH = 854;
 constexpr int LOGICAL_SCREEN_HEIGHT = 480;
 
-constexpr float DEFAULT_CAR_SPEED_PX_S = 200.0f;      // pixels/sec
-constexpr float DEFAULT_CAR_ACCEL_PX_S2 = 400.0f;     // px/sec^2
+constexpr float DEFAULT_CAR_SPEED_PX_S = 200.0f;  // pixels/sec
+constexpr float DEFAULT_CAR_ACCEL_PX_S2 = 400.0f; // px/sec^2
 constexpr float DEFAULT_CAR_HP = 100.0f;
 
 // NPCs
-constexpr int MAX_MOVING_NPCS = 20;          // NPCs circulando por waypoints
-constexpr int MAX_PARKED_NPCS = 10;          // NPCs estacionados
-constexpr float NPC_SPEED_PX_S = 120.0f;     // pixels/sec 
+constexpr int MAX_MOVING_NPCS = 20;      // NPCs circulando por waypoints
+constexpr int MAX_PARKED_NPCS = 10;      // NPCs estacionados
+constexpr float NPC_SPEED_PX_S = 120.0f; // pixels/sec
 
 // Car change (runtime swap during game)
-constexpr uint8_t CHANGE_CAR = 0x30;         // opcode para cambio de auto
+constexpr uint8_t CHANGE_CAR = 0x30;             // opcode para cambio de auto
 const std::string CHANGE_CAR_STR = "change_car"; // comando base
 
-const std::string MOVE_UP_PRESSED_STR = "move_up_pressed";              // NOLINT
-const std::string MOVE_UP_RELEASED_STR = "move_up_released";            // NOLINT
-const std::string MOVE_DOWN_PRESSED_STR = "move_down_pressed";          // NOLINT
-const std::string MOVE_DOWN_RELEASED_STR = "move_down_released";        // NOLINT
-const std::string MOVE_LEFT_PRESSED_STR = "move_left_pressed";            // NOLINT
-const std::string MOVE_LEFT_RELEASED_STR = "move_left_released";          // NOLINT
-const std::string MOVE_RIGHT_PRESSED_STR = "move_right_pressed";          // NOLINT
-const std::string MOVE_RIGHT_RELEASED_STR = "move_right_released";        // NOLINT
+const std::string MOVE_UP_PRESSED_STR = "move_up_pressed";         // NOLINT
+const std::string MOVE_UP_RELEASED_STR = "move_up_released";       // NOLINT
+const std::string MOVE_DOWN_PRESSED_STR = "move_down_pressed";     // NOLINT
+const std::string MOVE_DOWN_RELEASED_STR = "move_down_released";   // NOLINT
+const std::string MOVE_LEFT_PRESSED_STR = "move_left_pressed";     // NOLINT
+const std::string MOVE_LEFT_RELEASED_STR = "move_left_released";   // NOLINT
+const std::string MOVE_RIGHT_PRESSED_STR = "move_right_pressed";   // NOLINT
+const std::string MOVE_RIGHT_RELEASED_STR = "move_right_released"; // NOLINT
 
 // Lobby commands
-const std::string CREATE_GAME_STR = "create_game";                        // NOLINT
-const std::string JOIN_GAME_STR = "join_game";                            // NOLINT
-const std::string GET_GAMES_STR = "get_games";                            // NOLINT
-const std::string START_GAME_STR = "start_game";                          // NOLINT
-const std::string LEAVE_GAME_STR = "leave_game";                          // NOLINT
+const std::string CREATE_GAME_STR = "create_game"; // NOLINT
+const std::string JOIN_GAME_STR = "join_game";     // NOLINT
+const std::string GET_GAMES_STR = "get_games";     // NOLINT
+const std::string START_GAME_STR = "start_game";   // NOLINT
+const std::string LEAVE_GAME_STR = "leave_game";   // NOLINT
 
+#define COLLISION_FLOOR 0x0001     // 1
+#define COLLISION_BRIDGE 0x0002    // 2
+#define COLLISION_UNDER 0x0004     // 4
+#define SENSOR_START_BRIDGE 0x0008 // 8
+#define SENSOR_END_BRIDGE 0x0010   // 16
+
+#define CAR_GROUND 0x0020 // 32
+#define CAR_BRIDGE 0x0040 // 64
 
 #endif

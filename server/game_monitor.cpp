@@ -1,9 +1,13 @@
 #include "game_monitor.h"
 
-int GameMonitor::add_game(int &client_id, const std::string& name)
+GameMonitor::GameMonitor()
+    : games(), games_queues(), game_names(), games_mutex(), next_id(STARTING_ID)
 {
-    std::lock_guard<std::mutex> lock1(games_mutex);
-    std::lock_guard<std::mutex> lock2(game_queues_mutex);
+}
+
+int GameMonitor::add_game(int client_id, std::shared_ptr<Queue<ServerMessage>> player_outbox, const std::string& name)
+{
+    std::lock_guard<std::mutex> lock(games_mutex);  // Un solo lock
 
     int game_id = next_id++;
     auto new_queue = std::make_shared<Queue<Event>>();
@@ -11,7 +15,6 @@ int GameMonitor::add_game(int &client_id, const std::string& name)
 
     auto new_game = std::make_unique<GameLoop>(new_queue);
 
-    auto player_outbox = outboxes.get_cliente_queue(client_id);
     if (!player_outbox) {
         throw std::runtime_error("Outbox not found for creator client");
     }
@@ -23,7 +26,7 @@ int GameMonitor::add_game(int &client_id, const std::string& name)
 
     std::cout << "GameMonitor: juego " << game_id << " creado para cliente " << client_id << std::endl;
     
-    return game_id; // Devolver el game_id asignado
+    return game_id;
 }
 
 std::vector<ServerMessage::GameSummary> GameMonitor::list_games() {
@@ -45,57 +48,39 @@ std::vector<ServerMessage::GameSummary> GameMonitor::list_games() {
     return result;
 }
 
-void GameMonitor::join_player(int &player_id, int &game_id)
+void GameMonitor::join_player(int player_id, int game_id, std::shared_ptr<Queue<ServerMessage>> player_outbox)
 {
-    std::lock_guard<std::mutex> lock1(games_mutex);
+    std::lock_guard<std::mutex> lock(games_mutex);  // Un solo lock
     auto it = games.find(game_id);
     if (it == games.end() || !it->second) {
         throw std::runtime_error("Game not found");
     }
-    auto q = outboxes.get_cliente_queue(player_id);
-    if (!q) {
+    if (!player_outbox) {
         throw std::runtime_error("Outbox not found for joining client");
     }
     std::cout << "[GameMonitor] join_player: game_id=" << game_id
               << " player_id=" << player_id
-              << " outbox.valid=" << std::boolalpha << static_cast<bool>(q) << std::endl;
-    it->second->add_player(player_id, q);
+              << " outbox.valid=" << std::boolalpha << static_cast<bool>(player_outbox) << std::endl;
+    it->second->add_player(player_id, player_outbox);
     std::cout << "[GameMonitor] join_player: add_player() OK" << std::endl;
 }
 
-void GameMonitor::remove_player(int client_id)
-{
+std::shared_ptr<Queue<Event>> GameMonitor::get_game_queue(int game_id) {
     std::lock_guard<std::mutex> lock(games_mutex);
-    for (auto &entry : games)
-    {
-        auto &game = entry.second;
-        if (!game)
-            continue;
-        // Intentar remover en cada juego (si existe). GameLoop::remove_player
-        // internamente verificará si el player está presente.
-        try
-        {
-            game->remove_player(client_id);
-            // si no lanzó, asumimos que se removió y devolvemos
-            std::cout << "[GameMonitor] remove_player: client " << client_id << " removed from game " << entry.first << std::endl;
-            return;
-        }
-        catch (...) {
-            // Ignorar y seguir buscando
-        }
+    auto it = games_queues.find(game_id);
+    if (it != games_queues.end()) {
+        return it->second;
     }
-    // Si no se encontró el jugador en ningún juego, no es fatal.
-    std::cout << "[GameMonitor] remove_player: client " << client_id << " not found in any game" << std::endl;
+    return nullptr;
 }
 
-void GameMonitor::start_game(int game_id) {
+GameLoop* GameMonitor::get_game(int game_id) {
     std::lock_guard<std::mutex> lock(games_mutex);
     auto it = games.find(game_id);
     if (it == games.end() || !it->second) {
-        throw std::runtime_error("Game not found");
+        return nullptr;
     }
-    it->second->start_game();
-    std::cout << "[GameMonitor] Game " << game_id << " started (transitioned to PLAYING)" << std::endl;
+    return it->second.get();
 }
 
 GameMonitor::~GameMonitor()

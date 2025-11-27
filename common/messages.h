@@ -1,6 +1,6 @@
 #ifndef MESSAGES_H
 #define MESSAGES_H
-#include "Event.h"
+#include "position.h"
 #include "constants.h"
 #include <string>
 #include <cstdint>
@@ -50,7 +50,8 @@ struct ServerMessage
     bool success = false;
 
     // Payload para listado de partidas (GAMES_LIST)
-    struct GameSummary {
+    struct GameSummary
+    {
         uint32_t game_id;
         std::string name;
         uint32_t player_count;

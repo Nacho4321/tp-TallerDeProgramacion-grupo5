@@ -12,49 +12,31 @@
 #include "../common/messages.h"
 
 #include "client_handler_msg.h"
+#include "client_receiver.h"
+#include "client_sender.h"
 
-// ---------------- ClientReceiver ----------------
-class ClientReceiver : public Thread
-{
-    Protocol &protocol;
-    int client_id;
-    Queue<ClientHandlerMessage> &global_inbox;
-
-public:
-    ClientReceiver(Protocol &proto, int id, Queue<ClientHandlerMessage> &global_inbox);
-
-    void run() override;
-};
-
-// ---------------- ClientSender ----------------
-class ClientSender : public Thread
-{
-    Protocol &protocol;
-    Queue<ServerMessage> &outbox;
-
-public:
-    ClientSender(Protocol &proto, Queue<ServerMessage> &ob);
-
-    void run() override;
-};
+// Forward declaration
+class MessageHandler;
 
 // ---------------- ClientHandler ----------------
 class ClientHandler
 {
     Protocol protocol;
     std::shared_ptr<Queue<ServerMessage>> outbox;
-    Queue<ClientHandlerMessage> &global_inbox;
+    MessageHandler &message_handler;
     ClientSender sender;
     int client_id;
     ClientReceiver receiver;
 
+    static int next_id;
+
 public:
-    ClientHandler(Socket &&p, int id, Queue<ClientHandlerMessage> &global_inbox);
+    ClientHandler(Socket &&p, MessageHandler &msg_handler);
+    ~ClientHandler();
 
     void start();
     void stop();
     bool is_alive();
-    void join();
 
     std::shared_ptr<Queue<ServerMessage>> get_outbox();
     int get_id();

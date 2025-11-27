@@ -3,19 +3,34 @@ target_sources(taller_server
     # .cpp files
     acceptor.cpp
     client_handler.cpp
-    outbox_monitor.cpp
-    server_handler.cpp
+    client_sender.cpp
+    client_receiver.cpp
     main.cpp
     server.cpp
     game_monitor.cpp
-    message_admin.cpp
+    message_handler.cpp
+    gameloop.cpp
+    eventloop.cpp
+    eventDispatcher.cpp
+    car_physics_config.cpp
+    npc_config.cpp
+    event.cpp
+    map_layout.cpp
     PUBLIC
     # .h files
     acceptor.h
     client_handler.h
-    outbox_monitor.h
-    server_handler.h
+    client_sender.h
+    client_receiver.h
     server.h
     game_monitor.h
-    message_admin.h
+    message_handler.h
+    gameloop.h
+    eventloop.h
+    event.h
+    eventDispatcher.h
+    car_physics_config.h
+    npc_config.h
+    PlayerData.h
+    map_layout.h
     )

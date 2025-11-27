@@ -5,20 +5,23 @@
 #include <cmath>
 #include <array>
 
-#include "carsprites.h"  
+#include "carsprites.h"
 
-struct CarPosition {
+struct CarPosition
+{
     double x;
     double y;
     double directionX;
     double directionY;
+    bool on_bridge;
 };
 
-class Car {
+class Car
+{
 private:
     CarPosition position;
     int spriteIndex;
-    double renderedAngle; 
+    double renderedAngle;
     int carType;
     bool exploding;
     int explosionFrame;
@@ -27,10 +30,10 @@ private:
 public:
     Car(int carTypeId = 0);
 
-    Car(const CarPosition& pos, int carTypeId = 0);
+    Car(const CarPosition &pos, int carTypeId = 0);
 
-    void setPosition(const CarPosition& pos);
-    const CarPosition& getPosition() const;
+    void setPosition(const CarPosition &pos);
+    const CarPosition &getPosition() const;
 
     SDL_Rect getSprite() const;
 
@@ -39,7 +42,7 @@ public:
     bool isExploding() const;
     bool isExplosionComplete() const;
 
-    void setCarType(int newType) { carType = newType; spriteIndex = 0; updateSpriteIndex(); }
+    void setCarType(int newType);
 
 private:
     void updateSpriteIndex();

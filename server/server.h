@@ -6,24 +6,21 @@
 #include <string>
 #include "game_monitor.h"
 #include "acceptor.h"
-#include "message_admin.h"
+#include "message_handler.h"
 
 class Server
 {
 private:
-    OutboxMonitor outboxes;
-    Queue<ClientHandlerMessage> global_inbox;
-    std::unordered_map<int, std::shared_ptr<Queue<Event>>> game_queues;
-    std::mutex games_queues_mutex;
     GameMonitor games_monitor;
-    MessageAdmin message_admin;
+    MessageHandler message_handler;
     Acceptor acceptor;
     void process_input(const std::string &input, bool &connected);
 
 public:
     explicit Server(const char *port)
-        : outboxes(), global_inbox(), game_queues(), games_queues_mutex(), games_monitor(game_queues, games_queues_mutex, outboxes),
-          message_admin(global_inbox, game_queues, games_queues_mutex, games_monitor, outboxes), acceptor(port, global_inbox, outboxes)
+        : games_monitor(),
+          message_handler(games_monitor), 
+          acceptor(port, message_handler)
     {
     }
     void start();
