@@ -12,6 +12,7 @@ target_sources(taller_client
     checkpoint.cpp
     minimap.cpp
     game_renderer.cpp
+    audio_manager.cpp
     PUBLIC
     # .h files
     game_client_receiver.h
@@ -26,4 +27,5 @@ target_sources(taller_client
     checkpoint.h
     vector2.h
     minimap.h
+    audio_manager.h
 )

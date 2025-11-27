@@ -7,10 +7,11 @@
 #include <unordered_map>
 #include <functional>
 
+class AudioManager;
+
 class InputHandler {
 private:
     unsigned int prev_ticks;
-    std::unordered_map<SDL_Scancode, bool> key_states; 
     
     // Mapas para dispatch de teclas a comandos
     std::unordered_map<SDL_Keycode, std::string> keydown_actions;
@@ -21,12 +22,15 @@ private:
     bool awaiting_join_id = false;
     std::string join_id_buffer;
     
-    // Inicializar mapas de dispatch
-    void init_key_maps();
+    AudioManager* audioManager = nullptr;
     
+    // Inicializar mapas de dispatch
+    void init_key_maps(); 
+
 public:
     InputHandler();
     std::string receive();
+    void setAudioManager(AudioManager* am) { audioManager = am; }
 };
 
 #endif

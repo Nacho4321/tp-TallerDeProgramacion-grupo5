@@ -1,4 +1,5 @@
 #include "input_handler.h"
+#include "audio_manager.h"
 #include "../common/protocol.h" // To access the string constants
 #include <iostream>
 
@@ -96,6 +97,18 @@ std::string InputHandler::receive()
             // Casos especiales: QUIT y JOIN
             if (key == SDLK_ESCAPE || key == SDLK_q) {
                 return "QUIT";
+            }
+            if (key == SDLK_w) {
+                if (audioManager) {
+                    audioManager->increaseMasterVolume();
+                }
+                return "";  // Don't send to server
+            }
+            if (key == SDLK_s) {
+                if (audioManager) {
+                    audioManager->decreaseMasterVolume();
+                }
+                return "";  // Don't send to server
             }
             if (key == SDLK_j) {
                 // Activar modo para ingresar id de JOIN GAME

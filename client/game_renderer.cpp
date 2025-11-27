@@ -2,6 +2,9 @@
 #include "game_renderer.h"
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <set>
+#include <cmath>
+#include <algorithm>
 
 static std::unordered_map<int, std::string> mapsDataPaths = {
     {1, "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png"},
@@ -12,7 +15,7 @@ static std::string CarDataPath = "data/cars/Mobile - Grand Theft Auto 4 - Miscel
 static std::string ExplosionDataPath = "data/cars/explosion_pixelfied.png";
 
 GameRenderer::GameRenderer(const char *windowTitle, int windowWidth, int windowHeight, int mapId, const std::string &tiledJsonPath)
-    : sdl(SDL_INIT_VIDEO),
+    : sdl(SDL_INIT_VIDEO | SDL_INIT_AUDIO),
       window(windowTitle,
              SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
              windowWidth, windowHeight,
@@ -37,6 +40,11 @@ GameRenderer::GameRenderer(const char *windowTitle, int windowWidth, int windowH
 {
     SDL_RenderSetLogicalSize(renderer.Get(), logicalWidth, logicalHeight);
     minimap.initialize(renderer, backgroundTexture);
+
+    audioManager = std::make_unique<AudioManager>();
+    audioManager->playBackgroundMusic("data/music/background_loop.ogg");
+
+    audioManager->startCarEngine(-1, 0, 0, 0, 0, true);
 
     std::ifstream file(tiledJsonPath);
     nlohmann::json data;
@@ -66,38 +74,111 @@ GameRenderer::GameRenderer(const char *windowTitle, int windowWidth, int windowH
 
 void GameRenderer::updateMainCar(const CarPosition &position)
 {
+    audioManager->updateCarEngineVolume(-1, 0, 0, 0, 0);
     mainCar->setPosition(position);
 }
 
 void GameRenderer::updateOtherCars(const std::map<int, std::pair<CarPosition, int>> &positions)
 {
+    CarPosition mainPos = mainCar->getPosition();
+
+    auto nearest4 = computeNearestCars(positions, mainPos);
+    updateOrCreateCars(positions, nearest4, mainPos);
+    cleanupRemovedCars(positions, mainPos);
+    if (audioManager)
+        audioManager->stopEnginesExcept(nearest4);
+}
+
+std::set<int> GameRenderer::computeNearestCars(
+    const std::map<int, std::pair<CarPosition, int>> &positions,
+    const CarPosition &mainPos)
+{
+    std::vector<std::pair<float, int>> distances;
+
+    for (const auto &[id, data] : positions)
+    {
+        if (id < 0) continue; // skip NPCs
+        float dx = data.first.x - mainPos.x;
+        float dy = data.first.y - mainPos.y;
+        float dist = std::sqrt(dx * dx + dy * dy);
+        distances.push_back({dist, id});
+    }
+
+    std::sort(distances.begin(), distances.end());
+
+    std::set<int> nearest4;
+    for (size_t i = 0; i < std::min<size_t>(4, distances.size()); ++i)
+        nearest4.insert(distances[i].second);
+
+    return nearest4;
+}
+
+void GameRenderer::updateOrCreateCars(
+    const std::map<int, std::pair<CarPosition, int>> &positions,
+    const std::set<int> &nearest4,
+    const CarPosition &mainPos)
+{
     for (const auto &[id, data] : positions)
     {
         const CarPosition &pos = data.first;
         int typeId = data.second;
+        bool isNearby = nearest4.count(id) > 0;
         auto it = otherCars.find(id);
+
         if (it != otherCars.end())
         {
             it->second.setPosition(pos);
             it->second.setCarType(typeId);
+
+            if (isNearby && audioManager)
+            {
+                if (audioManager->isEnginePlayingForCar(id))
+                    audioManager->updateCarEngineVolume(id, pos.x, pos.y, mainPos.x, mainPos.y);
+                else
+                    audioManager->startCarEngine(id, pos.x, pos.y, mainPos.x, mainPos.y, false);
+            }
         }
         else
         {
+            // NEW CAR
             otherCars.emplace(id, Car(pos, typeId));
+            if (isNearby && audioManager)
+                audioManager->startCarEngine(id, pos.x, pos.y, mainPos.x, mainPos.y, false);
         }
-    }
 
+        previousCarPositions[id] = pos;
+    }
+}
+
+void GameRenderer::cleanupRemovedCars(
+    const std::map<int, std::pair<CarPosition, int>> &positions,
+    const CarPosition &mainPos)
+{
     for (auto it = otherCars.begin(); it != otherCars.end();)
     {
-        if (positions.find(it->first) == positions.end())
+        int id = it->first;
+
+        if (positions.find(id) == positions.end())
         {
-            if (!it->second.isExploding())
+            Car &car = it->second;
+
+            if (!car.isExploding())
             {
-                it->second.startExplosion();
+                car.startExplosion();
+                CarPosition pos = car.getPosition();
+                if (audioManager)
+                {
+                    audioManager->playExplosionSound(pos.x, pos.y, mainPos.x, mainPos.y);
+                    audioManager->stopCarEngine(id);
+                }
                 ++it;
             }
-            else if (it->second.isExplosionComplete())
+            else if (car.isExplosionComplete())
             {
+                if (audioManager)
+                    audioManager->stopCarEngine(id);
+
+                previousCarPositions.erase(id);
                 it = otherCars.erase(it);
             }
             else
