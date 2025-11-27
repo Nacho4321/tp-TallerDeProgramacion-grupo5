@@ -163,7 +163,8 @@ ServerMessage Protocol::receivePositionsUpdate()
     {
         PlayerPositionUpdate update;
 
-        readBuffer.resize(sizeof(int32_t) + sizeof(uint8_t) + 5 * sizeof(uint32_t));
+        // player_id (int32) + on_bridge (uint8) + new_X (float) + new_Y (float) + angle (float)
+        readBuffer.resize(sizeof(int32_t) + sizeof(uint8_t) + 3 * sizeof(float));
         if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0)
             return msg;
 
@@ -178,8 +179,6 @@ ServerMessage Protocol::receivePositionsUpdate()
         update.new_pos.new_X = exportFloat(readBuffer, idx);
         update.new_pos.new_Y = exportFloat(readBuffer, idx);
         update.new_pos.angle = exportFloat(readBuffer, idx);
-        update.new_pos.direction_x = static_cast<MovementDirectionX>(exportInt(readBuffer, idx));
-        update.new_pos.direction_y = static_cast<MovementDirectionY>(exportInt(readBuffer, idx));
 
         // Leer cantidad de checkpoints
         uint8_t next_count = 0;
