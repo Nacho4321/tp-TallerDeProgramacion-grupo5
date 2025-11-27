@@ -1,5 +1,5 @@
 #include "gameloop.h"
-#include "constants.h"
+#include "../common/constants.h"
 #include "npc_config.h"
 #include <thread>
 #include <chrono>

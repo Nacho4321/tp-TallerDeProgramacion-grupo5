@@ -1,7 +1,7 @@
 #ifndef EVENTLOOP_EVENTLOOP_H
 #define EVENTLOOP_EVENTLOOP_H
 #include <string>
-#include "queue.h"
+#include "../common/queue.h"
 #include "eventDispatcher.h"
 
 // EventLoop ya NO es un Thread separado

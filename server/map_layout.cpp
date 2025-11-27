@@ -2,7 +2,7 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <iostream>
-#include "constants.h"
+#include "../common/constants.h"
 #define MAP_WIDTH (4640.0f / 32.0f)
 #define MAP_HEIGHT (4672.0f / 32.0f)
 #define SCALE 32.0f

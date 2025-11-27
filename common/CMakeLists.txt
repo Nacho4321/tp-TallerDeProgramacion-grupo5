@@ -1,9 +1,6 @@
 target_sources(taller_common
     PRIVATE
     # .cpp files
-    gameloop.cpp
-    eventloop.cpp
-    eventDispatcher.cpp
     protocol.cpp
     liberror.cpp
     protocol_encode.cpp
@@ -11,18 +8,10 @@ target_sources(taller_common
     protocol_utils.cpp
     resolver.cpp
     socket.cpp
-    map_layout.cpp
-    car_physics_config.cpp
-    npc_config.cpp
-    event.cpp
     PUBLIC
     # .h files
-    gameloop.h
-    eventloop.h
     queue.h
     thread.h
-    Event.h
-    eventDispatcher.h
     constants.h
     liberror.h
     protocol.h
@@ -31,7 +20,5 @@ target_sources(taller_common
     socket.h
     thread.h
     messages.h
-    map_layout.h
-    car_physics_config.h
-    npc_config.h
+    position.h
     )

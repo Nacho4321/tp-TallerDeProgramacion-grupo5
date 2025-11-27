@@ -1,12 +1,12 @@
 #ifndef GAMELOOP_H
 #define GAMELOOP_H
-#include "thread.h"
+#include "../common/thread.h"
 #include <unordered_map>
 #include <array>
-#include "../common/eventloop.h"
+#include "eventloop.h"
 #include "PlayerData.h"
 #include "../common/messages.h"
-#include "../server/client_handler_msg.h"
+#include "client_handler_msg.h"
 #include <box2d/b2_world.h>
 #include <box2d/b2_polygon_shape.h>
 #include <box2d/b2_fixture.h>

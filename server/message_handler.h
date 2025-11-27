@@ -3,7 +3,7 @@
 #include "client_handler.h"
 #include "../common/queue.h"
 #include <unordered_map>
-#include "../common/Event.h"
+#include "event.h"
 #include <functional>
 #include "game_monitor.h"
 

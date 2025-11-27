@@ -1,5 +1,5 @@
 #include "npc_config.h"
-#include "constants.h"
+#include "../common/constants.h"
 #include <yaml-cpp/yaml.h>
 #include <iostream>
 

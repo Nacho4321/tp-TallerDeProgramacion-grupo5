@@ -2,7 +2,7 @@
 #define CHECKPOINT_H
 
 #include <SDL2pp/SDL2pp.hh>
-#include "../common/Event.h"
+#include "../common/position.h"
 #include "../common/constants.h"
 #include "vector2.h"
 

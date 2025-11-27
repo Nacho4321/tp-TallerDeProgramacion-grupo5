@@ -1,6 +1,6 @@
 #ifndef MESSAGES_H
 #define MESSAGES_H
-#include "Event.h"
+#include "position.h"
 #include "constants.h"
 #include <string>
 #include <cstdint>

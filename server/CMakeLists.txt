@@ -9,6 +9,13 @@ target_sources(taller_server
     server.cpp
     game_monitor.cpp
     message_handler.cpp
+    gameloop.cpp
+    eventloop.cpp
+    eventDispatcher.cpp
+    car_physics_config.cpp
+    npc_config.cpp
+    event.cpp
+    map_layout.cpp
     PUBLIC
     # .h files
     acceptor.h
@@ -18,4 +25,12 @@ target_sources(taller_server
     server.h
     game_monitor.h
     message_handler.h
+    gameloop.h
+    eventloop.h
+    event.h
+    eventDispatcher.h
+    car_physics_config.h
+    npc_config.h
+    PlayerData.h
+    map_layout.h
     )
