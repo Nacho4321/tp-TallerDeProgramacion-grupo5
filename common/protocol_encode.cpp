@@ -111,6 +111,12 @@ std::vector<std::uint8_t> Protocol::encodeServerMessage(ServerMessage &out)
             {
                 buffer.push_back(static_cast<uint8_t>(c));
             }
+
+            // Enviar HP
+            insertFloat(pos_update.hp);
+
+            // Enviar collision flag
+            buffer.push_back(pos_update.collision_flag ? 1 : 0);
         }
         return buffer;
     }

@@ -227,6 +227,80 @@ void MapLayout::extract_parked_cars(const std::string &jsonPath, std::vector<Par
     std::cout << "[MapLayout] Loaded " << out.size() << " parked cars from " << jsonPath << std::endl;
 }
 
+void MapLayout::extract_spawn_points(const std::string &jsonPath, std::vector<SpawnPointData> &out)
+{
+    out.clear();
+
+    std::ifstream file(jsonPath);
+    if (!file.is_open())
+    {
+        std::cerr << "[MapLayout] extract_spawn_points: cannot open " << jsonPath << std::endl;
+        return;
+    }
+
+    nlohmann::json data;
+    try
+    {
+        file >> data;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "[MapLayout] extract_spawn_points: JSON parse error in " << jsonPath << ": " << e.what() << std::endl;
+        return;
+    }
+
+    if (!data.contains("spawn_points") || !data["spawn_points"].is_array())
+    {
+        std::cerr << "[MapLayout] extract_spawn_points: missing 'spawn_points' array in " << jsonPath << std::endl;
+        return;
+    }
+
+    for (auto &obj : data["spawn_points"])
+    {
+        if (!obj.contains("x") || !obj.contains("y"))
+            continue;
+
+        float x = obj["x"].get<float>();
+        float y = obj["y"].get<float>();
+        float angle = 0.0f;
+        if (obj.contains("angle"))
+            angle = obj["angle"].get<float>();
+
+        // Optional units conversion: by default assume pixels (same as built-in array).
+        // If entry sets "units":"meters" then convert to pixel space.
+        std::string units = "pixels";
+        if (obj.contains("units") && obj["units"].is_string())
+            units = obj["units"].get<std::string>();
+        if (units == "meters")
+        {
+            x *= SCALE;
+            y *= SCALE;
+        }
+
+        // Apply same OFFSET used in map layout if caller provided raw map editor coordinates without offset.
+        // We only apply offset if field "raw": true OR an explicit flag "apply_offset": true.
+        bool apply_offset = false;
+        if (obj.contains("raw") && obj["raw"].is_boolean() && obj["raw"].get<bool>() == true)
+            apply_offset = true;
+        if (obj.contains("apply_offset") && obj["apply_offset"].is_boolean() && obj["apply_offset"].get<bool>() == true)
+            apply_offset = true;
+        if (apply_offset)
+        {
+            // OFFSET_X/Y definen traslación en PIXELES, así que sumamos directamente.
+            x += OFFSET_X;
+            y += OFFSET_Y;
+        }
+
+        SpawnPointData sp;
+        sp.x = x;
+        sp.y = y;
+        sp.angle = angle;
+        out.push_back(sp);
+    }
+
+    std::cout << "[MapLayout] Loaded " << out.size() << " spawn points from " << jsonPath << std::endl;
+}
+
 void MapLayout::create_polygon_layout(const std::vector<b2Vec2> &vertices, uint16_t category)
 {
     if (vertices.size() < 3)

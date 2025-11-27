@@ -1,4 +1,5 @@
 #include "eventDispatcher.h"
+#include "../common/constants.h"
 #include <box2d/b2_world.h>
 #include <box2d/b2_body.h>
 #include <box2d/b2_polygon_shape.h>
@@ -105,7 +106,7 @@ void EventDispatcher::change_car(Event &event, const std::string& car_type) {
     // Map physics to simple CarInfo used by drive logic
     it->second.car.speed = phys.max_speed; // already in px/s
     it->second.car.acceleration = phys.max_acceleration; // px/s^2
-    // keep hp as-is or maybe set depending on type later
+    it->second.car.hp = phys.max_hp;  // Set HP from physics config
     // Re-crear el body para que el fixture (hitbox) coincida con el tamaño físico del nuevo auto.
     b2Body* oldBody = it->second.body;
     if (oldBody) {

@@ -224,6 +224,19 @@ ServerMessage Protocol::receivePositionsUpdate()
             update.car_type.assign(reinterpret_cast<char *>(carBuf.data()), carBuf.size());
         }
 
+        // Leer HP
+        readBuffer.resize(sizeof(float));
+        if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0)
+            return msg;
+        size_t idx_hp = 0;
+        update.hp = exportFloat(readBuffer, idx_hp);
+
+        // Leer collision flag
+        uint8_t collision_byte;
+        if (skt.recvall(&collision_byte, sizeof(collision_byte)) <= 0)
+            return msg;
+        update.collision_flag = (collision_byte != 0);
+
         msg.positions.push_back(update);
     }
 

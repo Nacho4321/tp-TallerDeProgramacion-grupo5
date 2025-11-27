@@ -6,7 +6,6 @@
 #include <random>
 #include <algorithm>
 #include <iomanip>
-#define MAX_PLAYERS 8
 #define INITIAL_X_POS 960
 #define INITIAL_Y_POS 540
 #define FULL_LOBBY_MSG "can't join lobby, maximum players reached"
@@ -14,6 +13,10 @@
 #define FPS (1.0f / 60.0f)
 #define VELOCITY_ITERS 8
 #define COLLISION_ITERS 3
+// JSON loader
+#include <nlohmann/json.hpp>
+#include <fstream>
+#include <limits>
 
 void GameLoop::setup_checkpoints_from_file(const std::string &json_path)
 {
@@ -47,6 +50,32 @@ void GameLoop::setup_checkpoints_from_file(const std::string &json_path)
               << " checkpoint sensors (from " << json_path << ")." << std::endl;
 }
 
+GameLoop::SpawnPoint GameLoop::pick_best_spawn_near(float x_px, float y_px) const
+{
+    if (spawn_points.empty())
+    {
+        std::cerr << "[GameLoop] pick_best_spawn_near: no spawn points available!" << std::endl;
+        return SpawnPoint{0.0f, 0.0f, 0.0f}; // fallback emergency
+    }
+
+    // Pick the closest spawn in pixel space
+    float bestDist2 = std::numeric_limits<float>::infinity();
+    SpawnPoint best{spawn_points[0].x, spawn_points[0].y, spawn_points[0].angle};
+    
+    for (const auto &sp : spawn_points)
+    {
+        float dx = sp.x - x_px;
+        float dy = sp.y - y_px;
+        float d2 = dx * dx + dy * dy;
+        if (d2 < bestDist2)
+        {
+            bestDist2 = d2;
+            best = SpawnPoint{sp.x, sp.y, sp.angle};
+        }
+    }
+    return best;
+}
+
 void GameLoop::setup_npc_config()
 {
     auto &npc_cfg = NPCConfig::getInstance();
@@ -78,6 +107,7 @@ void GameLoop::setup_world()
     map_layout.create_map_layout("data/cities/liberty_city.json");
     
     setup_checkpoints_from_file("data/cities/base_liberty_city_checkpoints.json");
+    // Spawn points already loaded in constructor
     setup_npc_config();
     setup_npc_waypoints("data/cities/npc_waypoints.json");
 
@@ -100,6 +130,12 @@ void GameLoop::process_playing_state(float dt, float &acum)
         std::cout << "[GameLoop] Physics accumulator reset on start." << std::endl;
     }
 
+    // Reset collision flags at the start of each frame
+    for (auto &entry : players)
+    {
+        entry.second.collision_this_frame = false;
+    }
+
     update_npcs();
     update_body_positions();
 
@@ -109,6 +145,21 @@ void GameLoop::process_playing_state(float dt, float &acum)
         acum -= FPS;
     }
 
+    // Flush deferred body destructions immediately after stepping (world is unlocked now)
+    {
+        std::lock_guard<std::mutex> lk(players_map_mutex);
+        for (auto &[id, player_data] : players)
+        {
+            if (player_data.mark_body_for_removal && player_data.body && !world.IsLocked())
+            {
+                world.DestroyBody(player_data.body);
+                player_data.body = nullptr;
+                player_data.mark_body_for_removal = false;
+            }
+        }
+    }
+
+    process_respawns();
     perform_race_reset();
 
     std::vector<PlayerPositionUpdate> broadcast;
@@ -182,6 +233,9 @@ GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events)
     {
         std::cerr << "[GameLoop] WARNING: Failed to load car physics config, using defaults" << std::endl;
     }
+
+    // Load spawn points early so can_add_player() works before run() is called
+    map_layout.extract_spawn_points("data/cities/spawn_points.json", spawn_points);
 
     // seteo el contact listener owner y lo registro con el world
     contact_listener.set_owner(this);
@@ -395,6 +449,22 @@ void GameLoop::handle_checkpoint_reached(PlayerData &player_data, int player_id,
     else
     {
         player_data.next_checkpoint = new_next;
+        
+        // Store checkpoint position for respawn
+        if (checkpoint_index >= 0 && checkpoint_index < static_cast<int>(checkpoint_centers.size()))
+        {
+            b2Vec2 cp_pos = checkpoint_centers[checkpoint_index];
+            player_data.last_checkpoint_position = Position{
+                false, 
+                cp_pos.x * SCALE, 
+                cp_pos.y * SCALE, 
+                not_horizontal, 
+                not_vertical, 
+                0.0f
+            };
+            player_data.has_passed_checkpoint = true;
+        }
+        
         std::cout << "[GameLoop] Player " << player_id << " passed checkpoint " 
                   << checkpoint_index << " next=" << player_data.next_checkpoint << std::endl;
     }
@@ -413,13 +483,235 @@ void GameLoop::process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpoin
 void GameLoop::handle_begin_contact(b2Fixture *fixture_a, b2Fixture *fixture_b)
 {
     std::lock_guard<std::mutex> lk(players_map_mutex);
+    
+    // Check for checkpoint collisions
     process_pair(fixture_a, fixture_b);
     process_pair(fixture_b, fixture_a);
+    
+    // Check for car-to-car collisions
+    handle_car_collision(fixture_a, fixture_b);
+}
+
+void GameLoop::handle_car_collision(b2Fixture *fixture_a, b2Fixture *fixture_b)
+{
+    // Only process if game is in PLAYING state
+    if (game_state != GameState::PLAYING)
+        return;
+
+    b2Body *body_a = fixture_a->GetBody();
+    b2Body *body_b = fixture_b->GetBody();
+
+    uint16 cat_a = fixture_a->GetFilterData().categoryBits;
+    uint16 cat_b = fixture_b->GetFilterData().categoryBits;
+
+    // Skip if either fixture is a sensor (bridge sensors, checkpoint sensors)
+    bool a_is_sensor = fixture_a->IsSensor();
+    bool b_is_sensor = fixture_b->IsSensor();
+    
+    if (a_is_sensor || b_is_sensor)
+        return; // Don't apply damage to/from sensors
+
+    // Check if fixtures are player cars (CAR_GROUND or CAR_BRIDGE)
+    bool a_is_player = (cat_a == CAR_GROUND || cat_a == CAR_BRIDGE);
+    bool b_is_player = (cat_b == CAR_GROUND || cat_b == CAR_BRIDGE);
+
+    // Determine collision type for logging
+    std::string collision_type_a = "";
+    std::string collision_type_b = "";
+    
+    if (a_is_player && b_is_player) {
+        collision_type_a = "PLAYER vs PLAYER";
+        collision_type_b = "PLAYER vs PLAYER";
+    } else if (a_is_player) {
+        if (cat_b == 0x0001) {
+            collision_type_a = "PLAYER vs WALL";
+        } else {
+            collision_type_a = "PLAYER vs NPC/OBSTACLE";
+        }
+    } else if (b_is_player) {
+        if (cat_a == 0x0001) {
+            collision_type_b = "PLAYER vs WALL";
+        } else {
+            collision_type_b = "PLAYER vs NPC/OBSTACLE";
+        }
+    }
+
+    // Process damage for player A if it's a player
+    if (a_is_player)
+    {
+        int player_a_id = find_player_by_body(body_a);
+        if (player_a_id != -1)
+        {
+            auto it_a = players.find(player_a_id);
+            if (it_a != players.end())
+            {
+                // Calculate impact velocity
+                b2Vec2 vel_a = body_a->GetLinearVelocity();
+                b2Vec2 vel_b = body_b->GetLinearVelocity();
+                b2Vec2 relative_vel = vel_a - vel_b;
+                float impact_velocity = relative_vel.Length();
+
+                std::cout << "[Collision] " << collision_type_a 
+                          << " | Player " << player_a_id 
+                          << " | Impact: " << impact_velocity << " m/s" << std::endl;
+
+                apply_collision_damage(it_a->second, impact_velocity, it_a->second.car.car_name);
+            }
+        }
+    }
+
+    // Process damage for player B if it's a player
+    if (b_is_player)
+    {
+        int player_b_id = find_player_by_body(body_b);
+        if (player_b_id != -1)
+        {
+            auto it_b = players.find(player_b_id);
+            if (it_b != players.end())
+            {
+                // Calculate impact velocity
+                b2Vec2 vel_a = body_a->GetLinearVelocity();
+                b2Vec2 vel_b = body_b->GetLinearVelocity();
+                b2Vec2 relative_vel = vel_a - vel_b;
+                float impact_velocity = relative_vel.Length();
+
+                // Only log if it's not already logged (avoid double logging for player vs player)
+                if (!a_is_player || !b_is_player) {
+                    std::cout << "[Collision] " << collision_type_b 
+                              << " | Player " << player_b_id 
+                              << " | Impact: " << impact_velocity << " m/s" << std::endl;
+                }
+
+                apply_collision_damage(it_b->second, impact_velocity, it_b->second.car.car_name);
+            }
+        }
+    }
+}
+
+void GameLoop::apply_collision_damage(PlayerData &player_data, float impact_velocity, const std::string &car_name)
+{
+    // Skip if player already has 0 HP (waiting to respawn)
+    if (player_data.car.hp <= 0.0f)
+    {
+        std::cout << "[Collision] Player already dead (HP=0), skipping damage" << std::endl;
+        return;
+    }
+
+    // Get the collision damage multiplier from car physics config
+    const CarPhysics &car_physics = physics_config.getCarPhysics(car_name);
+
+    // Calculate damage based on impact velocity
+    // Formula: damage = impact_velocity * multiplier * 0.1 (scale factor)
+    // This makes moderate collisions (10 m/s) deal ~10 damage
+    float damage = impact_velocity * car_physics.collision_damage_multiplier * 0.1f;
+
+    // Only apply damage if it's significant (> 0.5)
+    if (damage < 0.5f)
+    {
+        std::cout << "[Collision] Impact too weak (" << impact_velocity 
+                  << " m/s), damage=" << damage << " < 0.5, skipping" << std::endl;
+        return;
+    }
+
+    // Apply damage
+    player_data.car.hp -= damage;
+
+    // Set collision flag for visual effects (explosion animation)
+    player_data.collision_this_frame = true;
+
+    std::cout << "[Collision] Player car '" << car_name 
+              << "' took " << damage << " damage (impact: " << impact_velocity 
+              << " m/s). HP remaining: " << player_data.car.hp << std::endl;
+
+    // Check if HP reached 0 or below
+    if (player_data.car.hp <= 0.0f)
+    {
+        player_data.car.hp = 0.0f;
+        player_data.waiting_to_respawn = true;
+        player_data.death_time = std::chrono::steady_clock::now();
+        player_data.collision_this_frame = true;  // Keep showing explosion
+        // Defer body destruction to outside Box2D callback/step
+        player_data.mark_body_for_removal = true;
+        
+        std::cout << "[Collision] Player car '" << car_name << "' destroyed! Will respawn in 3 seconds..." << std::endl;
+    }
+}
+
+void GameLoop::process_respawns()
+{
+    const float RESPAWN_DELAY_SECONDS = 3.0f;
+    auto now = std::chrono::steady_clock::now();
+
+    for (auto &entry : players)
+    {
+        PlayerData &player_data = entry.second;
+        
+        if (!player_data.waiting_to_respawn)
+            continue;
+
+        // Check if enough time has passed
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - player_data.death_time).count() / 1000.0f;
+        
+        if (elapsed >= RESPAWN_DELAY_SECONDS)
+        {
+            respawn_player(player_data);
+        }
+    }
+}
+
+void GameLoop::respawn_player(PlayerData &player_data)
+{
+    std::cout << "[Respawn] Respawning player at last checkpoint..." << std::endl;
+
+    // Get the respawn position (last checkpoint or spawn point if no checkpoint passed)
+    Position respawn_pos = player_data.last_checkpoint_position;
+    
+    // If no checkpoint was passed yet, respawn at nearest spawn point
+    if (!player_data.has_passed_checkpoint)
+    {
+        // Choose a spawn near the player's last known position to avoid long teleports
+        SpawnPoint chosen = pick_best_spawn_near(player_data.position.new_X, player_data.position.new_Y);
+        respawn_pos = Position{false, chosen.x, chosen.y, not_horizontal, not_vertical, chosen.angle};
+        std::cout << "[Respawn] No checkpoint passed. Picked nearest spawn (px): (" 
+                  << chosen.x << "," << chosen.y << ") angle=" << chosen.angle << std::endl;
+    }
+    else
+    {
+        std::cout << "[Respawn] Using last checkpoint position (px): (" 
+                  << respawn_pos.new_X << "," << respawn_pos.new_Y << ")" << std::endl;
+    }
+
+    // Destroy old body
+    if (player_data.body)
+    {
+        world.DestroyBody(player_data.body);
+    }
+
+    // Create new body with the standard helper to keep filters consistent
+    player_data.body = create_player_body(respawn_pos.new_X, respawn_pos.new_Y, respawn_pos, player_data.car.car_name);
+    if (player_data.body)
+    {
+        b2Vec2 world_pos = player_data.body->GetPosition();
+        std::cout << "[Respawn] Body created at world meters: (" << world_pos.x << "," << world_pos.y
+                  << ") from pixel pos (" << respawn_pos.new_X << "," << respawn_pos.new_Y << ")" << std::endl;
+    }
+
+    // Reset player state
+    const CarPhysics &car_physics = physics_config.getCarPhysics(player_data.car.car_name);
+    player_data.car.hp = car_physics.max_hp;
+    player_data.waiting_to_respawn = false;
+    player_data.collision_this_frame = false;
+    player_data.position = respawn_pos;
+    player_data.position.on_bridge = false; // ensure consistent state on respawn
+    player_data.mark_body_for_removal = false;
+
+    std::cout << "[Respawn] Player respawned with " << player_data.car.hp << " HP" << std::endl;
 }
 
 bool GameLoop::can_add_player() const
 {
-    if (static_cast<int>(players.size()) >= MAX_PLAYERS)
+    // Limit players to the number of available spawn points
+    if (static_cast<int>(players.size()) >= static_cast<int>(spawn_points.size()))
     {
         std::cout << FULL_LOBBY_MSG << std::endl;
         return false;
@@ -435,15 +727,18 @@ int GameLoop::add_player_to_order(int player_id)
 
 PlayerData GameLoop::create_default_player_data(int spawn_idx)
 {
-    const SpawnPoint &spawn = spawn_points[spawn_idx];
+    const MapLayout::SpawnPointData &spawn = spawn_points[spawn_idx];
     std::cout << "[GameLoop] add_player: assigning spawn point " << spawn_idx
               << " at (" << spawn.x << "," << spawn.y << ")" << std::endl;
 
+    const std::string default_car = "lambo";
+    const CarPhysics& car_physics = physics_config.getCarPhysics(default_car);
+
     Position pos = Position{false, spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
     PlayerData player_data;
-    player_data.body = create_player_body(spawn.x, spawn.y, pos, "lambo");
+    player_data.body = create_player_body(spawn.x, spawn.y, pos, default_car);
     player_data.state = MOVE_UP_RELEASED_STR;
-    player_data.car = CarInfo{"lambo", DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP};
+    player_data.car = CarInfo{default_car, car_physics.max_speed, car_physics.max_acceleration, car_physics.max_hp};
     player_data.position = pos;
     player_data.next_checkpoint = 0;
     player_data.laps_completed = 0;
@@ -506,7 +801,7 @@ void GameLoop::reposition_remaining_players()
             continue;
 
         PlayerData &player_data = player_it->second;
-        const SpawnPoint &spawn = spawn_points[i];
+        const MapLayout::SpawnPointData &spawn = spawn_points[i];
 
         std::cout << "[GameLoop] remove_player: moving player " << player_id
                   << " to spawn " << i << " at (" << spawn.x << "," << spawn.y << ")" << std::endl;
@@ -657,7 +952,7 @@ void GameLoop::reset_all_players_to_lobby()
             continue;
 
         PlayerData &player_data = player_it->second;
-        const SpawnPoint &spawn = spawn_points[i];
+        const MapLayout::SpawnPointData &spawn = spawn_points[i];
 
         safe_destroy_body(player_data.body);
         Position new_pos{false, spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
@@ -722,21 +1017,25 @@ b2Body *GameLoop::create_player_body(float x_px, float y_px, Position &pos, cons
 void GameLoop::add_player_to_broadcast(std::vector<PlayerPositionUpdate> &broadcast, int player_id, PlayerData &player_data)
 {
     b2Body *body = player_data.body;
-    b2Vec2 position = body->GetPosition();
+    if (body)
+    {
+        b2Vec2 position = body->GetPosition();
+        // Actualizar posición básica
+        player_data.position.new_X = position.x * SCALE;
+        player_data.position.new_Y = position.y * SCALE;
+        player_data.position.angle = normalize_angle(body->GetAngle());
 
-    // Actualizar posición básica
-    player_data.position.new_X = position.x * SCALE;
-    player_data.position.new_Y = position.y * SCALE;
-    player_data.position.angle = normalize_angle(body->GetAngle());
-
-    // IMPORTANTE: Actualizar el estado del puente ANTES de copiar la posición
-    update_bridge_state_for_player(player_data);
+        // IMPORTANTE: Actualizar el estado del puente ANTES de copiar la posición
+        update_bridge_state_for_player(player_data);
+    }
 
     // Ahora crear el update con los datos correctos
     PlayerPositionUpdate update;
     update.player_id = player_id;
     update.new_pos = player_data.position; // Ahora incluye on_bridge actualizado
     update.car_type = player_data.car.car_name;
+    update.hp = player_data.car.hp;
+    update.collision_flag = player_data.collision_this_frame;
 
     // Solo enviar checkpoints si el jugador no ha terminado la carrera
     if (!player_data.race_finished && !checkpoint_centers.empty())
@@ -783,6 +1082,8 @@ void GameLoop::add_npc_to_broadcast(std::vector<PlayerPositionUpdate> &broadcast
     update.player_id = npc.npc_id; // id negativo para NPC
     update.new_pos = pos;
     update.car_type = "npc";
+    update.hp = 100.0f; // NPCs always have full HP (invulnerable)
+    update.collision_flag = false; // NPCs don't show collision effects
     broadcast.push_back(update);
 }
 
@@ -807,6 +1108,16 @@ void GameLoop::update_body_positions()
     std::lock_guard<std::mutex> lk(players_map_mutex);
     for (auto &[id, player_data] : players)
     {
+        // If body is marked for removal and world is not locked, destroy safely
+        if (player_data.mark_body_for_removal && player_data.body && !world.IsLocked())
+        {
+            world.DestroyBody(player_data.body);
+            player_data.body = nullptr;
+            player_data.mark_body_for_removal = false;
+            continue; // nothing else to update for this player this tick
+        }
+        if (!player_data.body)
+            continue;
         // Aplicar fricción/adhesión primero
         update_friction_for_player(player_data);
 
@@ -1150,6 +1461,8 @@ void GameLoop::perform_race_reset()
 
 bool GameLoop::update_bridge_state_for_player(PlayerData &player_data)
 {
+    if (!player_data.body)
+        return player_data.position.on_bridge;
     if (!player_data.body)
     {
         return false;

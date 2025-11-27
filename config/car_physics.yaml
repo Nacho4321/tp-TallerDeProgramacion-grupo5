@@ -98,6 +98,19 @@ defaults:
     # - Measured in pixels
     center_offset_y: 0.0  # pixels
 
+  health:
+    # MAX_HP: Maximum health points for the car
+    # - Higher = more durable, survives more collisions
+    # - Lower = fragile, fewer hits before respawn
+    # - When HP reaches 0, car explodes and respawns
+    max_hp: 100.0
+    
+    # COLLISION_DAMAGE_MULTIPLIER: Base damage from collisions
+    # - Higher = collisions deal more damage
+    # - Lower = more forgiving, survives harder hits
+    # - Actual damage depends on impact velocity
+    collision_damage_multiplier: 10.0
+
 # Specific car type configurations
 # Each car inherits from defaults and can override specific values
 cars:

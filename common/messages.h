@@ -32,6 +32,10 @@ struct PlayerPositionUpdate
     // Up to N next checkpoints (in pixels) that the client can draw as guidance.
     // Coordinates are in the same units as Position (pixels).
     std::vector<Position> next_checkpoints;
+    
+    // HP system
+    float hp = 100.0f;  //  HP actual 
+    bool collision_flag = false;  // True si hubo colisión este frame (para animación de explosión)
 };
 
 // Mensaje unificado del servidor: puede ser una actualización de posiciones
