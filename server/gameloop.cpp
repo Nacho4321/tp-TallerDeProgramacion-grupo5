@@ -736,8 +736,6 @@ PlayerData GameLoop::create_default_player_data(int spawn_idx)
     std::cout << "[GameLoop] add_player: assigning spawn point " << spawn_idx
               << " at (" << spawn.x << "," << spawn.y << ")" << std::endl;
 
-    const std::string default_car = "lambo";
-    const CarPhysics& car_physics = physics_config.getCarPhysics(default_car);
 
     Position pos = Position{false, spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
     PlayerData player_data;
