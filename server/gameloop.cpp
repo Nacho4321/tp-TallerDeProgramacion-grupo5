@@ -135,7 +135,6 @@ void GameLoop::process_playing_state(float &acum)
         }
     }
 
-    process_respawns();
     perform_race_reset();
 
     std::vector<PlayerPositionUpdate> broadcast;
@@ -430,21 +429,6 @@ void GameLoop::handle_checkpoint_reached(PlayerData &player_data, int player_id,
     {
         player_data.next_checkpoint = new_next;
         
-        // Store checkpoint position for respawn
-        if (checkpoint_index >= 0 && checkpoint_index < static_cast<int>(checkpoint_centers.size()))
-        {
-            b2Vec2 cp_pos = checkpoint_centers[checkpoint_index];
-            player_data.last_checkpoint_position = Position{
-                false, 
-                cp_pos.x * SCALE, 
-                cp_pos.y * SCALE, 
-                not_horizontal, 
-                not_vertical, 
-                0.0f
-            };
-            player_data.has_passed_checkpoint = true;
-        }
-        
         std::cout << "[GameLoop] Player " << player_id << " passed checkpoint " 
                   << checkpoint_index << " next=" << player_data.next_checkpoint << std::endl;
     }
@@ -565,9 +549,9 @@ void GameLoop::handle_car_collision(b2Fixture *fixture_a, b2Fixture *fixture_b)
 
 void GameLoop::apply_collision_damage(PlayerData &player_data, float impact_velocity, const std::string &car_name)
 {
-    if (player_data.car.hp <= 0.0f)
+    if (player_data.is_dead)
     {
-        std::cout << "[Collision] Player already dead (HP=0), skipping damage" << std::endl;
+        std::cout << "[Collision] Player already dead, skipping damage" << std::endl;
         return;
     }
 
@@ -594,83 +578,22 @@ void GameLoop::apply_collision_damage(PlayerData &player_data, float impact_velo
               << "' took " << damage << " damage (impact: " << impact_velocity 
               << " m/s). HP remaining: " << player_data.car.hp << std::endl;
 
-    // Check if HP reached 0 or below
+
     if (player_data.car.hp <= 0.0f)
     {
         player_data.car.hp = 0.0f;
-        player_data.waiting_to_respawn = true;
-        player_data.death_time = std::chrono::steady_clock::now();
-        // TODO: este flag por ahi no hay q tocarla aca por si pone la explosion en loop
-        player_data.collision_this_frame = true;  
+        player_data.is_dead = true;
+        player_data.race_finished = true; // TODO: Player pierde
+        
+        // Marcar el body para destrucción en lugar de solo detenerlo
         player_data.mark_body_for_removal = true;
         
-        std::cout << "[Collision] Player car '" << car_name << "' destroyed! Will respawn in 3 seconds..." << std::endl;
-    }
-}
-
-void GameLoop::process_respawns()
-{
-    const float RESPAWN_DELAY_SECONDS = 3.0f;
-    auto now = std::chrono::steady_clock::now();
-
-    for (auto &entry : players)
-    {
-        PlayerData &player_data = entry.second;
+        player_data.collision_this_frame = true;  
         
-        if (!player_data.waiting_to_respawn)
-            continue;
+        std::cout << "[Death] Player car '" << car_name << "' DESTROYED! Player has lost the race." << std::endl;
 
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - player_data.death_time).count() / 1000.0f;
-        
-        if (elapsed >= RESPAWN_DELAY_SECONDS)
-        {
-            respawn_player(player_data);
-        }
+        check_race_completion();
     }
-}
-
-void GameLoop::respawn_player(PlayerData &player_data)
-{
-    std::cout << "[Respawn] Respawning player at last checkpoint..." << std::endl;
-
-    Position respawn_pos = player_data.last_checkpoint_position;
-    
-    if (!player_data.has_passed_checkpoint)
-    {
-        SpawnPoint chosen = pick_best_spawn(player_data.position.new_X, player_data.position.new_Y);
-        respawn_pos = Position{false, chosen.x, chosen.y, not_horizontal, not_vertical, chosen.angle};
-        std::cout << "[Respawn] No checkpoint passed. Picked nearest spawn (px): (" 
-                  << chosen.x << "," << chosen.y << ") angle=" << chosen.angle << std::endl;
-    }
-    else
-    {
-        std::cout << "[Respawn] Using last checkpoint position (px): (" 
-                  << respawn_pos.new_X << "," << respawn_pos.new_Y << ")" << std::endl;
-    }
-
-    if (player_data.body)
-    {
-        safe_destroy_body(player_data.body);
-    }
-
-    player_data.body = create_player_body(respawn_pos.new_X, respawn_pos.new_Y, respawn_pos, player_data.car.car_name);
-    if (player_data.body)
-    {
-        b2Vec2 world_pos = player_data.body->GetPosition();
-        std::cout << "[Respawn] Body created at world meters: (" << world_pos.x << "," << world_pos.y
-                  << ") from pixel pos (" << respawn_pos.new_X << "," << respawn_pos.new_Y << ")" << std::endl;
-    }
-
-    // Reseteo el estado del player
-    const CarPhysics &car_physics = physics_config.getCarPhysics(player_data.car.car_name);
-    player_data.car.hp = car_physics.max_hp;
-    player_data.waiting_to_respawn = false;
-    player_data.collision_this_frame = false;
-    player_data.position = respawn_pos;
-    player_data.position.on_bridge = false; 
-    player_data.mark_body_for_removal = false;
-
-    std::cout << "[Respawn] Player respawned with " << player_data.car.hp << " HP" << std::endl;
 }
 
 bool GameLoop::can_add_player() const
@@ -811,7 +734,12 @@ void GameLoop::reset_players_for_race_start()
         player_data.next_checkpoint = 0;
         player_data.laps_completed = 0;
         player_data.race_finished = false;
+        player_data.is_dead = false;
         player_data.position.on_bridge = false;
+        
+        // Reset HP 
+        const CarPhysics &car_physics = physics_config.getCarPhysics(player_data.car.car_name);
+        player_data.car.hp = car_physics.max_hp;
 
         b2Vec2 current_pos = player_data.body->GetPosition();
         float current_x_px = current_pos.x * SCALE;
@@ -820,6 +748,7 @@ void GameLoop::reset_players_for_race_start()
         std::cout << "[GameLoop] start_game: Player " << id
                   << " at body_pos=(" << current_x_px << "," << current_y_px << ")"
                   << " stored_pos=(" << player_data.position.new_X << "," << player_data.position.new_Y << ")"
+                  << " HP=" << player_data.car.hp
                   << " - race timer started"
                   << std::endl;
     }
@@ -839,8 +768,39 @@ void GameLoop::start_game()
 {
     std::lock_guard<std::mutex> lk(players_map_mutex);
 
-    if (game_state != GameState::LOBBY)
+    // Checkeo si se puede iniciar la carrera
+    bool can_start = false;
+    
+    if (game_state == GameState::LOBBY)
+    {
+        can_start = true;
+    }
+    else if (game_state == GameState::PLAYING)
+    {
+        // Durante PLAYING, solo permitir reiniciar si todos los jugadores están muertos
+        int total_players = static_cast<int>(players.size());
+        int dead_count = 0;
+        
+        for (const auto &[id, player_data] : players)
+        {
+            if (player_data.is_dead)
+            {
+                dead_count++;
+            }
+        }
+        
+        if (dead_count == total_players && total_players > 0)
+        {
+            can_start = true;
+            std::cout << "[GameLoop] All players dead, restarting race..." << std::endl;
+        }
+    }
+    
+    if (!can_start)
+    {
+        std::cout << "[GameLoop] Cannot start game in current state" << std::endl;
         return;
+    }
 
     transition_to_playing_state();
     reset_players_for_race_start();
@@ -924,7 +884,12 @@ void GameLoop::reset_all_players_to_lobby()
         player_data.next_checkpoint = 0;
         player_data.laps_completed = 0;
         player_data.race_finished = false;
+        player_data.is_dead = false;
         player_data.lap_start_time = std::chrono::steady_clock::now();
+        
+        // Reseteo HP
+        const CarPhysics &car_physics = physics_config.getCarPhysics(player_data.car.car_name);
+        player_data.car.hp = car_physics.max_hp;
     }
 }
 
@@ -977,6 +942,13 @@ b2Body *GameLoop::create_player_body(float x_px, float y_px, Position &pos, cons
 
 void GameLoop::add_player_to_broadcast(std::vector<PlayerPositionUpdate> &broadcast, int player_id, PlayerData &player_data)
 {
+    // Si el jugador está muerto y no tiene body, no lo agregamos al broadcast
+    // (el auto desaparece visualmente)
+    if (player_data.is_dead && !player_data.body)
+    {
+        return;
+    }
+    
     b2Body *body = player_data.body;
     if (body)
     {
@@ -1070,6 +1042,12 @@ void GameLoop::update_body_positions()
     std::lock_guard<std::mutex> lk(players_map_mutex);
     for (auto &[id, player_data] : players)
     {
+        // Si el jugador está muerto, no aplicar fuerzas
+        if (player_data.is_dead)
+        {
+            continue;
+        }
+        
         // Si el body está marcado para remover, NO lo destruyo acá (se hace en flush post-Step)
         // Simplemente omito actualizar fuerzas/física para este jugador.
         if (player_data.mark_body_for_removal)
@@ -1382,27 +1360,44 @@ size_t GameLoop::get_player_count() const
 
 void GameLoop::check_race_completion()
 {
-    // Asume que ya estamos bajo players_map_mutex lock (llamado desde process_pair)
+    // Asume que ya estamos bajo players_map_mutex lock (llamado desde process_pair o apply_collision_damage)
     // IMPORTANTE: No podemos modificar Box2D aca (estamos en callback de contacto)
 
-    // Contar cuántos jugadores terminaron
     int finished_count = 0;
+    int dead_count = 0;
     int total_players = static_cast<int>(players.size());
 
     for (const auto &[id, player_data] : players)
     {
-        if (player_data.race_finished)
+        if (player_data.race_finished && !player_data.is_dead)
         {
             finished_count++;
         }
+        if (player_data.is_dead)
+        {
+            dead_count++;
+        }
     }
 
-    // Si todos los jugadores terminaron, marcar flag para resetear después
-    if (finished_count == total_players && total_players > 0)
+    // La carrera termina cuando:
+    // 1. Todos los jugadores terminaron la carrera (ganaron)
+    // 2. Todos los jugadores murieron
+    bool all_finished = (finished_count == total_players && total_players > 0);
+    bool all_dead = (dead_count == total_players && total_players > 0);
+
+    if (all_finished || all_dead)
     {
         std::cout << "\n======================================" << std::endl;
-        std::cout << "   ALL PLAYERS FINISHED!" << std::endl;
-        std::cout << "   Preparing to return to lobby..." << std::endl;
+        if (all_dead)
+        {
+            std::cout << "   ALL PLAYERS DIED!" << std::endl;
+            std::cout << "   Press I to start a new race..." << std::endl;
+        }
+        else
+        {
+            std::cout << "   ALL PLAYERS FINISHED!" << std::endl;
+            std::cout << "   Preparing to return to lobby..." << std::endl;
+        }
         std::cout << "======================================\n"
                   << std::endl;
 
