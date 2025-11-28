@@ -143,7 +143,7 @@ private:
     void setup_npc_waypoints(const std::string &json_path);
 
     // Game tick processing
-    void process_playing_state(float dt, float &acum);
+    void process_playing_state(float &acum);
     void process_lobby_state();
 
     // Utility helpers
