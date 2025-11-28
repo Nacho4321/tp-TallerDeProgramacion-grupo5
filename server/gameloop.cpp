@@ -50,30 +50,20 @@ void GameLoop::setup_checkpoints_from_file(const std::string &json_path)
               << " checkpoint sensors (from " << json_path << ")." << std::endl;
 }
 
-GameLoop::SpawnPoint GameLoop::pick_best_spawn_near(float x_px, float y_px) const
+GameLoop::SpawnPoint GameLoop::pick_best_spawn(float /*x_px*/, float /*y_px*/) const
 {
     if (spawn_points.empty())
     {
-        std::cerr << "[GameLoop] pick_best_spawn_near: no spawn points available!" << std::endl;
-        return SpawnPoint{0.0f, 0.0f, 0.0f}; // Si no hay spawn points, devolver (0,0)
+        std::cerr << "[GameLoop] pick_best_spawn: no spawn points available!" << std::endl;
+        return SpawnPoint{0.0f, 0.0f, 0.0f};
     }
 
-    // Elijo el spawn point más cercano 
-    float bestDist2 = std::numeric_limits<float>::infinity();
-    SpawnPoint best{spawn_points[0].x, spawn_points[0].y, spawn_points[0].angle};
-    
-    for (const auto &sp : spawn_points)
-    {
-        float dx = sp.x - x_px;
-        float dy = sp.y - y_px;
-        float d2 = dx * dx + dy * dy;
-        if (d2 < bestDist2)
-        {
-            bestDist2 = d2;
-            best = SpawnPoint{sp.x, sp.y, sp.angle};
-        }
-    }
-    return best;
+    static thread_local std::mt19937 gen(std::random_device{}());
+    std::uniform_int_distribution<size_t> dist(0, spawn_points.size() - 1);
+    size_t idx = dist(gen);
+    const auto &sp = spawn_points[idx];
+    std::cout << "[GameLoop] Random spawn selected index=" << idx << " at (" << sp.x << "," << sp.y << ") angle=" << sp.angle << std::endl;
+    return SpawnPoint{sp.x, sp.y, sp.angle};
 }
 
 void GameLoop::setup_npc_config()
@@ -143,16 +133,22 @@ void GameLoop::process_playing_state(float &acum)
         acum -= FPS;
     }
 
-    // Flush deferred body destructions immediately after stepping (world is unlocked now)
+    // Flush de destrucciones diferidas (un solo lugar). El mundo ya no está locked.
     {
         std::lock_guard<std::mutex> lk(players_map_mutex);
         for (auto &[id, player_data] : players)
         {
-            if (player_data.mark_body_for_removal && player_data.body && !world.IsLocked())
+            if (player_data.mark_body_for_removal && player_data.body)
             {
-                world.DestroyBody(player_data.body);
-                player_data.body = nullptr;
+                if (world.IsLocked())
+                {
+                    // Esto no debería pasar acá, pero dejo el log por si aparece alguna condición rara.
+                    std::cout << "[GameLoop] World locked during flush, postergando destroy para player " << id << std::endl;
+                    continue;
+                }
+                safe_destroy_body(player_data.body);
                 player_data.mark_body_for_removal = false;
+                std::cout << "[GameLoop] Destroyed body for player " << id << " (flush)." << std::endl;
             }
         }
     }
@@ -659,7 +655,7 @@ void GameLoop::respawn_player(PlayerData &player_data)
     
     if (!player_data.has_passed_checkpoint)
     {
-        SpawnPoint chosen = pick_best_spawn_near(player_data.position.new_X, player_data.position.new_Y);
+        SpawnPoint chosen = pick_best_spawn(player_data.position.new_X, player_data.position.new_Y);
         respawn_pos = Position{false, chosen.x, chosen.y, not_horizontal, not_vertical, chosen.angle};
         std::cout << "[Respawn] No checkpoint passed. Picked nearest spawn (px): (" 
                   << chosen.x << "," << chosen.y << ") angle=" << chosen.angle << std::endl;
@@ -672,7 +668,7 @@ void GameLoop::respawn_player(PlayerData &player_data)
 
     if (player_data.body)
     {
-        world.DestroyBody(player_data.body);
+        safe_destroy_body(player_data.body);
     }
 
     player_data.body = create_player_body(respawn_pos.new_X, respawn_pos.new_Y, respawn_pos, player_data.car.car_name);
@@ -1092,13 +1088,11 @@ void GameLoop::update_body_positions()
     std::lock_guard<std::mutex> lk(players_map_mutex);
     for (auto &[id, player_data] : players)
     {
-        // If body is marked for removal and world is not locked, destroy safely
-        if (player_data.mark_body_for_removal && player_data.body && !world.IsLocked())
+        // Si el body está marcado para remover, NO lo destruyo acá (se hace en flush post-Step)
+        // Simplemente omito actualizar fuerzas/física para este jugador.
+        if (player_data.mark_body_for_removal)
         {
-            world.DestroyBody(player_data.body);
-            player_data.body = nullptr;
-            player_data.mark_body_for_removal = false;
-            continue; // nothing else to update for this player this tick
+            continue; // se destruye en el flush dentro de process_playing_state
         }
         if (!player_data.body)
             continue;

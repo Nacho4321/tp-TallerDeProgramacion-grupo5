@@ -111,7 +111,7 @@ private:
     CheckpointContactListener contact_listener;
 
     // Helper for picking nearest spawn point
-    SpawnPoint pick_best_spawn_near(float x_px, float y_px) const;
+    SpawnPoint pick_best_spawn(float x_px, float y_px) const;
 
     CarPhysicsConfig &physics_config;
 
