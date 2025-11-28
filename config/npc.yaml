@@ -1,5 +1,5 @@
 # NPC configuration (can be tweaked without recompiling)
 npc:
-  max_moving: 2      # NPCs circulando por waypoints
-  max_parked: 10      # NPCs estacionados
+  max_moving: 20      # NPCs circulando por waypoints
+  max_parked: 20      # NPCs estacionados
   speed_px_s: 120.0   # velocidad en pixeles/seg
