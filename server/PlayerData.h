@@ -24,5 +24,15 @@ struct PlayerData
     std::chrono::steady_clock::time_point lap_start_time;
     // Si el jugador ya completó la carrera (esperando a que otros terminen)
     bool race_finished = false;
+    // Flag para indicar si el jugador colisionó este frame (para animación de explosión)
+    bool collision_this_frame = false;
+    // Respawn system
+    bool waiting_to_respawn = false;
+    std::chrono::steady_clock::time_point death_time;
+    Position last_checkpoint_position;  // Position of the last checkpoint passed
+    bool has_passed_checkpoint = false; // True if player has passed at least one checkpoint
+    // When the player dies, we can't destroy the body inside Box2D callbacks.
+    // Use this flag to defer body destruction to a safe moment (outside world lock).
+    bool mark_body_for_removal = false;
 };
 #endif

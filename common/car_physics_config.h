@@ -5,10 +5,8 @@
 #include <unordered_map>
 #include <memory>
 #include <vector>
-#include "../common/constants.h"
 
-struct CarPhysics
-{
+struct CarPhysics {
     float torque;
     float angular_friction;
     float angular_damping;
@@ -27,39 +25,37 @@ struct CarPhysics
     float restitution;
     float width;
     float height;
-    float center_offset_y; // Offset vertical del centro de colisión en píxeles
+    float center_offset_y;  // Offset vertical del centro de colisión en píxeles
 
     float max_hp;
     float collision_damage_multiplier;
 };
 
-class CarPhysicsConfig
-{
+class CarPhysicsConfig {
 private:
     CarPhysics defaults;
     std::unordered_map<std::string, CarPhysics> car_configs;
     std::string config_path;
 
-    CarPhysicsConfig();
+    CarPhysicsConfig();  
 
-    void loadCarPhysicsFromYAML(CarPhysics &physics, const void *node);
-
+    void loadCarPhysicsFromYAML(CarPhysics& physics, const void* node);
 public:
-    static CarPhysicsConfig &getInstance();
+    static CarPhysicsConfig& getInstance();
 
-    CarPhysicsConfig(const CarPhysicsConfig &) = delete;
-    CarPhysicsConfig &operator=(const CarPhysicsConfig &) = delete;
+    CarPhysicsConfig(const CarPhysicsConfig&) = delete;
+    CarPhysicsConfig& operator=(const CarPhysicsConfig&) = delete;
 
-    bool loadFromFile(const std::string &path);
+    bool loadFromFile(const std::string& path);
 
     // reload config (not used yet)
     bool reload();
 
-    const CarPhysics &getCarPhysics(const std::string &car_name) const;
+    const CarPhysics& getCarPhysics(const std::string& car_name) const;
 
-    bool hasCarType(const std::string &car_name) const;
+    bool hasCarType(const std::string& car_name) const;
 
     std::vector<std::string> getAvailableCarTypes() const;
 };
 
-#endif
+#endif 

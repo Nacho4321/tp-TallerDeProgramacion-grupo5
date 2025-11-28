@@ -33,6 +33,17 @@ public:
         bool horizontal; // true = orientado horizontalmente, false = vertical
     };
 
+    // Extrae spawn points de un archivo JSON
+    // Formato: { "spawn_points": [ {"x": 890, "y": 700, "angle": 0.0}, ... ] }
+    // Soporta campos opcionales: "units" (pixels|meters), "raw" (bool), "apply_offset" (bool)
+    struct SpawnPointData
+    {
+        float x;        // En pixeles (después de aplicar conversiones)
+        float y;        // En pixeles
+        float angle;    // En radianes
+    };
+    void extract_spawn_points(const std::string &jsonPath, std::vector<SpawnPointData> &out);
+
     void extract_map_npc_data(const std::string &json_path, std::vector<WaypointData> &npc_waypoints, std::vector<ParkedCarData> &parked_cars);
     void get_parked_cars(const std::string &json_path_parked, std::vector<ParkedCarData> &parked_cars);
     void get_npc_waypoints(const std::string &json_path_wp, std::vector<WaypointData> &npc_waypoints);
