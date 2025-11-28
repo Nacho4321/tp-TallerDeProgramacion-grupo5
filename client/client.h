@@ -6,9 +6,12 @@
 #include "game_client_handler.h"
 #include "game_renderer.h"
 #include <SDL2pp/SDL2pp.hh>
+#include <unordered_map>
+#include <string>
 
 // Agrego esto para q no tengamos que apretar teclas al unirnos a una partida, pero siga funcionadno esa opcion
-enum class StartMode {
+enum class StartMode
+{
     NORMAL,      // espera comandos (create/join)
     AUTO_CREATE, // crea partida autoamticamente al inicio
     AUTO_JOIN    // se une a partida automaticamente al inicio
@@ -25,15 +28,22 @@ private:
     }
     bool connected;
     InputHandler handler;
-    
+
     // Handler que encapsula sender/receiver y colas
     GameClientHandler handler_core;
-
+    std::unordered_map<std::string, int> car_type_map = {
+        {GREEN_CAR, 0},
+        {RED_SQUARED_CAR, 1},
+        {RED_SPORTS_CAR, 2},
+        {LIGHT_BLUE_CAR, 3},
+        {RED_JEEP_CAR, 4},
+        {PURPLE_TRUCK, 5},
+        {LIMOUSINE_CAR, 6}};
     GameRenderer game_renderer;
 
     // IDs asignados por el servidor para identificar mi partida/jugador actuales
-    uint32_t my_game_id = 0;     // 0 => no asignado aún
-    int32_t my_player_id = -1;   // -1 => no asignado aún
+    uint32_t my_game_id = 0;   // 0 => no asignado aún
+    int32_t my_player_id = -1; // -1 => no asignado aún
 
     // Configuración de inicio
     StartMode start_mode;
@@ -41,10 +51,10 @@ private:
     std::string auto_create_game_name;
 
 public:
-    explicit Client(const char *address, const char *port, 
-                   StartMode mode = StartMode::NORMAL, 
-                   int join_game_id = -1,
-                   const std::string& game_name = "");
+    explicit Client(const char *address, const char *port,
+                    StartMode mode = StartMode::NORMAL,
+                    int join_game_id = -1,
+                    const std::string &game_name = "");
     ~Client();
     void start();
     bool isConnected() const { return connected; }

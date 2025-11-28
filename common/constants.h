@@ -74,4 +74,12 @@ const std::string LEAVE_GAME_STR = "leave_game";   // NOLINT
 #define CAR_GROUND 0x0020 // 32
 #define CAR_BRIDGE 0x0040 // 64
 
+#define GREEN_CAR "green_car"
+#define RED_SQUARED_CAR "red_squared_car"
+#define RED_SPORTS_CAR "red_sports_car"
+#define LIGHT_BLUE_CAR "light_blue_car"
+#define RED_JEEP_CAR "red_jeep_car"
+#define PURPLE_TRUCK "purple_truck"
+#define LIMOUSINE_CAR "limousine_car"
+#define DEFAULTS "defaults"
 #endif

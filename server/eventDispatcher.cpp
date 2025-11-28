@@ -24,14 +24,20 @@ void EventDispatcher::init_handlers()
     listeners[MOVE_RIGHT_RELEASED_STR] = [this](Event &e)
     { move_right_released(e); };
     // Handlers de cambio de auto (prefijos change_car <tipo>)
-    listeners[std::string(CHANGE_CAR_STR) + " lambo"] = [this](Event &e)
-    { change_car(e, "lambo"); };
-    listeners[std::string(CHANGE_CAR_STR) + " truck"] = [this](Event &e)
-    { change_car(e, "truck"); };
-    listeners[std::string(CHANGE_CAR_STR) + " sports_car"] = [this](Event &e)
-    { change_car(e, "sports_car"); };
-    listeners[std::string(CHANGE_CAR_STR) + " rally"] = [this](Event &e)
-    { change_car(e, "rally"); };
+    listeners[std::string(CHANGE_CAR_STR) + " " + GREEN_CAR] = [this](Event &e)
+    { change_car(e, GREEN_CAR); };
+    listeners[std::string(CHANGE_CAR_STR) + " " + RED_SQUARED_CAR] = [this](Event &e)
+    { change_car(e, RED_SQUARED_CAR); };
+    listeners[std::string(CHANGE_CAR_STR) + " " + RED_SPORTS_CAR] = [this](Event &e)
+    { change_car(e, RED_SPORTS_CAR); };
+    listeners[std::string(CHANGE_CAR_STR) + " " + LIGHT_BLUE_CAR] = [this](Event &e)
+    { change_car(e, LIGHT_BLUE_CAR); };
+    listeners[std::string(CHANGE_CAR_STR) + " " + RED_JEEP_CAR] = [this](Event &e)
+    { change_car(e, RED_JEEP_CAR); };
+    listeners[std::string(CHANGE_CAR_STR) + " " + PURPLE_TRUCK] = [this](Event &e)
+    { change_car(e, PURPLE_TRUCK); };
+    listeners[std::string(CHANGE_CAR_STR) + " " + LIMOUSINE_CAR] = [this](Event &e)
+    { change_car(e, LIMOUSINE_CAR); };
 }
 
 void EventDispatcher::move_up(Event &event)
