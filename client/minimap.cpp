@@ -71,7 +71,7 @@ void Minimap::initialize(Renderer& renderer, Texture& backgroundTexture) {
 }
 
 void Minimap::render(Renderer& renderer, const Car& mainCar,
-                    const std::vector<Car>& otherCars,
+                    std::map<int, Car>& otherCars,
                     const std::vector<Position>& checkpoints,
                     int logicalScreenWidth, int logicalScreenHeight) {
     Point minimapPos = calculateMinimapPosition(logicalScreenWidth, logicalScreenHeight);
@@ -179,12 +179,18 @@ void Minimap::drawCheckpointDot(Renderer& renderer, const Position& pos, int ord
 }
 
 void Minimap::drawCars(Renderer& renderer, const Car& mainCar, 
-                      const std::vector<Car>& otherCars, const Point& minimapPos,
+                      std::map<int, Car>& otherCars, const Point& minimapPos,
                       const Rect& worldViewRect) const {
     // Red for other cars
-    renderer.SetDrawColor(255, 0, 0, 255);
-    for (const auto& car : otherCars) {
-        drawCarDot(renderer, car.getPosition(), minimapPos, worldViewRect);
+    for (auto &[id, car] : otherCars) {
+        if (id < 0){
+            renderer.SetDrawColor(0, 0, 255, 128);
+            drawCarDot(renderer, car.getPosition(), minimapPos, worldViewRect);
+        }
+        else {
+            renderer.SetDrawColor(255, 0, 0, 255);
+            drawCarDot(renderer, car.getPosition(), minimapPos, worldViewRect);
+        }
     }
     
     // Green for main car
