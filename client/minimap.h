@@ -6,6 +6,7 @@
 #include "../common/position.h"
 #include <vector>
 #include <memory>
+#include <map>
 
 using namespace SDL2pp;
 
@@ -29,7 +30,7 @@ public:
     void initialize(Renderer& renderer, Texture& backgroundTexture);
     
     void render(Renderer& renderer, const Car& mainCar,
-                const std::vector<Car>& otherCars,
+                std::map<int, Car>& otherCars,
                 const std::vector<Position>& checkpoints,
                 int logicalScreenWidth, int logicalScreenHeight);
 
@@ -41,7 +42,7 @@ private:
     Rect scaleRectToCacheTexture(const Rect& worldRect) const;
     void drawMinimapBorder(Renderer& renderer, const Point& pos) const;
     void drawCars(Renderer& renderer, const Car& mainCar, 
-                  const std::vector<Car>& otherCars, const Point& minimapPos,
+                  std::map<int, Car>& otherCars, const Point& minimapPos,
                   const Rect& worldViewRect) const;
     void drawCarDot(Renderer& renderer, const CarPosition& pos, 
                     const Point& minimapPos, const Rect& worldViewRect) const;
