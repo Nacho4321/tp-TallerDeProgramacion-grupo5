@@ -3,11 +3,13 @@
 #include "../common/protocol.h" // To access the string constants
 #include <iostream>
 
-InputHandler::InputHandler() : prev_ticks(SDL_GetTicks()) {
+InputHandler::InputHandler() : prev_ticks(SDL_GetTicks())
+{
     init_key_maps();
 }
 
-void InputHandler::init_key_maps() {
+void InputHandler::init_key_maps()
+{
     // Mapeo de teclas presionadas (KEYPRESSED)
     keydown_actions[SDLK_LEFT] = MOVE_LEFT_PRESSED_STR;
     keydown_actions[SDLK_RIGHT] = MOVE_RIGHT_PRESSED_STR;
@@ -15,15 +17,23 @@ void InputHandler::init_key_maps() {
     keydown_actions[SDLK_DOWN] = MOVE_DOWN_PRESSED_STR;
     keydown_actions[SDLK_c] = CREATE_GAME_STR;
     keydown_actions[SDLK_i] = START_GAME_STR;
-    
+
     // Teclas de cambio de auto
-    keydown_special[SDLK_1] = []() { return std::string(CHANGE_CAR_STR) + " lambo"; };
-    keydown_special[SDLK_2] = []() { return std::string(CHANGE_CAR_STR) + " truck"; };
-    keydown_special[SDLK_3] = []() { return std::string(CHANGE_CAR_STR) + " sports_car"; };
-    keydown_special[SDLK_4] = []() { return std::string(CHANGE_CAR_STR) + " rally"; };
-    keydown_special[SDLK_5] = []() { return std::string(CHANGE_CAR_STR) + " lambo"; }; // futuro tipo
-    keydown_special[SDLK_6] = []() { return std::string(CHANGE_CAR_STR) + " truck"; }; // futuro tipo
-    
+    keydown_special[SDLK_1] = []()
+    { return std::string(CHANGE_CAR_STR) + " " + GREEN_CAR; };
+    keydown_special[SDLK_2] = []()
+    { return std::string(CHANGE_CAR_STR) + " " + RED_SQUARED_CAR; };
+    keydown_special[SDLK_3] = []()
+    { return std::string(CHANGE_CAR_STR) + " " + RED_SPORTS_CAR; };
+    keydown_special[SDLK_4] = []()
+    { return std::string(CHANGE_CAR_STR) + " " + LIGHT_BLUE_CAR; };
+    keydown_special[SDLK_5] = []()
+    { return std::string(CHANGE_CAR_STR) + " " + RED_JEEP_CAR; };
+    keydown_special[SDLK_6] = []()
+    { return std::string(CHANGE_CAR_STR) + " " + PURPLE_TRUCK; };
+    keydown_special[SDLK_7] = []()
+    { return std::string(CHANGE_CAR_STR) + " " + LIMOUSINE_CAR; };
+
     // Mapeo de teclas soltadas (KEYRELEASED)
     keyup_actions[SDLK_LEFT] = MOVE_LEFT_RELEASED_STR;
     keyup_actions[SDLK_RIGHT] = MOVE_RIGHT_RELEASED_STR;
@@ -39,13 +49,17 @@ std::string InputHandler::receive()
     while (SDL_PollEvent(&event))
     {
         // Si estamos en modo de esperar el id del JOIN GAME
-        if (awaiting_join_id) {
-            if (event.type == SDL_KEYDOWN && event.key.repeat == 0) {
+        if (awaiting_join_id)
+        {
+            if (event.type == SDL_KEYDOWN && event.key.repeat == 0)
+            {
                 SDL_Keycode key = event.key.keysym.sym;
 
                 // Enter: confirmar si hay algo en el buffer
-                if (key == SDLK_RETURN || key == SDLK_KP_ENTER) {
-                    if (!join_id_buffer.empty()) {
+                if (key == SDLK_RETURN || key == SDLK_KP_ENTER)
+                {
+                    if (!join_id_buffer.empty())
+                    {
                         std::string cmd = std::string(JOIN_GAME_STR) + " " + join_id_buffer;
                         awaiting_join_id = false;
                         join_id_buffer.clear();
@@ -56,7 +70,8 @@ std::string InputHandler::receive()
                 }
 
                 // Escape: cancelar modo join
-                if (key == SDLK_ESCAPE) {
+                if (key == SDLK_ESCAPE)
+                {
                     awaiting_join_id = false;
                     join_id_buffer.clear();
                     std::cout << "[Input] JOIN cancelado" << std::endl;
@@ -64,17 +79,21 @@ std::string InputHandler::receive()
                 }
 
                 // Backspace: borrar último dígito
-                if (key == SDLK_BACKSPACE) {
-                    if (!join_id_buffer.empty()) join_id_buffer.pop_back();
+                if (key == SDLK_BACKSPACE)
+                {
+                    if (!join_id_buffer.empty())
+                        join_id_buffer.pop_back();
                     continue;
                 }
 
                 // Aceptar dígitos 0-9 (incluye keypad)
-                if ((key >= SDLK_0 && key <= SDLK_9)) {
+                if ((key >= SDLK_0 && key <= SDLK_9))
+                {
                     join_id_buffer.push_back(char('0' + (key - SDLK_0)));
                     continue;
                 }
-                if (key >= SDLK_KP_0 && key <= SDLK_KP_9) {
+                if (key >= SDLK_KP_0 && key <= SDLK_KP_9)
+                {
                     join_id_buffer.push_back(char('0' + (key - SDLK_KP_0)));
                     continue;
                 }
@@ -93,55 +112,65 @@ std::string InputHandler::receive()
         else if (event.type == SDL_KEYDOWN && event.key.repeat == 0)
         {
             SDL_Keycode key = event.key.keysym.sym;
-            
+
             // Casos especiales: QUIT y JOIN
-            if (key == SDLK_ESCAPE || key == SDLK_q) {
+            if (key == SDLK_ESCAPE || key == SDLK_q)
+            {
                 return "QUIT";
             }
-            if (key == SDLK_w) {
-                if (audioManager) {
+            if (key == SDLK_w)
+            {
+                if (audioManager)
+                {
                     audioManager->increaseMasterVolume();
                 }
-                return "";  // Don't send to server
+                return ""; // Don't send to server
             }
-            if (key == SDLK_s) {
-                if (audioManager) {
+            if (key == SDLK_s)
+            {
+                if (audioManager)
+                {
                     audioManager->decreaseMasterVolume();
                 }
-                return "";  // Don't send to server
+                return ""; // Don't send to server
             }
-            if (key == SDLK_j) {
+            if (key == SDLK_j)
+            {
                 // Activar modo para ingresar id de JOIN GAME
                 awaiting_join_id = true;
                 join_id_buffer.clear();
                 std::cout << "[Input] Ingresá el id de partida y presioná Enter..." << std::endl;
                 return ""; // No enviar nada aún
             }
-            
+
             // Buscar en acciones especiales (lambdas)
             auto special_it = keydown_special.find(key);
-            if (special_it != keydown_special.end()) {
+            if (special_it != keydown_special.end())
+            {
                 return special_it->second(); // Invocar lambda
             }
-            
+
             // Buscar en acciones simples
             auto action_it = keydown_actions.find(key);
-            if (action_it != keydown_actions.end()) {
+            if (action_it != keydown_actions.end())
+            {
                 return action_it->second;
             }
         }
         else if (event.type == SDL_KEYUP)
         {
             SDL_Keycode key = event.key.keysym.sym;
-            
+
             // Buscar en acciones de keyup
             auto it = keyup_actions.find(key);
-            if (it != keyup_actions.end()) {
+            if (it != keyup_actions.end())
+            {
                 return it->second;
             }
-            
+
             // Ignorar keyup de teclas de cambio de auto (solo actúan en keydown)
-            if (keydown_special.find(key) != keydown_special.end()) {
+            if (keydown_special.find(key) != keydown_special.end())
+            {
                 // Es una tecla de cambio de auto, ignorar el keyup
                 return "";
             }

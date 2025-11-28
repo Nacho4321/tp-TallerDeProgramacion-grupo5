@@ -1,6 +1,5 @@
 # Car Physics Configuration
 # All values are tunable - experiment to find what feels right!
-
 # Default values used as fallback for all car types
 defaults:
   turning:
@@ -58,7 +57,7 @@ defaults:
     # - More negative = stronger drag, car slows faster when not accelerating
     # - Less negative = car coasts longer, feels slippery
     # - Affects how quickly car decelerates when letting go of gas
-    forward_drag_coefficient: -0.5  # N/(m/s)
+    forward_drag_coefficient: -0.1  # N/(m/s)
 
     # LINEAR DAMPING: General resistance to all linear motion
     # - Higher = car slows down faster overall
@@ -101,58 +100,91 @@ defaults:
 # Specific car type configurations
 # Each car inherits from defaults and can override specific values
 cars:
-  # Lamborghini - Balanced sports car, good all-arounder
-  lambo:
+
+  green_car:
     movement:
-      max_speed: 1000.0           # Fast but controllable
-      max_acceleration: 500.0    # Quick acceleration
+      max_speed: 1600.0          # 160 km/h
+      max_acceleration: 267.0    # 30 km/h x segundo
     turning:
-      torque: 15.0               # Responsive turning
+      torque: 17.0               # Responsive turning
+    friction:
+      max_lateral_impulse: 70.0   # Good grip, minimal drift
+    body:
+      center_offset_y: 3.0       # Capó deportivo largo
+
+
+  red_squared_car:
+    movement:
+      max_speed: 3000.0          # 160 km/h
+      max_acceleration: 500.0   # 20 km/h x segundo
+    turning:
+      torque: 8.0               # Responsive turning
+      angular_friction: 0.25
     friction:
       max_lateral_impulse: 10.0   # Good grip, minimal drift
     body:
       center_offset_y: 3.0       # Capó deportivo largo
 
-  # Heavy Truck - Slow, stable, hard to move
-  truck:
-    movement:
-      max_speed: 600.0           # Lower top speed
-      max_acceleration: 250.0    # Sluggish acceleration
-    turning:
-      torque: 14.0                # Wide, slow turns
-    body:
-      density: 5.0               # Heavy = wins collisions
-      center_offset_y: 5.0       # Cabina adelante, carga atrás
-      width: 22.0
-      height: 40.0
-    friction:
-      max_lateral_impulse: 20.0   # Extra grip from weight
-      linear_damping: 2.0
-
   # Sports Car - Maximum speed and handling
-  sports_car:
+  red_sports_car:
     movement:
-      max_speed: 2000.0           # Very fast
-      max_acceleration: 550.0    # Rapid acceleration
+      max_speed: 2500.0          # 160 km/h
+      max_acceleration: 400.0    # 24 km/h x segundo
     turning:
-      torque: 20.0               # Very sharp turns
+      torque: 13.0               # Responsive turning
     friction:
-      max_lateral_impulse: 12.0   # Excellent grip
-      forward_drag_coefficient: -0.3
+      max_lateral_impulse: 20.0   # Good grip, minimal drift
     body:
-      center_offset_y: -1.5       # Diseño deportivo aerodinámico
-      height: 40.0
+      center_offset_y: 3.0       # Capó deportivo largo
 
-  # Rally Car - Designed for drifting
-  rally:
+  light_blue_car:
     movement:
-      max_speed: 800.0           # Good speed
-      max_acceleration: 400.0    # Quick off the line
+      max_speed: 2000.0          # 160 km/h
+      max_acceleration: 200.0    # 30 km/h x segundo
+      backward_speed_multiplier: 3.0
     turning:
-      torque: 10.0               # Nimble turning
+      torque: 12.0               # Responsive turning
     friction:
-      max_lateral_impulse: 1.0   # Low grip = fun drifts!
-      linear_damping: 0.1        # Slides around more
+      max_lateral_impulse: 100.0   # Good grip, minimal drift
     body:
-      center_offset_y: -2.5       # Compacto y balanceado
-      height: 40.0
+      center_offset_y: 3.0       # Capó deportivo largo
+
+  red_jeep_car:
+    movement:
+      max_speed: 1500.0          # Fast but controllable
+      max_acceleration: 300.0    # Quick acceleration
+    turning:
+      torque: 20.0               # Responsive turning
+    friction:
+      max_lateral_impulse: 10.0   # Good grip, minimal drift
+    body:
+      center_offset_y: 3.0       # Capó deportivo largo
+      density: 3.0
+  
+  purple_truck:
+    movement:
+      max_speed: 2600.0          # 160 km/h
+      max_acceleration: 367.0    # 30 km/h x segundo
+    turning:
+      torque: 10.0               # Responsive turning
+    friction:
+      max_lateral_impulse: 70.0   # Good grip, minimal drift
+    body:
+      center_offset_y: 3.0       # Capó deportivo largo
+      restitution: 1.2
+      
+  limousine_car:
+    movement:
+      max_speed: 1500.0          # Fast but controllable
+      max_acceleration: 500.0    # Quick acceleration
+    turning:
+      torque: 12.0               # Responsive turning
+      angular_friction: 0.1
+    friction:
+      max_lateral_impulse: 1.0   # Good grip, minimal drift
+    body:
+      center_offset_y: -13.0       
+      density: 1.5
+      width: 20.0 
+      height: 48.0
+  

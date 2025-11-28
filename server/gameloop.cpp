@@ -297,6 +297,10 @@ void GameLoop::apply_forward_drive_force(b2Body *body, float desired_speed, cons
     float current_speed = b2Dot(body->GetLinearVelocity(), forwardNormal);
 
     float max_accel_m = car_physics.max_acceleration / SCALE;
+    if (desired_speed < 0.0f)
+    {
+        max_accel_m *= car_physics.backward_speed_multiplier;
+    }
     float accel_command = (desired_speed - current_speed) * car_physics.speed_controller_gain;
 
     if (accel_command > max_accel_m)
@@ -442,9 +446,9 @@ PlayerData GameLoop::create_default_player_data(int spawn_idx)
 
     Position pos = Position{false, spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
     PlayerData player_data;
-    player_data.body = create_player_body(spawn.x, spawn.y, pos, "lambo");
+    player_data.body = create_player_body(spawn.x, spawn.y, pos, GREEN_CAR);
     player_data.state = MOVE_UP_RELEASED_STR;
-    player_data.car = CarInfo{"lambo", DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP};
+    player_data.car = CarInfo{GREEN_CAR, DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP};
     player_data.position = pos;
     player_data.next_checkpoint = 0;
     player_data.laps_completed = 0;
