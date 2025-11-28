@@ -24,7 +24,6 @@ public:
         b2Vec2 position;
         std::vector<int> connections;
     };
-    void extract_npc_waypoints(const std::string &jsonPath, std::vector<WaypointData> &out);
 
     // Extrae posiciones de autos estacionados de un archivo JSON
     // Formato: { "parked_cars": [ {"x": 100, "y": 100, "horizontal": true}, ... ] }
@@ -33,7 +32,6 @@ public:
         b2Vec2 position;
         bool horizontal; // true = orientado horizontalmente, false = vertical
     };
-    void extract_parked_cars(const std::string &jsonPath, std::vector<ParkedCarData> &out);
 
     // Extrae spawn points de un archivo JSON
     // Formato: { "spawn_points": [ {"x": 890, "y": 700, "angle": 0.0}, ... ] }
@@ -46,6 +44,12 @@ public:
     };
     void extract_spawn_points(const std::string &jsonPath, std::vector<SpawnPointData> &out);
 
-    MapLayout(b2World &world_map) : world(world_map) {}
+    void extract_map_npc_data(const std::string &json_path, std::vector<WaypointData> &npc_waypoints, std::vector<ParkedCarData> &parked_cars);
+    void get_parked_cars(const std::string &json_path_parked, std::vector<ParkedCarData> &parked_cars);
+    void get_npc_waypoints(const std::string &json_path_wp, std::vector<WaypointData> &npc_waypoints);
+    std::vector<std::string> split(std::string s, const std::string &delim);
+    MapLayout(b2World &world_map) : world(world_map)
+    {
+    }
 };
 #endif
