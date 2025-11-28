@@ -1,5 +1,4 @@
 #include "map_layout.h"
-#include <nlohmann/json.hpp>
 #include <fstream>
 #include <iostream>
 #include "../common/constants.h"
@@ -9,6 +8,7 @@
 #define WALL_THICKNESS 0.1f
 #define OFFSET_X -10.0f
 #define OFFSET_Y -10.0f
+#include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
@@ -18,29 +18,31 @@ void MapLayout::create_map_layout(const std::string &jsonPath)
     json data;
     file >> data;
 
-    for (auto &layer : data["layers"])
+    for (auto &layer : data[LAYERS_STR])
     {
-        if (layer["type"] != "objectgroup")
+        if (layer[TYPE_STR] != OBJECTGROUP_STR)
+        {
             continue;
+        }
 
         uint16_t category = 0;
-        if (layer["name"] == "Collisions")
+        if (layer[NAME_STR] == LAYER_COLLISIONS_STR)
         {
             category = COLLISION_FLOOR;
         }
-        if (layer["name"] == "Collisions_Bridge")
+        if (layer[NAME_STR] == LAYER_COLLISIONS_BRIDGE_STR)
         {
             category = COLLISION_BRIDGE;
         }
-        if (layer["name"] == "End_Bridge")
+        if (layer[NAME_STR] == LAYER_END_BRIDGE_STR)
         {
             category = SENSOR_END_BRIDGE;
         }
-        if (layer["name"] == "Collisions_under")
+        if (layer[NAME_STR] == LAYER_COLLISIONS_UNDER_STR)
         {
             category = COLLISION_UNDER; // cosas que no son puente pero estan por arriba
         }
-        if (layer["name"] == "Start_Bridge")
+        if (layer[NAME_STR] == LAYER_START_BRIDGE_STR)
         {
             category = SENSOR_START_BRIDGE;
         }
@@ -49,52 +51,35 @@ void MapLayout::create_map_layout(const std::string &jsonPath)
         {
             continue;
         }
-        for (auto &obj : layer["objects"])
+        for (auto &obj : layer[OBJECTS_STR])
         {
-            // CASO 1: POLÍGONO
 
-            if (obj.contains("polygon"))
+            if (obj.contains(POLYGON_STR))
             {
-                float baseX = obj["x"].get<float>();
-                float baseY = obj["y"].get<float>();
+                float baseX = obj[X_STR].get<float>();
+                float baseY = obj[Y_STR].get<float>();
 
-                // std::cout << "Polygon RAW coords:\n";
                 std::vector<b2Vec2> verts;
 
-                for (auto &pt : obj["polygon"])
+                for (auto &pt : obj[POLYGON_STR])
                 {
-                    float raw_px = baseX + pt["x"].get<float>();
-                    float raw_py = baseY + pt["y"].get<float>();
-
-                    // std::cout << raw_px << ", " << raw_py << "\n";
-
+                    float raw_px = baseX + pt[X_STR].get<float>();
+                    float raw_py = baseY + pt[Y_STR].get<float>();
                     float px = raw_px + OFFSET_X;
                     float py = raw_py + OFFSET_Y;
 
                     verts.emplace_back(px / SCALE, py / SCALE);
                 }
-
-                // std::cout << "----\n";
-
                 create_polygon_layout(verts, category);
                 continue;
             }
 
-            // CASO 2: RECTÁNGULO
-            if (obj.contains("width") && obj.contains("height"))
+            if (obj.contains(WIDTH_STR) && obj.contains(HEIGHT_STR))
             {
-                float x = obj["x"].get<float>();
-                float y = obj["y"].get<float>();
-                float w = obj["width"].get<float>();
-                float h = obj["height"].get<float>();
-
-                // std::cout << "Square RAW coords:\n";
-                // std::cout << x << ", " << y << "\n";
-                // std::cout << x + w << ", " << y << "\n";
-                // std::cout << x + w << ", " << y + h << "\n";
-                // std::cout << x << ", " << y + h << "\n";
-                // std::cout << "----\n";
-
+                float x = obj[X_STR].get<float>();
+                float y = obj[Y_STR].get<float>();
+                float w = obj[WIDTH_STR].get<float>();
+                float h = obj[HEIGHT_STR].get<float>();
                 std::vector<b2Vec2> verts;
                 verts.emplace_back((x + OFFSET_X) / SCALE, (y + OFFSET_Y) / SCALE);
                 verts.emplace_back((x + w + OFFSET_X) / SCALE, (y + OFFSET_Y) / SCALE);
@@ -118,113 +103,189 @@ void MapLayout::extract_checkpoints(const std::string &jsonPath, std::vector<b2V
     json data;
     file >> data;
 
-    if (!data.contains("checkpoints") || !data["checkpoints"].is_array())
+    if (!data.contains(CHECKPOINTS_STR) || !data[CHECKPOINTS_STR].is_array())
     {
         std::cerr << "[MapLayout] extract_checkpoints: missing or invalid 'checkpoints' array in " << jsonPath << std::endl;
         return;
     }
 
-    for (auto &obj : data["checkpoints"])
+    for (auto &obj : data[CHECKPOINTS_STR])
     {
-        if (!obj.contains("x") || !obj.contains("y"))
+        if (!obj.contains(X_STR) || !obj.contains(Y_STR))
             continue;
-        float raw_x = obj["x"].get<float>();
-        float raw_y = obj["y"].get<float>();
+        float raw_x = obj[X_STR].get<float>();
+        float raw_y = obj[Y_STR].get<float>();
         float px = raw_x + OFFSET_X;
         float py = raw_y + OFFSET_Y;
         out.emplace_back(px / SCALE, py / SCALE);
     }
 }
 
-void MapLayout::extract_npc_waypoints(const std::string &jsonPath, std::vector<WaypointData> &out)
+void MapLayout::extract_map_npc_data(const std::string &json_path, std::vector<WaypointData> &npc_waypoints, std::vector<ParkedCarData> &parked_cars)
 {
-    std::ifstream file(jsonPath);
-    if (!file)
+    npc_waypoints.clear();
+    parked_cars.clear();
+
+    get_npc_waypoints(json_path, npc_waypoints);
+    get_parked_cars(json_path, parked_cars);
+}
+void MapLayout::get_parked_cars(const std::string &json_path_parked, std::vector<ParkedCarData> &parked_cars)
+{
+    std::ifstream file_parked(json_path_parked);
+    if (!file_parked)
     {
-        std::cerr << "[MapLayout] Could not open JSON: " << jsonPath << std::endl;
-        return;
+        throw std::runtime_error("No se pudo abrir " + json_path_parked);
     }
-    json data;
-    file >> data;
+    nlohmann::json root;
+    file_parked >> root;
 
-    if (!data.contains("waypoints") || !data["waypoints"].is_array())
+    // Buscar la capa "parked_cars" dentro de "layers"
+    if (root.contains(LAYERS_STR))
     {
-        std::cerr << "[MapLayout] extract_npc_waypoints: missing or invalid 'waypoints' array in " << jsonPath << std::endl;
-        return;
-    }
-
-    for (auto &obj : data["waypoints"])
-    {
-        if (!obj.contains("x") || !obj.contains("y"))
-            continue;
-
-        float raw_x = obj["x"].get<float>();
-        float raw_y = obj["y"].get<float>();
-        float px = raw_x + OFFSET_X;
-        float py = raw_y + OFFSET_Y;
-
-        WaypointData wp;
-        wp.position = b2Vec2(px / SCALE, py / SCALE);
-
-        // Extract connections array
-        if (obj.contains("connections") && obj["connections"].is_array())
+        for (auto &layer : root[LAYERS_STR])
         {
-            for (auto &conn : obj["connections"])
+            if (layer.contains(NAME_STR) && layer[NAME_STR] == PARKED_CARS_STR)
             {
-                wp.connections.push_back(conn.get<int>());
+                if (layer.contains(OBJECTS_STR))
+                {
+                    for (auto &item : layer[OBJECTS_STR])
+                    {
+                        ParkedCarData pc;
+
+                        float px = (item[X_STR].get<float>() + OFFSET_X) / SCALE;
+                        float py = (item[Y_STR].get<float>() + OFFSET_Y) / SCALE;
+
+                        pc.position.Set(px, py);
+
+                        // Buscar "horizontal" en properties
+                        pc.horizontal = false; // valor por defecto
+                        if (item.contains("properties") && !item["properties"].empty())
+                        {
+                            for (auto &prop : item["properties"])
+                            {
+                                if (prop.contains("name") && prop["name"] == "horizontal")
+                                {
+                                    pc.horizontal = prop["value"].get<bool>();
+                                    break;
+                                }
+                            }
+                        }
+
+                        parked_cars.push_back(std::move(pc));
+                    }
+                }
+                break;
             }
         }
-
-        out.push_back(wp);
     }
-
-    std::cout << "[MapLayout] Loaded " << out.size() << " NPC waypoints from " << jsonPath << std::endl;
 }
 
-void MapLayout::extract_parked_cars(const std::string &jsonPath, std::vector<ParkedCarData> &out)
+void MapLayout::get_npc_waypoints(const std::string &json_path_wp, std::vector<WaypointData> &npc_waypoints)
 {
-    out.clear();
-
-    std::ifstream file(jsonPath);
-    if (!file.is_open())
+    std::ifstream file(json_path_wp);
+    if (!file)
     {
-        std::cerr << "[MapLayout] ERROR: Cannot open parked cars file: " << jsonPath << std::endl;
-        return;
+        throw std::runtime_error("No se pudo abrir " + json_path_wp);
     }
+    nlohmann::json root;
+    file >> root;
 
-    nlohmann::json j;
-    file >> j;
-    file.close();
+    std::vector<std::pair<int, WaypointData>> temp;
 
-    if (!j.contains("parked_cars") || !j["parked_cars"].is_array())
+    if (root.contains(LAYERS_STR))
     {
-        std::cerr << "[MapLayout] ERROR: JSON missing 'parked_cars' array" << std::endl;
-        return;
-    }
-
-    for (const auto &item : j["parked_cars"])
-    {
-        if (!item.contains("x") || !item.contains("y") || !item.contains("horizontal"))
+        for (auto &layer : root[LAYERS_STR])
         {
-            std::cerr << "[MapLayout] WARNING: Parked car missing x, y or horizontal field" << std::endl;
-            continue;
+            if (layer.contains(NAME_STR) && layer[NAME_STR] == "npc_waypoints")
+            {
+                if (layer.contains(OBJECTS_STR))
+                {
+                    for (auto &obj : layer[OBJECTS_STR])
+                    {
+                        WaypointData wp;
+                        int id = -1;
+
+                        float px = (obj[X_STR].get<float>() + OFFSET_X) / SCALE;
+                        float py = (obj[Y_STR].get<float>() + OFFSET_Y) / SCALE;
+                        wp.position = b2Vec2(px, py);
+
+                        if (obj.contains("properties"))
+                        {
+                            for (auto &prop : obj["properties"])
+                            {
+                                if (prop["name"] == "connections")
+                                {
+                                    std::string conexiones = prop["value"].get<std::string>();
+                                    std::vector<std::string> lista = split(conexiones, ",");
+                                    for (auto &s : lista)
+                                    {
+                                        wp.connections.push_back(std::stoi(s));
+                                    }
+                                }
+                                else if (prop["name"] == "id")
+                                {
+                                    id = prop["value"].get<int>();
+                                }
+                            }
+                        }
+
+                        // Extraer ID del nombre si no hay property "id"
+                        if (id == -1)
+                        {
+                            std::string name = obj["name"].get<std::string>();
+                            size_t pos = name.find("_");
+                            if (pos != std::string::npos)
+                            {
+                                id = std::stoi(name.substr(pos + 1));
+                            }
+                        }
+
+                        temp.push_back({id, wp});
+                    }
+                }
+            }
         }
-
-        ParkedCarData pc;
-        float raw_x = item["x"].get<float>();
-        float raw_y = item["y"].get<float>();
-
-        // Aplicar offset y escala
-        float x_m = (raw_x + static_cast<float>(OFFSET_X)) / static_cast<float>(SCALE);
-        float y_m = (raw_y + static_cast<float>(OFFSET_Y)) / static_cast<float>(SCALE);
-
-        pc.position.Set(x_m, y_m);
-        pc.horizontal = item["horizontal"].get<bool>();
-
-        out.push_back(pc);
     }
 
-    std::cout << "[MapLayout] Loaded " << out.size() << " parked cars from " << jsonPath << std::endl;
+    // Encontrar el ID máximo
+    int max_id = 0;
+    for (const auto &p : temp)
+    {
+        if (p.first > max_id)
+            max_id = p.first;
+    }
+
+    // Crear vector del tamaño necesario
+    npc_waypoints.clear();
+    npc_waypoints.resize(max_id + 1);
+
+    // Colocar cada waypoint en su posición según su ID
+    for (const auto &p : temp)
+    {
+        npc_waypoints[p.first] = p.second;
+    }
+}
+
+std::vector<std::string> MapLayout::split(std::string s, const std::string &delim)
+{
+    std::vector<std::string> out;
+    size_t pos;
+
+    while ((pos = s.find(delim)) != std::string::npos)
+    {
+        std::string token = s.substr(0, pos);
+        if (!token.empty())
+        {
+            out.push_back(token);
+        }
+        s.erase(0, pos + delim.length());
+    }
+
+    if (!s.empty())
+    {
+        out.push_back(s);
+    }
+    return out;
 }
 
 void MapLayout::create_polygon_layout(const std::vector<b2Vec2> &vertices, uint16_t category)
