@@ -33,9 +33,10 @@ public:
         bool horizontal; // true = orientado horizontalmente, false = vertical
     };
 
-    void extract_map_npc_data(const std::string &json_path_wp, const std::string &json_path_parked, std::vector<WaypointData> &npc_waypoints, std::vector<ParkedCarData> &parked_cars);
+    void extract_map_npc_data(const std::string &json_path, std::vector<WaypointData> &npc_waypoints, std::vector<ParkedCarData> &parked_cars);
     void get_parked_cars(const std::string &json_path_parked, std::vector<ParkedCarData> &parked_cars);
     void get_npc_waypoints(const std::string &json_path_wp, std::vector<WaypointData> &npc_waypoints);
+    std::vector<std::string> split(std::string s, const std::string &delim);
     MapLayout(b2World &world_map) : world(world_map)
     {
     }

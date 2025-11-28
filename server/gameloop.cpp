@@ -55,13 +55,13 @@ void GameLoop::setup_npc_config()
 
 void GameLoop::setup_world()
 {
+    std::vector<MapLayout::ParkedCarData> parked_data;
     map_layout.create_map_layout("data/cities/liberty_city.json");
 
     setup_checkpoints_from_file("data/cities/base_liberty_city_checkpoints.json");
     setup_npc_config();
 
-    std::vector<MapLayout::ParkedCarData> parked_data;
-    map_layout.extract_map_npc_data("data/cities/npc_waypoints.json", "data/cities/parked_cars.json", street_waypoints, parked_data);
+    map_layout.extract_map_npc_data("data/cities/liberty_city.json", street_waypoints, parked_data);
     if (int(parked_data.size()) > 0)
     {
         init_npcs(parked_data);

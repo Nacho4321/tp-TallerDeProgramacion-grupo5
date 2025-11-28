@@ -121,13 +121,13 @@ void MapLayout::extract_checkpoints(const std::string &jsonPath, std::vector<b2V
     }
 }
 
-void MapLayout::extract_map_npc_data(const std::string &json_path_wp, const std::string &json_path_parked, std::vector<WaypointData> &npc_waypoints, std::vector<ParkedCarData> &parked_cars)
+void MapLayout::extract_map_npc_data(const std::string &json_path, std::vector<WaypointData> &npc_waypoints, std::vector<ParkedCarData> &parked_cars)
 {
     npc_waypoints.clear();
     parked_cars.clear();
 
-    get_npc_waypoints(json_path_wp, npc_waypoints);
-    get_parked_cars(json_path_parked, parked_cars);
+    get_npc_waypoints(json_path, npc_waypoints);
+    get_parked_cars(json_path, parked_cars);
 }
 void MapLayout::get_parked_cars(const std::string &json_path_parked, std::vector<ParkedCarData> &parked_cars)
 {
@@ -136,21 +136,46 @@ void MapLayout::get_parked_cars(const std::string &json_path_parked, std::vector
     {
         throw std::runtime_error("No se pudo abrir " + json_path_parked);
     }
-    nlohmann::json p;
-    file_parked >> p;
-    if (p.contains(PARKED_CARS_STR))
+    nlohmann::json root;
+    file_parked >> root;
+
+    // Buscar la capa "parked_cars" dentro de "layers"
+    if (root.contains(LAYERS_STR))
     {
-        for (auto &item : p[PARKED_CARS_STR])
+        for (auto &layer : root[LAYERS_STR])
         {
-            ParkedCarData pc;
+            if (layer.contains(NAME_STR) && layer[NAME_STR] == PARKED_CARS_STR)
+            {
+                if (layer.contains(OBJECTS_STR))
+                {
+                    for (auto &item : layer[OBJECTS_STR])
+                    {
+                        ParkedCarData pc;
 
-            float px = (item[X_STR].get<float>() + OFFSET_X) / SCALE;
-            float py = (item[Y_STR].get<float>() + OFFSET_Y) / SCALE;
+                        float px = (item[X_STR].get<float>() + OFFSET_X) / SCALE;
+                        float py = (item[Y_STR].get<float>() + OFFSET_Y) / SCALE;
 
-            pc.position.Set(px, py);
-            pc.horizontal = item[HORIZONTAL_STR].get<bool>();
+                        pc.position.Set(px, py);
 
-            parked_cars.push_back(std::move(pc));
+                        // Buscar "horizontal" en properties
+                        pc.horizontal = false; // valor por defecto
+                        if (item.contains("properties") && !item["properties"].empty())
+                        {
+                            for (auto &prop : item["properties"])
+                            {
+                                if (prop.contains("name") && prop["name"] == "horizontal")
+                                {
+                                    pc.horizontal = prop["value"].get<bool>();
+                                    break;
+                                }
+                            }
+                        }
+
+                        parked_cars.push_back(std::move(pc));
+                    }
+                }
+                break;
+            }
         }
     }
 }
@@ -162,27 +187,105 @@ void MapLayout::get_npc_waypoints(const std::string &json_path_wp, std::vector<W
     {
         throw std::runtime_error("No se pudo abrir " + json_path_wp);
     }
-    nlohmann::json j;
-    file >> j;
-    if (j.contains(WAYPOINTS_STR))
+    nlohmann::json root;
+    file >> root;
+
+    std::vector<std::pair<int, WaypointData>> temp;
+
+    if (root.contains(LAYERS_STR))
     {
-        for (auto &obj : j[WAYPOINTS_STR])
+        for (auto &layer : root[LAYERS_STR])
         {
-            WaypointData wp;
-
-            float px = (obj[X_STR].get<float>() + OFFSET_X) / SCALE;
-            float py = (obj[Y_STR].get<float>() + OFFSET_Y) / SCALE;
-            wp.position = b2Vec2(px, py);
-
-            if (obj.contains(CONNECTIONS_STR))
+            if (layer.contains(NAME_STR) && layer[NAME_STR] == "npc_waypoints")
             {
-                for (auto &c : obj[CONNECTIONS_STR])
-                    wp.connections.push_back(c.get<int>());
-            }
+                if (layer.contains(OBJECTS_STR))
+                {
+                    for (auto &obj : layer[OBJECTS_STR])
+                    {
+                        WaypointData wp;
+                        int id = -1;
 
-            npc_waypoints.push_back(std::move(wp));
+                        float px = (obj[X_STR].get<float>() + OFFSET_X) / SCALE;
+                        float py = (obj[Y_STR].get<float>() + OFFSET_Y) / SCALE;
+                        wp.position = b2Vec2(px, py);
+
+                        if (obj.contains("properties"))
+                        {
+                            for (auto &prop : obj["properties"])
+                            {
+                                if (prop["name"] == "connections")
+                                {
+                                    std::string conexiones = prop["value"].get<std::string>();
+                                    std::vector<std::string> lista = split(conexiones, ",");
+                                    for (auto &s : lista)
+                                    {
+                                        wp.connections.push_back(std::stoi(s));
+                                    }
+                                }
+                                else if (prop["name"] == "id")
+                                {
+                                    id = prop["value"].get<int>();
+                                }
+                            }
+                        }
+
+                        // Extraer ID del nombre si no hay property "id"
+                        if (id == -1)
+                        {
+                            std::string name = obj["name"].get<std::string>();
+                            size_t pos = name.find("_");
+                            if (pos != std::string::npos)
+                            {
+                                id = std::stoi(name.substr(pos + 1));
+                            }
+                        }
+
+                        temp.push_back({id, wp});
+                    }
+                }
+            }
         }
     }
+
+    // Encontrar el ID máximo
+    int max_id = 0;
+    for (const auto &p : temp)
+    {
+        if (p.first > max_id)
+            max_id = p.first;
+    }
+
+    // Crear vector del tamaño necesario
+    npc_waypoints.clear();
+    npc_waypoints.resize(max_id + 1);
+
+    // Colocar cada waypoint en su posición según su ID
+    for (const auto &p : temp)
+    {
+        npc_waypoints[p.first] = p.second;
+    }
+}
+
+std::vector<std::string> MapLayout::split(std::string s, const std::string &delim)
+{
+    std::vector<std::string> out;
+    size_t pos;
+
+    while ((pos = s.find(delim)) != std::string::npos)
+    {
+        std::string token = s.substr(0, pos);
+        if (!token.empty())
+        {
+            out.push_back(token);
+        }
+        s.erase(0, pos + delim.length());
+    }
+
+    if (!s.empty())
+    {
+        out.push_back(s);
+    }
+    return out;
 }
 
 void MapLayout::create_polygon_layout(const std::vector<b2Vec2> &vertices, uint16_t category)

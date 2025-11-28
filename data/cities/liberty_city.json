@@ -33475,221 +33475,14 @@
          "objects":[
                 {
                  "height":0,
-                 "id":2522,
-                 "name":"waypoint_7",
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"connections",
-                         "type":"string",
-                         "value":"6,8"
-                        }, 
-                        {
-                         "name":"id",
-                         "type":"int",
-                         "value":7
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":77,
-                 "y":92
-                }, 
-                {
-                 "height":0,
-                 "id":2523,
-                 "name":"waypoint_6",
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"connections",
-                         "type":"string",
-                         "value":"7,5,0"
-                        }, 
-                        {
-                         "name":"id",
-                         "type":"int",
-                         "value":6
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":386,
-                 "y":88
-                }, 
-                {
-                 "height":0,
-                 "id":2524,
-                 "name":"waypoint_8",
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"connections",
-                         "type":"string",
-                         "value":"7,5,9"
-                        }, 
-                        {
-                         "name":"id",
-                         "type":"int",
-                         "value":8
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":78,
-                 "y":514
-                }, 
-                {
-                 "height":0,
-                 "id":2525,
-                 "name":"waypoint_9",
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"connections",
-                         "type":"string",
-                         "value":"2,8,10"
-                        }, 
-                        {
-                         "name":"id",
-                         "type":"int",
-                         "value":9
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":78,
-                 "y":830
-                }, 
-                {
-                 "height":0,
-                 "id":2526,
-                 "name":"waypoint_14",
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"connections",
-                         "type":"string",
-                         "value":"13,11"
-                        }, 
-                        {
-                         "name":"id",
-                         "type":"int",
-                         "value":14
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":72,
-                 "y":2102
-                }, 
-                {
-                 "height":0,
-                 "id":2528,
-                 "name":"waypoint_13",
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"connections",
-                         "type":"string",
-                         "value":"12,14"
-                        }, 
-                        {
-                         "name":"id",
-                         "type":"int",
-                         "value":13
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":230,
-                 "y":2104
-                }, 
-                {
-                 "height":0,
-                 "id":2529,
-                 "name":"waypoint_12",
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"connections",
-                         "type":"string",
-                         "value":"11,13"
-                        }, 
-                        {
-                         "name":"id",
-                         "type":"int",
-                         "value":12
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":228,
-                 "y":1778
-                }, 
-                {
-                 "height":0,
-                 "id":2530,
-                 "name":"waypoint_11",
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"connections",
-                         "type":"string",
-                         "value":"10,12,14"
-                        }, 
-                        {
-                         "name":"id",
-                         "type":"int",
-                         "value":11
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":76,
-                 "y":1774
-                }, 
-                {
-                 "height":0,
-                 "id":2531,
-                 "name":"waypoint_10",
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"connections",
-                         "type":"string",
-                         "value":"9,11"
-                        }, 
-                        {
-                         "name":"id",
-                         "type":"int",
-                         "value":10
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":81.8181818181818,
-                 "y":1500
-                }, 
-                {
-                 "height":0,
-                 "id":2533,
+                 "id":3284,
                  "name":"waypoint_1",
                  "point":true,
                  "properties":[
                         {
                          "name":"connections",
                          "type":"string",
-                         "value":"0,2,15"
+                         "value":"2"
                         }, 
                         {
                          "name":"id",
@@ -33700,111 +33493,19 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":1106.66666666667,
-                 "y":834.666666666667
+                 "x":119,
+                 "y":80.5
                 }, 
                 {
                  "height":0,
-                 "id":2534,
-                 "name":"waypoint_0",
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"connections",
-                         "type":"string",
-                         "value":"1,6"
-                        }, 
-                        {
-                         "name":"id",
-                         "type":"int",
-                         "value":0
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":1102,
-                 "y":92
-                }, 
-                {
-                 "height":0,
-                 "id":2535,
-                 "name":"waypoint_5",
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"connections",
-                         "type":"string",
-                         "value":"4,8,6"
-                        }, 
-                        {
-                         "name":"id",
-                         "type":"int",
-                         "value":5
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":386,
-                 "y":516
-                }, 
-                {
-                 "height":0,
-                 "id":2536,
-                 "name":"waypoint_4",
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"connections",
-                         "type":"string",
-                         "value":"3,5"
-                        }, 
-                        {
-                         "name":"id",
-                         "type":"int",
-                         "value":4
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":386,
-                 "y":614.666666666667
-                }, 
-                {
-                 "height":0,
-                 "id":2537,
-                 "name":"waypoint_3",
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"connections",
-                         "type":"string",
-                         "value":"2,4"
-                        }, 
-                        {
-                         "name":"id",
-                         "type":"int",
-                         "value":3
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":582.666666666667,
-                 "y":620
-                }, 
-                {
-                 "height":0,
-                 "id":2538,
+                 "id":3286,
                  "name":"waypoint_2",
                  "point":true,
                  "properties":[
                         {
                          "name":"connections",
                          "type":"string",
-                         "value":"3,9"
+                         "value":"3"
                         }, 
                         {
                          "name":"id",
@@ -33815,19 +33516,272 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":587.333333333333,
-                 "y":829.333333333333
+                 "x":361,
+                 "y":83.5
                 }, 
                 {
                  "height":0,
-                 "id":3269,
+                 "id":3288,
+                 "name":"waypoint_3",
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"connections",
+                         "type":"string",
+                         "value":"4"
+                        }, 
+                        {
+                         "name":"id",
+                         "type":"int",
+                         "value":3
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":551.5,
+                 "y":77
+                }, 
+                {
+                 "height":0,
+                 "id":3290,
+                 "name":"waypoint_4",
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"connections",
+                         "type":"string",
+                         "value":"5,9"
+                        }, 
+                        {
+                         "name":"id",
+                         "type":"int",
+                         "value":4
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":645,
+                 "y":76.5
+                }, 
+                {
+                 "height":0,
+                 "id":3291,
+                 "name":"waypoint_5",
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"connections",
+                         "type":"string",
+                         "value":"6,10,13"
+                        }, 
+                        {
+                         "name":"id",
+                         "type":"int",
+                         "value":5
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":774.5,
+                 "y":75.5
+                }, 
+                {
+                 "height":0,
+                 "id":3292,
+                 "name":"waypoint_6",
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"connections",
+                         "type":"string",
+                         "value":"7 "
+                        }, 
+                        {
+                         "name":"id",
+                         "type":"int",
+                         "value":6
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":905,
+                 "y":75
+                }, 
+                {
+                 "height":0,
+                 "id":3293,
+                 "name":"waypoint_7",
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"connections",
+                         "type":"string",
+                         "value":"8"
+                        }, 
+                        {
+                         "name":"id",
+                         "type":"int",
+                         "value":7
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":1091.5,
+                 "y":77
+                }, 
+                {
+                 "height":0,
+                 "id":3295,
+                 "name":"waypoint_9",
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"connections",
+                         "type":"string",
+                         "value":"10"
+                        }, 
+                        {
+                         "name":"id",
+                         "type":"int",
+                         "value":9
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":648,
+                 "y":292.666666666667
+                }, 
+                {
+                 "height":0,
+                 "id":3296,
+                 "name":"waypoint_10",
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"connections",
+                         "type":"string",
+                         "value":"15"
+                        }, 
+                        {
+                         "name":"id",
+                         "type":"int",
+                         "value":10
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":776,
+                 "y":290.666666666667
+                }, 
+                {
+                 "height":0,
+                 "id":3299,
+                 "name":"waypoint_11",
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"connections",
+                         "type":"string",
+                         "value":"12"
+                        }, 
+                        {
+                         "name":"id",
+                         "type":"int",
+                         "value":11
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":1098,
+                 "y":344
+                }, 
+                {
+                 "height":0,
+                 "id":3300,
+                 "name":"waypoint_12",
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"connections",
+                         "type":"string",
+                         "value":"15                     "
+                        }, 
+                        {
+                         "name":"id",
+                         "type":"int",
+                         "value":12
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":922,
+                 "y":346.666666666667
+                }, 
+                {
+                 "height":0,
+                 "id":3302,
+                 "name":"waypoint_13",
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"connections",
+                         "type":"string",
+                         "value":"14"
+                        }, 
+                        {
+                         "name":"id",
+                         "type":"int",
+                         "value":13
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":922,
+                 "y":97.3333333333333
+                }, 
+                {
+                 "height":0,
+                 "id":3303,
+                 "name":"waypoint_14",
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"connections",
+                         "type":"string",
+                         "value":"11"
+                        }, 
+                        {
+                         "name":"id",
+                         "type":"int",
+                         "value":14
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":1093.33333333333,
+                 "y":101.333333333333
+                }, 
+                {
+                 "height":0,
+                 "id":3304,
                  "name":"waypoint_15",
                  "point":true,
                  "properties":[
                         {
                          "name":"connections",
                          "type":"string",
-                         "value":"1"
+                         "value":"13"
                         }, 
                         {
                          "name":"id",
@@ -33838,8 +33792,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":1100,
-                 "y":1240
+                 "x":921.333333333333,
+                 "y":288.666666666667
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -35026,18 +34980,6 @@
                 }, 
                 {
                  "height":0,
-                 "id":3270,
-                 "name":"",
-                 "point":true,
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":1132,
-                 "y":1010
-                }, 
-                {
-                 "height":0,
                  "id":3271,
                  "name":"",
                  "point":true,
@@ -35351,7 +35293,7 @@
          "y":0
         }],
  "nextlayerid":13,
- "nextobjectid":3275,
+ "nextobjectid":3305,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
