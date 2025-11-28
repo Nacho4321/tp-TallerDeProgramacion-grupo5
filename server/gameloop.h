@@ -54,19 +54,19 @@ private:
         float angle;
     };
     static constexpr int MAX_PLAYERS = 8;
-    
+
     // Configuración de checkpoints y NPCs
     static constexpr int CHECKPOINT_LOOKAHEAD = 3;
     static constexpr float NPC_DIRECTION_THRESHOLD = 0.05f;
     static constexpr float NPC_ARRIVAL_THRESHOLD_M = 0.5f;
     static constexpr float MIN_DISTANCE_FROM_PARKED_M = 1.0f;
-    
+
     // Vectores de dirección para Box2D
     static constexpr float RIGHT_VECTOR_X = 1.0f;
     static constexpr float RIGHT_VECTOR_Y = 0.0f;
     static constexpr float FORWARD_VECTOR_X = 0.0f;
     static constexpr float FORWARD_VECTOR_Y = 1.0f;
-    
+
     std::array<SpawnPoint, MAX_PLAYERS> spawn_points = {{
         {890.0f, 700.0f, 0.0f}, // Spawn 0
         {910.0f, 660.0f, 0.0f}, // Spawn 1
@@ -130,7 +130,7 @@ private:
     // Helpers usados por el contact listener
     int find_player_by_body(b2Body *body);
     void process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpointFix);
-    bool is_valid_checkpoint_collision(b2Fixture *player_fixture, b2Fixture *checkpoint_fixture, 
+    bool is_valid_checkpoint_collision(b2Fixture *player_fixture, b2Fixture *checkpoint_fixture,
                                        int &out_player_id, int &out_checkpoint_index);
     void handle_checkpoint_reached(PlayerData &player_data, int player_id, int checkpoint_index);
     void complete_player_race(PlayerData &player_data, int player_id);
@@ -139,7 +139,6 @@ private:
     void setup_world();
     void setup_checkpoints_from_file(const std::string &json_path);
     void setup_npc_config();
-    void setup_npc_waypoints(const std::string &json_path);
 
     // Game tick processing
     void process_playing_state(float dt, float &acum);

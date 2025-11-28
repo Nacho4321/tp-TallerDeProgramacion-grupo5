@@ -50,27 +50,7 @@ void GameLoop::setup_checkpoints_from_file(const std::string &json_path)
 void GameLoop::setup_npc_config()
 {
     auto &npc_cfg = NPCConfig::getInstance();
-    if (!npc_cfg.loadFromFile("config/npc.yaml"))
-    {
-        std::cerr << "[GameLoop][NPC] Using built-in defaults (could not load config/npc.yaml)" << std::endl;
-    }
-    else
-    {
-        std::cout << "[GameLoop][NPC] Loaded NPC config: moving=" << npc_cfg.getMaxMoving()
-                  << " parked=" << npc_cfg.getMaxParked()
-                  << " speed_px_s=" << npc_cfg.getSpeedPxS() << std::endl;
-    }
-}
-
-void GameLoop::setup_npc_waypoints(const std::string &json_path)
-{
-    map_layout.extract_npc_waypoints(json_path, street_waypoints);
-
-    if (!street_waypoints.empty())
-    {
-        std::cout << "[GameLoop] Loaded " << street_waypoints.size()
-                  << " NPC waypoints (from " << json_path << ")." << std::endl;
-    }
+    npc_cfg.loadFromFile("config/npc.yaml");
 }
 
 void GameLoop::setup_world()
@@ -79,11 +59,13 @@ void GameLoop::setup_world()
 
     setup_checkpoints_from_file("data/cities/base_liberty_city_checkpoints.json");
     setup_npc_config();
-    setup_npc_waypoints("data/cities/npc_waypoints.json");
 
     std::vector<MapLayout::ParkedCarData> parked_data;
-    map_layout.extract_parked_cars("data/cities/parked_cars.json", parked_data);
-    init_npcs(parked_data);
+    map_layout.extract_map_npc_data("data/cities/npc_waypoints.json", "data/cities/parked_cars.json", street_waypoints, parked_data);
+    if (int(parked_data.size()) > 0)
+    {
+        init_npcs(parked_data);
+    }
 }
 
 void GameLoop::process_playing_state(float dt, float &acum)

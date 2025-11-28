@@ -17,6 +17,7 @@
         {
          "draworder":"topdown",
          "id":3,
+         "locked":true,
          "name":"Collisions",
          "objects":[
                 {
@@ -29216,13 +29217,14 @@
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":true,
+         "visible":false,
          "x":0,
          "y":0
         }, 
         {
          "draworder":"topdown",
          "id":9,
+         "locked":true,
          "name":"Collisions_under",
          "objects":[
                 {
@@ -32823,7 +32825,7 @@
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":true,
+         "visible":false,
          "x":0,
          "y":0
         }, 
@@ -33297,7 +33299,7 @@
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":true,
+         "visible":false,
          "x":0,
          "y":0
         }, 
@@ -33462,7 +33464,7 @@
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":true,
+         "visible":false,
          "x":0,
          "y":0
         }, 
@@ -33687,7 +33689,7 @@
                         {
                          "name":"connections",
                          "type":"string",
-                         "value":"0,2"
+                         "value":"0,2,15"
                         }, 
                         {
                          "name":"id",
@@ -33815,10 +33817,33 @@
                  "width":0,
                  "x":587.333333333333,
                  "y":829.333333333333
+                }, 
+                {
+                 "height":0,
+                 "id":3269,
+                 "name":"waypoint_15",
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"connections",
+                         "type":"string",
+                         "value":"1"
+                        }, 
+                        {
+                         "name":"id",
+                         "type":"int",
+                         "value":15
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":1100,
+                 "y":1240
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":false,
+         "visible":true,
          "x":0,
          "y":0
         }, 
@@ -34998,10 +35023,58 @@
                  "width":0,
                  "x":105.333333333333,
                  "y":584
+                }, 
+                {
+                 "height":0,
+                 "id":3270,
+                 "name":"",
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":1132,
+                 "y":1010
+                }, 
+                {
+                 "height":0,
+                 "id":3271,
+                 "name":"",
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":1073.5,
+                 "y":1080
+                }, 
+                {
+                 "height":0,
+                 "id":3272,
+                 "name":"",
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":1074,
+                 "y":1187
+                }, 
+                {
+                 "height":0,
+                 "id":3273,
+                 "name":"",
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":1072.66666666667,
+                 "y":1233.33333333333
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":false,
+         "visible":true,
          "x":0,
          "y":0
         }, 
@@ -35108,7 +35181,7 @@
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":false,
+         "visible":true,
          "x":0,
          "y":0
         }, 
@@ -35278,7 +35351,7 @@
          "y":0
         }],
  "nextlayerid":13,
- "nextobjectid":3266,
+ "nextobjectid":3275,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
