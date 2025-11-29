@@ -77,6 +77,15 @@ private:
     // Centros de los checkpoints en metros del mundo, indexados por índice de checkpoint
     std::vector<b2Vec2> checkpoint_centers;
 
+    // ----- Multi-race support (3 carreras en mismo mapa con distintos recorridos) -----
+    int current_round{0}; // 0..2
+    // Archivos de recorridos que existen en data/
+    std::array<std::string, 3> checkpoint_sets{
+        "data/cities/base_liberty_city_checkpoints_race_1.json",
+        "data/cities/base_liberty_city_checkpoints_race_2.json",
+        "data/cities/base_liberty_city_checkpoints_race_3.json"};
+    void load_current_round_checkpoints();
+
     // ---------------- NPC Support ----------------
     struct NPCData
     {
@@ -138,6 +147,7 @@ private:
     void setup_world();
     void setup_checkpoints_from_file(const std::string &json_path);
     void setup_npc_config();
+    void setup_map_layout();
 
     // Game tick processing
     void process_playing_state(float &acum);
@@ -159,6 +169,7 @@ private:
     void check_race_completion();
     // Ejecuta el reset al lobby cuando es seguro (fuera del callback de Box2D)
     void perform_race_reset();
+    void advance_round_or_reset_to_lobby();
     bool update_bridge_state_for_player(PlayerData &player_data);
     void set_car_category(PlayerData &player_data, uint16 newCategory);
     void update_bridge_state_for_npc(NPCData &npc_data);
