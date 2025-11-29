@@ -34,9 +34,10 @@ GameRenderer::GameRenderer(const char *windowTitle, int windowWidth, int windowH
       backgroundTexture(renderer, Surface(mapsDataPaths.at(mapId))),
       camera(LOGICAL_SCREEN_WIDTH, LOGICAL_SCREEN_HEIGHT, backgroundTexture.GetWidth(), backgroundTexture.GetHeight()),
       minimap(backgroundTexture.GetWidth(), backgroundTexture.GetHeight()),
-      mainCar(std::make_unique<Car>()),
       logicalWidth(LOGICAL_SCREEN_WIDTH),
-      logicalHeight(LOGICAL_SCREEN_HEIGHT)
+      logicalHeight(LOGICAL_SCREEN_HEIGHT),
+      mainCar(std::make_unique<Car>())
+
 {
     SDL_RenderSetLogicalSize(renderer.Get(), logicalWidth, logicalHeight);
     minimap.initialize(renderer, backgroundTexture);
@@ -72,18 +73,26 @@ GameRenderer::GameRenderer(const char *windowTitle, int windowWidth, int windowH
     }
 }
 
-void GameRenderer::updateMainCar(const CarPosition &position)
+void GameRenderer::updateMainCar(const CarPosition &position, bool collisionFlag)
 {
     audioManager->updateCarEngineVolume(-1, 0, 0, 0, 0);
     mainCar->setPosition(position);
+
+    if (collisionFlag && mainCar)
+    {
+        mainCar->startFlash();
+
+        audioManager->playCollisionSound(position.x, position.y, position.x, position.y);
+    }
 }
 
-void GameRenderer::updateOtherCars(const std::map<int, std::pair<CarPosition, int>> &positions)
+void GameRenderer::updateOtherCars(const std::map<int, std::pair<CarPosition, int>> &positions,
+                                   const std::map<int, bool> &collisionFlags)
 {
     CarPosition mainPos = mainCar->getPosition();
 
     auto nearest4 = computeNearestCars(positions, mainPos);
-    updateOrCreateCars(positions, nearest4, mainPos);
+    updateOrCreateCars(positions, collisionFlags, nearest4, mainPos);
     cleanupRemovedCars(positions, mainPos);
     if (audioManager)
         audioManager->stopEnginesExcept(nearest4);
@@ -115,6 +124,7 @@ std::set<int> GameRenderer::computeNearestCars(
 
 void GameRenderer::updateOrCreateCars(
     const std::map<int, std::pair<CarPosition, int>> &positions,
+    const std::map<int, bool> &collisionFlags,
     const std::set<int> &nearest4,
     const CarPosition &mainPos)
 {
@@ -130,6 +140,20 @@ void GameRenderer::updateOrCreateCars(
             it->second.setPosition(pos);
             it->second.setCarType(typeId);
 
+            auto collisionIt = collisionFlags.find(id);
+            if (collisionIt != collisionFlags.end() && collisionIt->second)
+            {
+                if (id >= 0)
+                {
+                    it->second.startFlash();
+                }
+
+                if (audioManager)
+                {
+                    audioManager->playCollisionSound(pos.x, pos.y, mainPos.x, mainPos.y);
+                }
+            }
+
             if (isNearby && audioManager)
             {
                 if (audioManager->isEnginePlayingForCar(id))
@@ -142,6 +166,21 @@ void GameRenderer::updateOrCreateCars(
         {
             // NEW CAR
             otherCars.emplace(id, Car(pos, typeId));
+
+            auto collisionIt = collisionFlags.find(id);
+            if (collisionIt != collisionFlags.end() && collisionIt->second)
+            {
+                if (id >= 0)
+                {
+                    otherCars[id].startFlash();
+                }
+
+                if (audioManager)
+                {
+                    audioManager->playCollisionSound(pos.x, pos.y, mainPos.x, mainPos.y);
+                }
+            }
+
             if (isNearby && audioManager)
                 audioManager->startCarEngine(id, pos.x, pos.y, mainPos.x, mainPos.y, false);
         }
@@ -194,11 +233,11 @@ void GameRenderer::cleanupRemovedCars(
 }
 
 void GameRenderer::render(const CarPosition &mainCarPos, int mainCarTypeId, const std::map<int, std::pair<CarPosition, int>> &otherCarPositions,
-                          const std::vector<Position> &next_checkpoints)
+                          const std::vector<Position> &next_checkpoints, bool mainCarCollisionFlag, const std::map<int, bool> &otherCarsCollisionFlags)
 {
-    updateMainCar(mainCarPos);
+    updateMainCar(mainCarPos, mainCarCollisionFlag);
     setMainCarType(mainCarTypeId);
-    updateOtherCars(otherCarPositions);
+    updateOtherCars(otherCarPositions, otherCarsCollisionFlags);
     updateCheckpoints(next_checkpoints);
 
     camera.setScreenSize(logicalWidth, logicalHeight);
@@ -206,7 +245,8 @@ void GameRenderer::render(const CarPosition &mainCarPos, int mainCarTypeId, cons
     renderer.SetDrawColor(0, 0, 0, 255);
     renderer.Clear();
     renderBackground();
-
+    
+    renderCheckpoints();
     renderUpperLayer();
 
     std::vector<Car> on_bridge_cars;
@@ -218,8 +258,6 @@ void GameRenderer::render(const CarPosition &mainCarPos, int mainCarTypeId, cons
     {
         renderCar(*mainCar);
     }
-    // 2. DIBUJAR: checkpoints
-    renderCheckpoints();
 
     for (auto &[id, car] : otherCars)
     {
@@ -233,7 +271,6 @@ void GameRenderer::render(const CarPosition &mainCarPos, int mainCarTypeId, cons
         }
     }
 
-    // 4. DIBUJAR LAYER SUPERIOR (tapa autos y checkpoints)
     renderUpperLayer();
     for (auto &car : on_bridge_cars)
     {
@@ -277,6 +314,22 @@ void GameRenderer::renderCar(Car &car)
             carSprites,
             Rect(sprite.x, sprite.y, sprite.w, sprite.h),
             Rect(carScreenX, carScreenY, sprite.w, sprite.h));
+
+        if (car.isFlashing())
+        {
+            car.updateFlash();
+            carSprites.SetBlendMode(SDL_BLENDMODE_ADD);
+            Uint8 intensity = std::min(255, ((Car::FLASH_DURATION - car.getFlashFrame()) * 400) / Car::FLASH_DURATION);
+            carSprites.SetAlphaMod(intensity);
+
+            renderer.Copy(
+                carSprites,
+                Rect(sprite.x, sprite.y, sprite.w, sprite.h),
+                Rect(carScreenX, carScreenY, sprite.w, sprite.h));
+        }
+
+        carSprites.SetBlendMode(SDL_BLENDMODE_BLEND);
+        carSprites.SetAlphaMod(255);
     }
 }
 

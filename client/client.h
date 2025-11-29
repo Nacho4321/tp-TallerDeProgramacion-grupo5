@@ -50,6 +50,8 @@ private:
     int auto_join_game_id;
     std::string auto_create_game_name;
 
+    int SPECTATOR_MODE = -1;
+
 public:
     explicit Client(const char *address, const char *port,
                     StartMode mode = StartMode::NORMAL,

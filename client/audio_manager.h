@@ -23,9 +23,9 @@ private:
     static constexpr float MAX_HEARING_DISTANCE_EXPLOSION = 1000.0f;
     static constexpr float MAX_HEARING_DISTANCE_COLLISION = 400.0f;
     static constexpr float MAX_HEARING_DISTANCE_ENGINE = 400.0f;
-    static constexpr int MAIN_CAR_ENGINE_VOLUME = 20;           
+    static constexpr int MAIN_CAR_ENGINE_VOLUME = 0;           
     static constexpr int BACKGROUND_MUSIC_VOLUME = 40;     
-    static constexpr int MAX_VOLUME = 40;
+    static constexpr int MAX_VOLUME = 80;
     static constexpr int VOLUME_STEP = 8;
     static constexpr int MIN_VOLUME = 0;
     static constexpr int MAX_VOLUME_LIMIT = 128;
@@ -41,7 +41,7 @@ public:
 
     void playBackgroundMusic(const std::string& musicPath);
     void stopMusic();
-    void setMusicVolume(int volume);  // 0-128
+    void setMusicVolume(int volume);  
 
     void playExplosionSound(float worldX, float worldY, float listenerX, float listenerY);
     void playCollisionSound(float worldX, float worldY, float listenerX, float listenerY);

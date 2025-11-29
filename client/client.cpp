@@ -69,7 +69,6 @@ void Client::start()
             return;
         }
     }
-    // una vez conectado continuo con el loop normal porque ya estoy en partida
 
     while (connected)
     {
@@ -154,6 +153,8 @@ void Client::start()
         {
             // Elegir como "auto principal" el correspondiente a mi player_id (si lo tengo asignado)
             size_t idx_main = 0;
+            bool player_found = false;
+
             if (my_player_id >= 0)
             {
                 for (size_t i = 0; i < latest_message.positions.size(); ++i)
@@ -161,31 +162,69 @@ void Client::start()
                     if (latest_message.positions[i].player_id == my_player_id)
                     {
                         idx_main = i;
+                        player_found = true;
                         break;
                     }
                 }
             }
+            else
+            {
+                player_found = true;
+            }
 
-            const PlayerPositionUpdate &main_pos = latest_message.positions[idx_main];
-            // Use server-provided body angle to compute forward direction for rendering.
-            // Server treats local forward as (0,1) rotated by body angle, i.e. forward = rotate((0,1), angle) = (-sin(angle), cos(angle)).
-            double angle = main_pos.new_pos.angle;
-            CarPosition mainCarPosition = CarPosition{
-                main_pos.new_pos.new_X,
-                main_pos.new_pos.new_Y,
-                float(-std::sin(angle)),
-                float(std::cos(angle)),
-                main_pos.new_pos.on_bridge};
-            auto it = car_type_map.find(main_pos.car_type);
-            int mainTypeId = (it != car_type_map.end()) ? it->second : 0;
+            if (!player_found && my_player_id >= 0)
+            {
+                if (game_renderer.mainCar && !game_renderer.mainCar->isExploding())
+                {
+                    game_renderer.mainCar->startExplosion();
+
+                    CarPosition deathPos = game_renderer.mainCar->getPosition();
+                    game_renderer.getAudioManager()->playExplosionSound(
+                        deathPos.x, deathPos.y, deathPos.x, deathPos.y);
+                    game_renderer.getAudioManager()->stopCarEngine(-1);
+                }
+
+                if (game_renderer.mainCar && game_renderer.mainCar->isExplosionComplete())
+                {
+                    idx_main = 0;
+                    player_found = true;
+                    game_renderer.mainCar->stopExplosion();
+                    my_player_id = SPECTATOR_MODE;  // Switch to spectator mode
+                }
+            }
+
+            CarPosition mainCarPosition;
+            int mainTypeId = 0;
+            std::vector<Position> next_cps;
+            bool mainCarCollisionFlag = false;
+
+            if (player_found)
+            {
+                const PlayerPositionUpdate &main_pos = latest_message.positions[idx_main];
+                double angle = main_pos.new_pos.angle;
+                mainCarPosition = CarPosition{
+                    main_pos.new_pos.new_X,
+                    main_pos.new_pos.new_Y,
+                    float(-std::sin(angle)),
+                    float(std::cos(angle)),
+                    main_pos.new_pos.on_bridge};
+                auto it = car_type_map.find(main_pos.car_type);
+                mainTypeId = (it != car_type_map.end()) ? it->second : 0;
+                next_cps = main_pos.next_checkpoints;
+                mainCarCollisionFlag = main_pos.collision_flag;
+            }
+            else if (game_renderer.mainCar)
+            {
+                mainCarPosition = game_renderer.mainCar->getPosition();
+            }
 
             std::map<int, std::pair<CarPosition, int>> otherCars;
+            std::map<int, bool> otherCarsCollisionFlags;
             for (size_t i = 0; i < latest_message.positions.size(); ++i)
             {
                 if (i == idx_main)
                     continue;
                 const PlayerPositionUpdate &pos = latest_message.positions[i];
-                // Use server-provided body angle for other cars as well (forward = rotate((0,1), angle)).
                 double ang = pos.new_pos.angle;
                 CarPosition cp{
                     pos.new_pos.new_X,
@@ -196,11 +235,10 @@ void Client::start()
                 auto other_it = car_type_map.find(pos.car_type);
                 int other_type_id = (other_it != car_type_map.end()) ? other_it->second : 0;
                 otherCars[pos.player_id] = std::make_pair(cp, other_type_id);
+                otherCarsCollisionFlags[pos.player_id] = pos.collision_flag;
             }
 
-            const std::vector<Position> &next_cps = main_pos.next_checkpoints;
-
-            game_renderer.render(mainCarPosition, mainTypeId, otherCars, next_cps);
+            game_renderer.render(mainCarPosition, mainTypeId, otherCars, next_cps, mainCarCollisionFlag, otherCarsCollisionFlags);
         }
 
         SDL_Delay(16);
