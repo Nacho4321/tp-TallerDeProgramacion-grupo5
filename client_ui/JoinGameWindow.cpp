@@ -112,13 +112,10 @@ void JoinGameWindow::onJoin() {
     
     if (result == QDialog::Accepted && lobbyWindow.wasGameStarted()) {
         gameStarted_ = true;
-        std::string host = lobbyClient_->getAddress();
-        std::string port = lobbyClient_->getPort();
         
-        lobbyClient_->disconnect();
+        auto connection = lobbyClient_->extractConnection();
         
-        std::cout << "[JoinGameWindow] Launching SDL client for game " << selectedGameId_ << std::endl;
-        GameLauncher::launchGameWithJoin(host, port, selectedGameId_);
+        GameLauncher::launchWithConnection(std::move(connection));
         
         accept();
     } else {

@@ -15,6 +15,7 @@ target_sources(taller_tests
     ${CMAKE_SOURCE_DIR}/client/game_client_receiver.cpp
     ${CMAKE_SOURCE_DIR}/client/game_client_sender.cpp
     ${CMAKE_SOURCE_DIR}/client/game_client_handler.cpp
+    ${CMAKE_SOURCE_DIR}/client/game_connection.cpp
     ${CMAKE_SOURCE_DIR}/server/gameloop.cpp          
     ${CMAKE_SOURCE_DIR}/server/event.cpp   
     ${CMAKE_SOURCE_DIR}/server/map_layout.cpp

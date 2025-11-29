@@ -7,18 +7,11 @@
 #include "../common/protocol.h"
 #include "../common/socket.h"
 #include "../common/messages.h"
-#include "../client/game_client_handler.h"
+#include "../client/game_connection.h"
 
 class LobbyClient {
 private:
-    std::unique_ptr<Protocol> protocol_;
-    std::unique_ptr<GameClientHandler> handler_;
-    std::string address_;
-    std::string port_;
-    bool connected_;
-
-    uint32_t currentGameId_;
-    uint32_t currentPlayerId_;
+    std::unique_ptr<GameConnection> connection_;
 
 public:
     LobbyClient();
@@ -42,6 +35,9 @@ public:
     uint32_t getCurrentPlayerId() const;
     
     void disconnect();
+    
+    // este metodo sirve para pasarle la conexion a SDL
+    std::unique_ptr<GameConnection> extractConnection();
 };
 
 #endif

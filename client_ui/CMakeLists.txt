@@ -35,6 +35,7 @@ target_sources(taller_client_ui PRIVATE
     ../client/game_client_handler.cpp
     ../client/game_client_receiver.cpp
     ../client/game_client_sender.cpp
+    ../client/game_connection.cpp
     ../client/input_handler.cpp
     ../client/car.cpp
     ../client/camera.cpp

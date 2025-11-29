@@ -70,13 +70,11 @@ void NewGameWindow::onCreate() {
     
     if (result == QDialog::Accepted && lobbyWindow.wasGameStarted()) {
         gameStarted_ = true;
-        std::string host = lobbyClient_->getAddress();
-        std::string port = lobbyClient_->getPort();
         
-        // desconectar el lobby antes de lanzar el juego
-        lobbyClient_->disconnect();
+        auto connection = lobbyClient_->extractConnection();
         
-        GameLauncher::launchGameWithJoin(host, port, static_cast<int>(gameId_));
+        std::cout << "[NewGameWindow] Transfiriendo conexión al cliente SDL" << std::endl;
+        GameLauncher::launchWithConnection(std::move(connection));
         
         accept(); 
     } else {

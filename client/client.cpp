@@ -6,33 +6,70 @@
 #include <SDL2/SDL.h>
 #include <map>
 
+// helper para crear conexion como antes
+void Client::initLegacyConnection(const char* address, const char* port) {
+    Socket sock(address, port);
+    owned_protocol_ = std::make_unique<Protocol>(std::move(sock));
+    owned_handler_ = std::make_unique<GameClientHandler>(*owned_protocol_);
+    active_handler_ = owned_handler_.get();
+    owned_handler_->start();
+}
+
 Client::Client(const char *address, const char *port, StartMode mode, int join_game_id, const std::string &game_name)
-    : protocol(ini_protocol(address, port)),
+    : connection_(nullptr),
+      owned_protocol_(nullptr),
+      owned_handler_(nullptr),
+      active_handler_(nullptr),
       connected(true),
       handler(),
-      handler_core(protocol),
       game_renderer("Game Renderer", LOGICAL_SCREEN_WIDTH, LOGICAL_SCREEN_HEIGHT, 1, "data/cities/liberty_city.json"),
       start_mode(mode),
       auto_join_game_id(join_game_id),
       auto_create_game_name(game_name)
 {
-    handler_core.start(); // iniciar handler (sender+receiver)
+    initLegacyConnection(address, port);
+    handler.setAudioManager(game_renderer.getAudioManager());
+}
+
+// nuevo constructor desde lobby (QT)
+Client::Client(std::unique_ptr<GameConnection> connection)
+    : connection_(std::move(connection)),
+      owned_protocol_(nullptr),
+      owned_handler_(nullptr),
+      active_handler_(nullptr),
+      connected(true),
+      handler(),
+      game_renderer("Game Renderer", LOGICAL_SCREEN_WIDTH, LOGICAL_SCREEN_HEIGHT, 1, "data/cities/liberty_city.json"),
+      start_mode(StartMode::FROM_LOBBY),
+      auto_join_game_id(-1),
+      auto_create_game_name("")
+{
+    active_handler_ = connection_->getHandler();
+    
+    my_game_id = connection_->getGameId();
+    my_player_id = static_cast<int32_t>(connection_->getPlayerId());
+    
     handler.setAudioManager(game_renderer.getAudioManager());
 }
 
 Client::~Client()
 {
-    handler_core.stop();
-    handler_core.join();
+    if (connection_) {
+        connection_->stop();
+        connection_->join();
+    }
+    else if (owned_handler_) {
+        owned_handler_->stop();
+        owned_handler_->join();
+    }
 }
 
 void Client::start()
 {
     // Ejecutar acción automática según el modo de inicio
-    if (start_mode == StartMode::AUTO_CREATE)
-    {
+    if (start_mode == StartMode::AUTO_CREATE) {
         uint32_t gid = 0, pid = 0;
-        bool ok = handler_core.create_game_blocking(gid, pid, auto_create_game_name);
+        bool ok = active_handler_->create_game_blocking(gid, pid, auto_create_game_name);
         if (ok)
         {
             my_game_id = gid;
@@ -55,7 +92,7 @@ void Client::start()
         }
         std::cout << "[Client] AUTOJOIN mode: Joining game " << auto_join_game_id << std::endl;
         uint32_t pid = 0;
-        bool ok = handler_core.join_game_blocking(auto_join_game_id, pid);
+        bool ok = active_handler_->join_game_blocking(auto_join_game_id, pid);
         if (ok)
         {
             std::cout << "[Client] Joined game. game_id=" << auto_join_game_id << " player_id=" << pid << std::endl;
@@ -83,7 +120,7 @@ void Client::start()
             {
                 std::cout << "[Client] Creating game..." << std::endl;
                 uint32_t gid = 0, pid = 0;
-                bool ok = handler_core.create_game_blocking(gid, pid);
+                bool ok = active_handler_->create_game_blocking(gid, pid);
                 if (ok)
                 {
                     std::cout << "[Client] Game created. game_id=" << gid << " player_id=" << pid << std::endl;
@@ -108,7 +145,7 @@ void Client::start()
                         int gid = std::stoi(game_id_str);
                         std::cout << "[Client] Joining game " << gid << "..." << std::endl;
                         uint32_t pid = 0;
-                        bool ok = handler_core.join_game_blocking(gid, pid);
+                        bool ok = active_handler_->join_game_blocking(gid, pid);
                         if (ok)
                         {
                             std::cout << "[Client] Joined game successfully. game_id=" << gid << " player_id=" << pid << std::endl;
@@ -135,7 +172,7 @@ void Client::start()
             {
                 // comandos de movimiento u otros
                 std::cout << "[Client] Sending: " << input << std::endl;
-                handler_core.send(input);
+                active_handler_->send(input);
             }
         }
 
@@ -143,7 +180,7 @@ void Client::start()
         ServerMessage latest_message;
         bool got_message = false;
 
-        while (handler_core.try_receive(message))
+        while (active_handler_->try_receive(message))
         {
             latest_message = message;
             got_message = true;
