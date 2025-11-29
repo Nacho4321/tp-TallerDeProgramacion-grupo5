@@ -42,6 +42,7 @@ void EventDispatcher::init_handlers()
 
 void EventDispatcher::move_up(Event &event)
 {
+    if (current_state != GameState::PLAYING) return; // Disable movement in LOBBY/STARTING
     std::lock_guard<std::mutex> lock(players_map_mutex);
     players[event.client_id].position.direction_y = up;
     players[event.client_id].state = event.action;
@@ -49,6 +50,7 @@ void EventDispatcher::move_up(Event &event)
 
 void EventDispatcher::move_up_released(Event &event)
 {
+    if (current_state != GameState::PLAYING) return; // Ignore in LOBBY/STARTING
     std::lock_guard<std::mutex> lock(players_map_mutex);
     if (players[event.client_id].state != MOVE_DOWN_PRESSED_STR)
     {
@@ -59,6 +61,7 @@ void EventDispatcher::move_up_released(Event &event)
 
 void EventDispatcher::move_down(Event &event)
 {
+    if (current_state != GameState::PLAYING) return;
     std::lock_guard<std::mutex> lock(players_map_mutex);
     players[event.client_id].position.direction_y = down;
     players[event.client_id].state = event.action;
@@ -66,6 +69,7 @@ void EventDispatcher::move_down(Event &event)
 
 void EventDispatcher::move_down_released(Event &event)
 {
+    if (current_state != GameState::PLAYING) return;
     std::lock_guard<std::mutex> lock(players_map_mutex);
     if (players[event.client_id].state != MOVE_UP_PRESSED_STR)
     {
@@ -76,6 +80,7 @@ void EventDispatcher::move_down_released(Event &event)
 
 void EventDispatcher::move_left(Event &event)
 {
+    if (current_state != GameState::PLAYING) return;
     std::lock_guard<std::mutex> lock(players_map_mutex);
     players[event.client_id].position.direction_x = left;
     players[event.client_id].state = event.action;
@@ -83,6 +88,7 @@ void EventDispatcher::move_left(Event &event)
 
 void EventDispatcher::move_left_released(Event &event)
 {
+    if (current_state != GameState::PLAYING) return;
     std::lock_guard<std::mutex> lock(players_map_mutex);
     if (players[event.client_id].state != MOVE_RIGHT_PRESSED_STR)
     {
@@ -93,6 +99,7 @@ void EventDispatcher::move_left_released(Event &event)
 
 void EventDispatcher::move_right(Event &event)
 {
+    if (current_state != GameState::PLAYING) return;
     std::lock_guard<std::mutex> lock(players_map_mutex);
     players[event.client_id].position.direction_x = right;
     players[event.client_id].state = event.action;
@@ -100,6 +107,7 @@ void EventDispatcher::move_right(Event &event)
 
 void EventDispatcher::move_right_released(Event &event)
 {
+    if (current_state != GameState::PLAYING) return;
     std::lock_guard<std::mutex> lock(players_map_mutex);
     if (players[event.client_id].state != MOVE_LEFT_PRESSED_STR)
     {
@@ -109,6 +117,9 @@ void EventDispatcher::move_right_released(Event &event)
 }
 void EventDispatcher::change_car(Event &event, const std::string &car_type)
 {
+    if (current_state != GameState::LOBBY) {
+        return;
+    }
     std::lock_guard<std::mutex> lock(players_map_mutex);
     auto it = players.find(event.client_id);
     if (it == players.end())
