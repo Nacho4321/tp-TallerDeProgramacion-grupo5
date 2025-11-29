@@ -132,7 +132,7 @@ private:
     
     // Car collision damage system
     void handle_car_collision(b2Fixture *fixture_a, b2Fixture *fixture_b);
-    void apply_collision_damage(PlayerData &player_data, float impact_velocity, const std::string &car_name);
+    void apply_collision_damage(PlayerData &player_data, float impact_velocity, const std::string &car_name, float frontal_multiplier = 1.0f);
 
     // Setup and initialization helpers
     void setup_world();
