@@ -512,11 +512,31 @@ void GameLoop::handle_car_collision(b2Fixture *fixture_a, b2Fixture *fixture_b)
                 b2Vec2 relative_vel = vel_a - vel_b;
                 float impact_velocity = relative_vel.Length();
 
+                // Detectar choque frontal: si las velocidades son opuestas (ángulo cercano a 180°)
+                float frontal_multiplier = 1.0f;
+                if (vel_a.Length() > 1.0f && vel_b.Length() > 1.0f) {
+                    // Normalizar y calcular producto punto
+                    b2Vec2 dir_a = vel_a;
+                    dir_a.Normalize();
+                    b2Vec2 dir_b = vel_b;
+                    dir_b.Normalize();
+                    float dot = b2Dot(dir_a, dir_b);
+                    
+                    // Si dot < -0.5, significa que los vectores apuntan en direcciones opuestas
+                    // (ángulo > 120°). Cuanto más negativo, más frontal es el choque.
+                    if (dot < -0.5f) {
+                        // Mapear de [-1.0, -0.5] a [2.5, 1.5] 
+                        // dot = -1.0 (180°) -> multiplier = 2.5x
+                        // dot = -0.5 (120°) -> multiplier = 1.5x
+                        frontal_multiplier = 1.5f + (-dot - 0.5f) * 2.0f;
+                    }
+                }
+
                 std::cout << "[Collision] " << collision_type_a 
                           << " | Player " << player_a_id 
                           << " | Impact: " << impact_velocity << " m/s" << std::endl;
 
-                apply_collision_damage(it_a->second, impact_velocity, it_a->second.car.car_name);
+                apply_collision_damage(it_a->second, impact_velocity, it_a->second.car.car_name, frontal_multiplier);
             }
         }
     }
@@ -532,8 +552,23 @@ void GameLoop::handle_car_collision(b2Fixture *fixture_a, b2Fixture *fixture_b)
             {
                 b2Vec2 vel_a = body_a->GetLinearVelocity();
                 b2Vec2 vel_b = body_b->GetLinearVelocity();
-                b2Vec2 relative_vel = vel_a - vel_b;
+                b2Vec2 relative_vel = vel_b - vel_a;  // Invertido para B
                 float impact_velocity = relative_vel.Length();
+
+                // Detectar choque frontal para el jugador B
+                float frontal_multiplier = 1.0f;
+                if (vel_a.Length() > 1.0f && vel_b.Length() > 1.0f) {
+                    // Agarro los 2 vectores de velocidad, los normalizo y calculo el producto punto
+                    b2Vec2 dir_a = vel_a;
+                    dir_a.Normalize();
+                    b2Vec2 dir_b = vel_b;
+                    dir_b.Normalize();
+                    float dot = b2Dot(dir_a, dir_b);
+                    
+                    if (dot < -0.5f) {
+                        frontal_multiplier = 1.5f + (-dot - 0.5f) * 2.0f;
+                    }
+                }
 
                 if (!a_is_player || !b_is_player) {
                     std::cout << "[Collision] " << collision_type_b 
@@ -541,13 +576,13 @@ void GameLoop::handle_car_collision(b2Fixture *fixture_a, b2Fixture *fixture_b)
                               << " | Impact: " << impact_velocity << " m/s" << std::endl;
                 }
 
-                apply_collision_damage(it_b->second, impact_velocity, it_b->second.car.car_name);
+                apply_collision_damage(it_b->second, impact_velocity, it_b->second.car.car_name, frontal_multiplier);
             }
         }
     }
 }
 
-void GameLoop::apply_collision_damage(PlayerData &player_data, float impact_velocity, const std::string &car_name)
+void GameLoop::apply_collision_damage(PlayerData &player_data, float impact_velocity, const std::string &car_name, float frontal_multiplier)
 {
     if (player_data.is_dead)
     {
@@ -557,12 +592,13 @@ void GameLoop::apply_collision_damage(PlayerData &player_data, float impact_velo
 
     const CarPhysics &car_physics = physics_config.getCarPhysics(car_name);
 
-    // Formula: damage = impact_velocity * multiplier * 0.1 
-    // (10 m/s) son aprox 10 damage
-    float damage = impact_velocity * car_physics.collision_damage_multiplier * 0.1f;
+    // Formula: damage = impact_velocity * multiplier * frontal_multiplier * 0.1 
+    // frontal_multiplier: 1.0 para colisiones normales, 2.5 para choques frontales en contramano
+    // (10 m/s) son aprox 10 damage (o 25 si es frontal)
+    float damage = impact_velocity * car_physics.collision_damage_multiplier * frontal_multiplier * 0.1f;
 
     // Solo aplico daño si es significativo
-    // TODO: Por ahi meter esto al YAML o hacerlo una constante global
+    // TODO: Por ahi meter el 0.5 al YAML o hacerlo una constante global
     if (damage < 0.5f)
     {
         std::cout << "[Collision] Impact too weak (" << impact_velocity 
@@ -574,9 +610,16 @@ void GameLoop::apply_collision_damage(PlayerData &player_data, float impact_velo
 
     player_data.collision_this_frame = true;
 
-    std::cout << "[Collision] Player car '" << car_name 
-              << "' took " << damage << " damage (impact: " << impact_velocity 
-              << " m/s). HP remaining: " << player_data.car.hp << std::endl;
+    if (frontal_multiplier > 1.5f) {
+        std::cout << "[Collision] **FRONTAL HEAD-ON CRASH** Player car '" << car_name 
+                  << "' took " << damage << " damage (impact: " << impact_velocity 
+                  << " m/s, frontal multiplier: " << frontal_multiplier 
+                  << "). HP remaining: " << player_data.car.hp << std::endl;
+    } else {
+        std::cout << "[Collision] Player car '" << car_name 
+                  << "' took " << damage << " damage (impact: " << impact_velocity 
+                  << " m/s). HP remaining: " << player_data.car.hp << std::endl;
+    }
 
 
     if (player_data.car.hp <= 0.0f)
