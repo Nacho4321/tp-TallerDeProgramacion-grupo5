@@ -1,5 +1,7 @@
 #include "JoinGameWindow.h"
 #include "ui_JoinGameWindow.h"
+#include "GameLobbyWindow.h"
+#include "GameLauncher.h"
 
 #include <QMessageBox>
 #include <iostream>
@@ -8,8 +10,11 @@ JoinGameWindow::JoinGameWindow(std::shared_ptr<LobbyClient> lobby, QWidget* pare
     : QDialog(parent), 
       ui(new Ui::JoinGameWindow), 
       lobbyClient_(std::move(lobby)),
-      selectedGameId_(-1) {
-    
+      selectedGameId_(-1),
+      selectedGameName_(""),
+      playerId_(0),
+      gameStarted_(false)
+{
     ui->setupUi(this);
     
     connect(ui->refreshButton, &QPushButton::clicked, this, &JoinGameWindow::onRefresh);
@@ -31,6 +36,7 @@ JoinGameWindow::~JoinGameWindow() {
 void JoinGameWindow::loadGamesList() {
     ui->gamesListWidget->clear();
     selectedGameId_ = -1;
+    selectedGameName_ = "";
     updateJoinButtonState();
     
     if (!lobbyClient_ || !lobbyClient_->isConnected()) {
@@ -45,6 +51,7 @@ void JoinGameWindow::loadGamesList() {
             QListWidgetItem* item = new QListWidgetItem("No games available");
             item->setFlags(item->flags() & ~Qt::ItemIsSelectable);
             item->setData(Qt::UserRole, -1);
+            item->setData(Qt::UserRole + 1, "");
             ui->gamesListWidget->addItem(item);
 
         } else {
@@ -56,6 +63,7 @@ void JoinGameWindow::loadGamesList() {
                 
                 QListWidgetItem* item = new QListWidgetItem(itemText);
                 item->setData(Qt::UserRole, static_cast<int>(game.game_id));
+                item->setData(Qt::UserRole + 1, QString::fromStdString(game.name));
                 ui->gamesListWidget->addItem(item);
             }
         }
@@ -77,7 +85,47 @@ void JoinGameWindow::onJoin() {
         return;
     }
     
-    accept(); 
+    if (!lobbyClient_ || !lobbyClient_->isConnected()) {
+        QMessageBox::warning(this, "Error", "Lost connection to server");
+        return;
+    }
+    
+    uint32_t outPlayerId = 0;
+    bool success = lobbyClient_->joinGame(static_cast<uint32_t>(selectedGameId_), outPlayerId);
+    
+    if (!success) {
+        QMessageBox::critical(this, "Error", "Failed to join game.");
+        loadGamesList();
+        return;
+    }
+    
+    playerId_ = outPlayerId;
+    
+    std::cout << "[JoinGameWindow] Joined game successfully. player_id=" << playerId_ << std::endl;
+    
+    this->hide();
+    
+    GameLobbyWindow lobbyWindow(lobbyClient_, selectedGameName_, 
+                                 static_cast<uint32_t>(selectedGameId_), 
+                                 playerId_, false, this);
+    int result = lobbyWindow.exec();
+    
+    if (result == QDialog::Accepted && lobbyWindow.wasGameStarted()) {
+        gameStarted_ = true;
+        std::string host = lobbyClient_->getAddress();
+        std::string port = lobbyClient_->getPort();
+        
+        lobbyClient_->disconnect();
+        
+        std::cout << "[JoinGameWindow] Launching SDL client for game " << selectedGameId_ << std::endl;
+        GameLauncher::launchGameWithJoin(host, port, selectedGameId_);
+        
+        accept();
+    } else {
+        gameStarted_ = false;
+        this->show();
+        loadGamesList();
+    }
 }
 
 void JoinGameWindow::onCancel() {
@@ -87,17 +135,20 @@ void JoinGameWindow::onCancel() {
 void JoinGameWindow::onGameSelected(QListWidgetItem* item) {
     if (!item) {
         selectedGameId_ = -1;
+        selectedGameName_ = "";
         updateJoinButtonState();
         return;
     }
     
     QVariant data = item->data(Qt::UserRole);
+    QVariant nameData = item->data(Qt::UserRole + 1);
     
     if (data.isValid()) {
         selectedGameId_ = data.toInt();
-        std::cout << "[JoinGameWindow] Selected game ID: " << selectedGameId_ << std::endl;
+        selectedGameName_ = nameData.toString();
     } else {
         selectedGameId_ = -1;
+        selectedGameName_ = "";
     }
     updateJoinButtonState();
 }

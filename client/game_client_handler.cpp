@@ -115,3 +115,17 @@ std::vector<ServerMessage::GameSummary> GameClientHandler::get_games_blocking() 
         return games;
     }
 }
+
+bool GameClientHandler::wait_for_game_started(int timeout_ms) {
+    (void)timeout_ms;  // por si hay que modificarlo en algun futuro
+    try {
+        ServerMessage msg;
+        bool got = join_results.try_pop(msg);
+        if (got && msg.opcode == GAME_STARTED) {
+            return true;
+        }
+        return false;
+    } catch (const ClosedQueue&) {
+        return false;
+    }
+}

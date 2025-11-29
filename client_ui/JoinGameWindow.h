@@ -18,6 +18,10 @@ public:
     ~JoinGameWindow();
 
     int getSelectedGameId() const { return selectedGameId_; }
+    bool wasGameStarted() const { return gameStarted_; }
+    
+    uint32_t getPlayerId() const { return playerId_; }
+    QString getSelectedGameName() const { return selectedGameName_; }
 
 private slots:
     void onRefresh();
@@ -29,6 +33,9 @@ private:
     Ui::JoinGameWindow* ui;
     std::shared_ptr<LobbyClient> lobbyClient_;
     int selectedGameId_;
+    QString selectedGameName_;
+    uint32_t playerId_;
+    bool gameStarted_;
     
     void loadGamesList();
     void updateJoinButtonState();

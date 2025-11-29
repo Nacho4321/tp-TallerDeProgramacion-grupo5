@@ -759,6 +759,28 @@ void GameLoop::transition_to_playing_state()
     game_state = GameState::PLAYING;
     std::cout << "[GameLoop] Game started! Transitioning from LOBBY to PLAYING" << std::endl;
     reset_accumulator.store(true);
+    
+    broadcast_game_started();
+}
+
+void GameLoop::broadcast_game_started()
+{
+    ServerMessage msg;
+    msg.opcode = GAME_STARTED;
+    
+    for (auto &entry : players_messanger)
+    {
+        auto &queue = entry.second;
+        if (queue)
+        {
+            try
+            {
+                queue->push(msg);
+                std::cout << "[GameLoop] GAME_STARTED sent to player " << entry.first << std::endl;
+            }
+            catch (const ClosedQueue &) {}
+        }
+    }
 }
 
 void GameLoop::reset_players_for_race_start()

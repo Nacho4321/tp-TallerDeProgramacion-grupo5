@@ -176,6 +176,7 @@ private:
     void transition_to_playing_state();
     void reset_players_for_race_start();
     void reset_npcs_velocities();
+    void broadcast_game_started();
 
     // perform_race_reset helpers
     bool should_reset_race() const;

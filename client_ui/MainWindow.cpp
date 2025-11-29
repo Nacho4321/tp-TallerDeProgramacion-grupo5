@@ -55,10 +55,10 @@ void MainWindow::onNewGameClicked() {
     this->hide();
     NewGameWindow dlg(lobbyClient, this);
     const int r = dlg.exec();
-    if (r != QDialog::Accepted) {
-        this->show();
-    } else {
+    if (r == QDialog::Accepted && dlg.wasGameStarted()) {
         close();
+    } else {
+        this->show();
     }
 }
 
@@ -74,18 +74,10 @@ void MainWindow::onJoinGameClicked() {
     JoinGameWindow dlg(lobbyClient, this);
     const int response = dlg.exec();
 
-    if (response != QDialog::Accepted) {
-        this->show();
-    } else {
-        int gameId = dlg.getSelectedGameId();
-        std::string host = lobbyClient->getAddress();
-        std::string port = lobbyClient->getPort();
-        
-        // desconecto el lobbyClient antes de lanzar el juego
-        lobbyClient->disconnect();
-        
-        GameLauncher::launchGameWithJoin(host, port, gameId);
+    if (response == QDialog::Accepted && dlg.wasGameStarted()) {
         close();
+    } else {
+        this->show();
     }
 }
 

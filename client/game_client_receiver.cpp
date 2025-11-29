@@ -27,6 +27,11 @@ void GameClientReceiver::run() {
                 // Enviar la lista de partidas a incoming messages para que get_games_blocking lareciba
                 std::cout << "[ClientReceiver] Lista de partidas recibida (" << positionsMsg.games.size() << " juegos)" << std::endl;
                 incoming_messages.push(std::move(positionsMsg));
+            } else if (opcode == GAME_STARTED) {
+                std::cout << "[ClientReceiver] GAME_STARTED recibido" << std::endl;
+                ServerMessage m;
+                m.opcode = GAME_STARTED;
+                join_results.push(std::move(m)); 
             } else {
                 // Paquete desconocido: ignorar
             }

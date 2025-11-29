@@ -49,6 +49,8 @@ public:
     
     // Solicita lista de partidas y bloquea hasta recibir GAMES_LIST
     std::vector<ServerMessage::GameSummary> get_games_blocking();
+    
+    bool wait_for_game_started(int timeout_ms = 100); 
 };
 
 #endif // GAME_CLIENT_HANDLER_H

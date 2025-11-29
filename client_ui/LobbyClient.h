@@ -17,6 +17,9 @@ private:
     std::string port_;
     bool connected_;
 
+    uint32_t currentGameId_;
+    uint32_t currentPlayerId_;
+
 public:
     LobbyClient();
     ~LobbyClient();
@@ -25,10 +28,18 @@ public:
     
     std::vector<ServerMessage::GameSummary> listGames();
     
-    // Getters
+    bool createGame(const std::string& gameName, uint32_t& outGameId, uint32_t& outPlayerId);
+    bool joinGame(uint32_t gameId, uint32_t& outPlayerId);
+    bool startGame();
+    void leaveGame();
+    bool checkGameStarted();
+    
+    // getters
     bool isConnected() const;
     std::string getAddress() const;
     std::string getPort() const;
+    uint32_t getCurrentGameId() const;
+    uint32_t getCurrentPlayerId() const;
     
     void disconnect();
 };

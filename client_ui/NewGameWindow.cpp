@@ -1,12 +1,19 @@
 #include "NewGameWindow.h"
 #include "ui_NewGameWindow.h"
+#include "GameLobbyWindow.h"
 #include "GameLauncher.h"
 
 #include <QMessageBox>
 #include <iostream>
 
 NewGameWindow::NewGameWindow(std::shared_ptr<LobbyClient> lobby, QWidget* parent)
-    : QDialog(parent), ui(new Ui::NewGameWindow), lobbyClient_(std::move(lobby)) {
+    : QDialog(parent)
+    ,ui(new Ui::NewGameWindow)
+    ,lobbyClient_(std::move(lobby))
+    ,gameStarted_(false)
+    ,gameId_(0)
+    ,playerId_(0)
+{
     ui->setupUi(this);
     ui->gameNameLineEdit->setText("Lobby");
     ui->maxPlayersSpinBox->setMinimum(1);
@@ -29,30 +36,53 @@ void NewGameWindow::onCreate() {
     
     const QString gameName = ui->gameNameLineEdit->text().trimmed();
     const int maxPlayers = ui->maxPlayersSpinBox->value();
+    (void)maxPlayers;
 
     if (gameName.isEmpty()) {
         QMessageBox::warning(this, "New Game", "Game name is missing.");
         return;
     }
 
-    std::string host = lobbyClient_->getAddress();
-    std::string port = lobbyClient_->getPort();
-    
-    if (host.empty() || port.empty()) {
-        QMessageBox::warning(this, "Error", "No server information configured.");
+    if (!lobbyClient_->isConnected()) {
+        QMessageBox::warning(this, "Error", "Lost connection to server.");
         return;
     }
     
-    accept();
-
-    std::cout << "Creating new game: " << gameName.toStdString()
-              << " with max players: " << maxPlayers << std::endl;
+    uint32_t outGameId = 0;
+    uint32_t outPlayerId = 0;
+    bool success = lobbyClient_->createGame(gameName.toStdString(), outGameId, outPlayerId);
     
-    // Desconectar lobby antes de lanzar el juego
-    lobbyClient_->disconnect();
-              
-    // Lanzar el cliente SDL
-    GameLauncher::launchGame(host, port, gameName.toStdString());
+    if (!success) {
+        QMessageBox::warning(this, "Error", "Failed to create game. Please try again.");
+        return;
+    }
+    
+    gameId_ = outGameId;
+    playerId_ = outPlayerId;
+    
+    std::cout << "[NewGameWindow] Game created successfully. game_id=" << gameId_ 
+              << " player_id=" << playerId_ << std::endl;
+    
+    this->hide();
+    
+    GameLobbyWindow lobbyWindow(lobbyClient_, gameName, gameId_, playerId_, true, this);
+    int result = lobbyWindow.exec();
+    
+    if (result == QDialog::Accepted && lobbyWindow.wasGameStarted()) {
+        gameStarted_ = true;
+        std::string host = lobbyClient_->getAddress();
+        std::string port = lobbyClient_->getPort();
+        
+        // desconectar el lobby antes de lanzar el juego
+        lobbyClient_->disconnect();
+        
+        GameLauncher::launchGameWithJoin(host, port, static_cast<int>(gameId_));
+        
+        accept(); 
+    } else {
+        gameStarted_ = false;
+        this->show();
+    }
 }
 
 void NewGameWindow::onBack() { 

@@ -6,6 +6,7 @@ target_sources(taller_client_ui
     MainWindow.cpp
     NewGameWindow.cpp
     JoinGameWindow.cpp
+    GameLobbyWindow.cpp
     GameLauncher.cpp
     LobbyClient.cpp
 
@@ -14,6 +15,7 @@ target_sources(taller_client_ui
     ui/ConnectionMenu.ui
     ui/NewGameWindow.ui
     ui/JoinGameWindow.ui
+    ui/GameLobbyWindow.ui
 
     # Recursos
     resources.qrc
@@ -23,6 +25,7 @@ target_sources(taller_client_ui
     ConnectionMenu.h
     NewGameWindow.h
     JoinGameWindow.h
+    GameLobbyWindow.h
     GameLauncher.h
     LobbyClient.h
     )

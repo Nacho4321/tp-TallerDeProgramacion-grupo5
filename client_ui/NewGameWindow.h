@@ -15,6 +15,11 @@ class NewGameWindow : public QDialog {
 public:
     explicit NewGameWindow(std::shared_ptr<LobbyClient> lobby, QWidget* parent = nullptr);
     ~NewGameWindow();
+    
+    bool wasGameStarted() const { return gameStarted_; }
+    
+    uint32_t getGameId() const { return gameId_; }
+    uint32_t getPlayerId() const { return playerId_; }
 
 private slots:
     void onCreate();
@@ -23,6 +28,9 @@ private slots:
 private:
     Ui::NewGameWindow* ui;
     std::shared_ptr<LobbyClient> lobbyClient_;
+    bool gameStarted_;
+    uint32_t gameId_;
+    uint32_t playerId_;
 };
 
 
