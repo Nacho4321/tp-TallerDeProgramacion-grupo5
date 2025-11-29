@@ -22,6 +22,8 @@ const std::uint8_t GET_GAMES = 0x13;
 const std::uint8_t GAMES_LIST = 0x14;
 // Start game (transition from lobby to playing)
 const std::uint8_t START_GAME = 0x15;
+// Notify clients that STARTING countdown began (no payload; client assumes duration)
+const std::uint8_t STARTING_COUNTDOWN = 0x16;
 
 // Game opcodes
 const std::uint8_t UPDATE_POSITIONS = 0x20;

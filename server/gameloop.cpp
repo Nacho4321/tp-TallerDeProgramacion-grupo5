@@ -170,9 +170,8 @@ void GameLoop::process_lobby_state()
 
 void GameLoop::process_starting_state()
 {
-    if (players.empty())
-        return;
-
+    // Durante STARTING igual avanzamos la cuenta regresiva aunque no haya jugadores,
+    // para evitar quedar trabados en este estado.
     std::vector<PlayerPositionUpdate> broadcast;
     update_player_positions(broadcast);
 
@@ -196,6 +195,10 @@ void GameLoop::run()
     {
         try
         {
+            // Falla segura: antes de procesar eventos, validar si el countdown terminó
+            // para evitar quedar bloqueados por procesamiento de eventos.
+            maybe_finish_starting_and_play();
+
             event_loop.process_available_events(game_state);
 
             auto now = std::chrono::steady_clock::now();
@@ -214,6 +217,9 @@ void GameLoop::run()
             else if (game_state == GameState::STARTING)
             {
                 process_starting_state();
+                // Falla segura: aunque por algún motivo no se ejecute el process,
+                // chequeamos igualmente la finalización del countdown en el loop.
+                maybe_finish_starting_and_play();
             }
         }
         catch (const ClosedQueue &)
@@ -840,49 +846,54 @@ void GameLoop::reset_npcs_velocities()
 
 void GameLoop::start_game()
 {
-    std::lock_guard<std::mutex> lk(players_map_mutex);
-
-    // Checkeo si se puede iniciar la carrera
     bool can_start = false;
     
-    if (game_state == GameState::LOBBY)
+    // Scope limitado para el lock: solo para leer estado y modificar datos de jugadores
     {
-        can_start = true;
-    }
-    else if (game_state == GameState::PLAYING)
-    {
-        // Durante PLAYING, solo permitir reiniciar si todos los jugadores están muertos
-        int total_players = static_cast<int>(players.size());
-        int dead_count = 0;
-        
-        for (const auto &[id, player_data] : players)
+        std::lock_guard<std::mutex> lk(players_map_mutex);
+
+        // Checkeo si se puede iniciar la carrera
+        if (game_state == GameState::LOBBY)
         {
-            if (player_data.is_dead)
+            can_start = true;
+        }
+        else if (game_state == GameState::PLAYING)
+        {
+            // Durante PLAYING, solo permitir reiniciar si todos los jugadores están muertos
+            int total_players = static_cast<int>(players.size());
+            int dead_count = 0;
+            
+            for (const auto &[id, player_data] : players)
             {
-                dead_count++;
+                if (player_data.is_dead)
+                {
+                    dead_count++;
+                }
+            }
+            
+            if (dead_count == total_players && total_players > 0)
+            {
+                can_start = true;
+                std::cout << "[GameLoop] All players dead, restarting race..." << std::endl;
             }
         }
         
-        if (dead_count == total_players && total_players > 0)
+        if (!can_start)
         {
-            can_start = true;
-            std::cout << "[GameLoop] All players dead, restarting race..." << std::endl;
+            std::cout << "[GameLoop] Cannot start game in current state" << std::endl;
+            return;
         }
-    }
-    
-    if (!can_start)
-    {
-        std::cout << "[GameLoop] Cannot start game in current state" << std::endl;
-        return;
-    }
 
-    // Al iniciar una carrera explícitamente, limpiar cualquier reset pendiente
-    // para evitar que perform_race_reset() dispare inmediatamente.
-    pending_race_reset.store(false);
-    // Asegurar que los checkpoints de la ronda actual estén cargados al iniciar
-    load_current_round_checkpoints();
-    reset_players_for_race_start();
-    reset_npcs_velocities();
+        // Al iniciar una carrera explícitamente, limpiar cualquier reset pendiente
+        // para evitar que perform_race_reset() dispare inmediatamente.
+        pending_race_reset.store(false);
+        // Asegurar que los checkpoints de la ronda actual estén cargados al iniciar
+        load_current_round_checkpoints();
+        reset_players_for_race_start();
+        reset_npcs_velocities();
+    } // <-- Lock se libera aquí
+
+    // Cambiar el estado FUERA del lock para evitar deadlock con el game loop
     transition_to_starting_state(10);
     started = true;
 }
@@ -984,17 +995,25 @@ void GameLoop::transition_to_starting_state(int countdown_seconds)
     game_state = GameState::STARTING;
     starting_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(countdown_seconds);
     std::cout << "[GameLoop] STARTING: countdown " << countdown_seconds << "s before PLAYING" << std::endl;
+
+    // Notificar a los clientes el inicio de la cuenta regresiva
+    ServerMessage msg;
+    msg.opcode = STARTING_COUNTDOWN;
+    broadcast_positions(msg);
 }
 
 void GameLoop::maybe_finish_starting_and_play()
 {
     if (!starting_active)
+    {
         return;
+    }
 
     auto now = std::chrono::steady_clock::now();
     if (now >= starting_deadline)
     {
         starting_active = false;
+        std::cout << "[GameLoop] STARTING finished. Transitioning to PLAYING" << std::endl;
         transition_to_playing_state();
     }
 }
@@ -1502,9 +1521,20 @@ void GameLoop::check_race_completion()
 
 void GameLoop::perform_race_reset()
 {
-    std::lock_guard<std::mutex> lk(players_map_mutex);
+    // Evitar realizar operaciones pesadas (destroy/recreate bodies, reload checkpoints)
+    // bajo el lock del mapa de jugadores. Primero chequeamos el flag y salimos del lock.
+    bool do_reset = false;
+    {
+        std::lock_guard<std::mutex> lk(players_map_mutex);
+        if (should_reset_race())
+        {
+            // Limpiamos el flag acá para que no se vuelva a ejecutar en el mismo frame.
+            pending_race_reset.store(false);
+            do_reset = true;
+        }
+    }
 
-    if (!should_reset_race())
+    if (!do_reset)
         return;
 
     broadcast_race_end_message();
@@ -1528,6 +1558,7 @@ void GameLoop::advance_round_or_reset_to_lobby()
 
         // Limpiar flags y pasar a STARTING
         pending_race_reset.store(false);
+        std::cout << "[GameLoop] About to call transition_to_starting_state for round " << (current_round + 1) << std::endl;
         transition_to_starting_state(10);
     }
     else
@@ -1538,6 +1569,7 @@ void GameLoop::advance_round_or_reset_to_lobby()
         load_current_round_checkpoints();
         reset_all_players_to_lobby();
         pending_race_reset.store(false);
+        std::cout << "[GameLoop] About to call transition_to_starting_state for championship restart" << std::endl;
         transition_to_starting_state(10);
     }
 }

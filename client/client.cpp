@@ -142,14 +142,29 @@ void Client::start()
         ServerMessage message;
         ServerMessage latest_message;
         bool got_message = false;
+        uint8_t latest_opcode = 0;
+        bool saw_starting_countdown = false;
 
         while (handler_core.try_receive(message))
         {
+            // Track the last message for rendering, but also note if any STARTING_COUNTDOWN arrived
+            if (message.opcode == STARTING_COUNTDOWN)
+            {
+                saw_starting_countdown = true;
+            }
+
             latest_message = message;
             got_message = true;
+            latest_opcode = latest_message.opcode;
         }
 
-        if (got_message && !latest_message.positions.empty())
+        // Aviso simple de inicio de countdown
+        if (got_message && (latest_opcode == STARTING_COUNTDOWN || saw_starting_countdown))
+        {
+            std::cout << "[Client] STARTING countdown begun (10s)." << std::endl;
+        }
+
+        if (got_message && latest_message.opcode == UPDATE_POSITIONS && !latest_message.positions.empty())
         {
             // Elegir como "auto principal" el correspondiente a mi player_id (si lo tengo asignado)
             size_t idx_main = 0;
