@@ -50,21 +50,6 @@ void GameLoop::setup_checkpoints_from_file(const std::string &json_path)
               << " checkpoint sensors (from " << json_path << ")." << std::endl;
 }
 
-GameLoop::SpawnPoint GameLoop::pick_best_spawn(float /*x_px*/, float /*y_px*/) const
-{
-    if (spawn_points.empty())
-    {
-        std::cerr << "[GameLoop] pick_best_spawn: no spawn points available!" << std::endl;
-        return SpawnPoint{0.0f, 0.0f, 0.0f};
-    }
-
-    static thread_local std::mt19937 gen(std::random_device{}());
-    std::uniform_int_distribution<size_t> dist(0, spawn_points.size() - 1);
-    size_t idx = dist(gen);
-    const auto &sp = spawn_points[idx];
-    std::cout << "[GameLoop] Random spawn selected index=" << idx << " at (" << sp.x << "," << sp.y << ") angle=" << sp.angle << std::endl;
-    return SpawnPoint{sp.x, sp.y, sp.angle};
-}
 
 void GameLoop::setup_npc_config()
 {
@@ -183,6 +168,23 @@ void GameLoop::process_lobby_state()
     broadcast_positions(msg);
 }
 
+void GameLoop::process_starting_state()
+{
+    if (players.empty())
+        return;
+
+    std::vector<PlayerPositionUpdate> broadcast;
+    update_player_positions(broadcast);
+
+    ServerMessage msg;
+    msg.opcode = UPDATE_POSITIONS;
+    msg.positions = broadcast;
+    broadcast_positions(msg);
+
+    // Checkeamos si la cuenta regresiva terminó
+    maybe_finish_starting_and_play();
+}
+
 void GameLoop::run()
 {
     auto last_tick = std::chrono::steady_clock::now();
@@ -194,7 +196,7 @@ void GameLoop::run()
     {
         try
         {
-            event_loop.process_available_events();
+            event_loop.process_available_events(game_state);
 
             auto now = std::chrono::steady_clock::now();
             float dt = std::chrono::duration<float>(now - last_tick).count();
@@ -208,6 +210,10 @@ void GameLoop::run()
             else if (game_state == GameState::LOBBY)
             {
                 process_lobby_state();
+            }
+            else if (game_state == GameState::STARTING)
+            {
+                process_starting_state();
             }
         }
         catch (const ClosedQueue &)
@@ -802,6 +808,8 @@ void GameLoop::reset_players_for_race_start()
         player_data.race_finished = false;
         player_data.is_dead = false;
         player_data.position.on_bridge = false;
+        player_data.position.direction_x = not_horizontal;
+        player_data.position.direction_y = not_vertical;
         
         // Reset HP 
         const CarPhysics &car_physics = physics_config.getCarPhysics(player_data.car.car_name);
@@ -868,7 +876,6 @@ void GameLoop::start_game()
         return;
     }
 
-    transition_to_playing_state();
     // Al iniciar una carrera explícitamente, limpiar cualquier reset pendiente
     // para evitar que perform_race_reset() dispare inmediatamente.
     pending_race_reset.store(false);
@@ -876,7 +883,7 @@ void GameLoop::start_game()
     load_current_round_checkpoints();
     reset_players_for_race_start();
     reset_npcs_velocities();
-
+    transition_to_starting_state(10);
     started = true;
 }
 
@@ -969,6 +976,27 @@ void GameLoop::transition_to_lobby_state()
     game_state = GameState::LOBBY;
     pending_race_reset.store(false);
     std::cout << "[GameLoop] Race reset complete. Returning to LOBBY." << std::endl;
+}
+
+void GameLoop::transition_to_starting_state(int countdown_seconds)
+{
+    starting_active = true;
+    game_state = GameState::STARTING;
+    starting_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(countdown_seconds);
+    std::cout << "[GameLoop] STARTING: countdown " << countdown_seconds << "s before PLAYING" << std::endl;
+}
+
+void GameLoop::maybe_finish_starting_and_play()
+{
+    if (!starting_active)
+        return;
+
+    auto now = std::chrono::steady_clock::now();
+    if (now >= starting_deadline)
+    {
+        starting_active = false;
+        transition_to_playing_state();
+    }
 }
 
 b2Body *GameLoop::create_player_body(float x_px, float y_px, Position &pos, const std::string &car_name)
@@ -1485,31 +1513,32 @@ void GameLoop::perform_race_reset()
 
 void GameLoop::advance_round_or_reset_to_lobby()
 {
-    // Si quedan rondas, avanzar y VOLVER A LOBBY para que el host inicie manualmente.
+    // Nueva política: NO volver a LOBBY entre rondas.
+    // Avanzar de ronda (o reiniciar campeonato) y entrar directamente en STARTING (cuenta regresiva) automáticamente.
     if (current_round < 2)
     {
         current_round++;
-        std::cout << "[GameLoop] Advancing to round " << (current_round + 1) << " of 3" << std::endl;
+        std::cout << "[GameLoop] Advancing to round " << (current_round + 1) << " of 3 (auto STARTING)" << std::endl;
 
         // Preparar siguiente ronda: recargar checkpoints
         load_current_round_checkpoints();
 
-        // Mandar jugadores al lobby (spawns) y limpiar estado de carrera
+        // Reposicionar jugadores a los spawns y limpiar estado de carrera
         reset_all_players_to_lobby();
 
-        // Limpiar flags y volver a LOBBY; el host debe apretar I para iniciar
+        // Limpiar flags y pasar a STARTING
         pending_race_reset.store(false);
-        transition_to_lobby_state();
+        transition_to_starting_state(10);
     }
     else
     {
-        // Terminar campeonato: volver a lobby y preparar para reinicio
-        std::cout << "[GameLoop] Championship finished. Returning to lobby." << std::endl;
-        reset_all_players_to_lobby();
-        transition_to_lobby_state();
+        // Terminar campeonato: reiniciar al round 1 y entrar a STARTING directamente
+        std::cout << "[GameLoop] Championship finished. Restarting at round 1 (auto STARTING)." << std::endl;
         current_round = 0;
-        // Recargar checkpoints del primer recorrido para próxima vez
         load_current_round_checkpoints();
+        reset_all_players_to_lobby();
+        pending_race_reset.store(false);
+        transition_to_starting_state(10);
     }
 }
 

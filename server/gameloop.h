@@ -14,13 +14,9 @@
 #include "map_layout.h"
 #include "car_physics_config.h"
 #include <atomic>
+#include <chrono>
 #define INITIAL_ID 1
-
-enum class GameState
-{
-    LOBBY,  // Esperando que el host inicie el juego
-    PLAYING // Juego en curso
-};
+#include "game_state.h"
 
 class GameLoop : public Thread
 {
@@ -44,6 +40,9 @@ private:
     EventLoop event_loop;
     bool started;
     GameState game_state; // Estado actual del juego (lobby o jugando)
+    // Cuenta regresiva antes de iniciar la carrera
+    std::chrono::steady_clock::time_point starting_deadline{};
+    bool starting_active{false};
     int next_id;
 
     // Spawn points para hasta 8 jugadores (en píxeles)
@@ -119,9 +118,6 @@ private:
 
     CheckpointContactListener contact_listener;
 
-    // Helper for picking nearest spawn point
-    SpawnPoint pick_best_spawn(float x_px, float y_px) const;
-
     CarPhysicsConfig &physics_config;
 
     b2Body *create_player_body(float x, float y, Position &pos, const std::string &car_name);
@@ -152,6 +148,7 @@ private:
     // Game tick processing
     void process_playing_state(float &acum);
     void process_lobby_state();
+    void process_starting_state();
 
     // Utility helpers
     float normalize_angle(double angle) const;
@@ -187,6 +184,8 @@ private:
     void transition_to_playing_state();
     void reset_players_for_race_start();
     void reset_npcs_velocities();
+    void transition_to_starting_state(int countdown_seconds);
+    void maybe_finish_starting_and_play();
 
     // perform_race_reset helpers
     bool should_reset_race() const;

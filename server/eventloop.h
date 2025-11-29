@@ -3,6 +3,7 @@
 #include <string>
 #include "../common/queue.h"
 #include "eventDispatcher.h"
+#include "game_state.h"
 
 // EventLoop ya NO es un Thread separado
 // Se ejecuta dentro del GameLoop procesando eventos de manera sincrónica
@@ -17,8 +18,8 @@ private:
 public:
     explicit EventLoop(std::mutex &map_mutex, std::unordered_map<int, PlayerData> &map, std::shared_ptr<Queue<Event>> &global_inb);
     
-    // Procesa todos los eventos disponibles sin bloquear
-    void process_available_events();
+    // Procesa todos los eventos disponibles sin bloquear, respetando el estado del juego
+    void process_available_events(GameState state);
     
     ~EventLoop() = default;
 };

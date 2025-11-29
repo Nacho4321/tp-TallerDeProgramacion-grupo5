@@ -9,7 +9,7 @@ EventLoop::EventLoop(std::mutex &map_mutex, std::unordered_map<int, PlayerData> 
 }
 
 // Procesa todos los eventos disponibles en la cola sin bloquear
-void EventLoop::process_available_events()
+void EventLoop::process_available_events(GameState state)
 {
     Event ev;
     // Procesar todos los eventos disponibles usando try_pop
@@ -17,6 +17,7 @@ void EventLoop::process_available_events()
     {
         try
         {
+            dispatcher.set_game_state(state);
             dispatcher.handle_event(ev);
         }
         catch (const std::exception &e)
