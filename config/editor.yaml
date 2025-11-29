@@ -1,0 +1,3 @@
+editor:
+  map_image: "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png"
+  checkpoints_file: "data/cities/base_liberty_city_checkpoints.json"

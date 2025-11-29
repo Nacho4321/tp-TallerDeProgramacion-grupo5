@@ -1,5 +1,5 @@
 # Car Physics Configuration
-# All values are tunable - experiment to find what feels right!
+
 # Default values used as fallback for all car types
 defaults:
   turning:
