@@ -75,9 +75,8 @@ void GameLoop::setup_npc_config()
 void GameLoop::setup_world()
 {
     std::vector<MapLayout::ParkedCarData> parked_data;
-    map_layout.create_map_layout("data/cities/liberty_city.json");
-
-    setup_checkpoints_from_file("data/cities/base_liberty_city_checkpoints.json");
+    setup_map_layout();
+    load_current_round_checkpoints();
     setup_npc_config();
 
     map_layout.extract_map_npc_data("data/cities/liberty_city.json", street_waypoints, parked_data);
@@ -85,6 +84,30 @@ void GameLoop::setup_world()
     {
         init_npcs(parked_data);
     }
+}
+
+void GameLoop::setup_map_layout()
+{
+    map_layout.create_map_layout("data/cities/liberty_city.json");
+}
+
+void GameLoop::load_current_round_checkpoints()
+{
+    // Limpiar checkpoints previos y fixtures
+    for (auto &pair : checkpoint_fixtures)
+    {
+        b2Body *body = pair.first->GetBody();
+        if (body)
+        {
+            world.DestroyBody(body);
+        }
+    }
+    checkpoint_fixtures.clear();
+    checkpoint_centers.clear();
+
+    std::string json_path = checkpoint_sets[current_round];
+    setup_checkpoints_from_file(json_path);
+    std::cout << "[GameLoop] Round " << current_round+1 << " loaded checkpoints from: " << json_path << std::endl;
 }
 
 void GameLoop::process_playing_state(float &acum)
@@ -846,6 +869,11 @@ void GameLoop::start_game()
     }
 
     transition_to_playing_state();
+    // Al iniciar una carrera explícitamente, limpiar cualquier reset pendiente
+    // para evitar que perform_race_reset() dispare inmediatamente.
+    pending_race_reset.store(false);
+    // Asegurar que los checkpoints de la ronda actual estén cargados al iniciar
+    load_current_round_checkpoints();
     reset_players_for_race_start();
     reset_npcs_velocities();
 
@@ -1088,6 +1116,17 @@ void GameLoop::update_body_positions()
         // Si el jugador está muerto, no aplicar fuerzas
         if (player_data.is_dead)
         {
+            continue;
+        }
+        
+        // Si el jugador terminó la carrera, detenerlo completamente
+        if (player_data.race_finished)
+        {
+            if (player_data.body)
+            {
+                player_data.body->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
+                player_data.body->SetAngularVelocity(0.0f);
+            }
             continue;
         }
         
@@ -1406,41 +1445,26 @@ void GameLoop::check_race_completion()
     // Asume que ya estamos bajo players_map_mutex lock (llamado desde process_pair o apply_collision_damage)
     // IMPORTANTE: No podemos modificar Box2D aca (estamos en callback de contacto)
 
-    int finished_count = 0;
-    int dead_count = 0;
+    int finished_or_dead_count = 0;
     int total_players = static_cast<int>(players.size());
 
     for (const auto &[id, player_data] : players)
     {
-        if (player_data.race_finished && !player_data.is_dead)
+        // Contar jugadores que terminaron la carrera O murieron
+        if (player_data.race_finished || player_data.is_dead)
         {
-            finished_count++;
-        }
-        if (player_data.is_dead)
-        {
-            dead_count++;
+            finished_or_dead_count++;
         }
     }
 
-    // La carrera termina cuando:
-    // 1. Todos los jugadores terminaron la carrera (ganaron)
-    // 2. Todos los jugadores murieron
-    bool all_finished = (finished_count == total_players && total_players > 0);
-    bool all_dead = (dead_count == total_players && total_players > 0);
+    // La carrera termina cuando TODOS los jugadores terminaron O murieron
+    bool all_done = (finished_or_dead_count == total_players && total_players > 0);
 
-    if (all_finished || all_dead)
+    if (all_done)
     {
         std::cout << "\n======================================" << std::endl;
-        if (all_dead)
-        {
-            std::cout << "   ALL PLAYERS DIED!" << std::endl;
-            std::cout << "   Press I to start a new race..." << std::endl;
-        }
-        else
-        {
-            std::cout << "   ALL PLAYERS FINISHED!" << std::endl;
-            std::cout << "   Preparing to return to lobby..." << std::endl;
-        }
+        std::cout << "   ALL PLAYERS FINISHED OR DIED!" << std::endl;
+        std::cout << "   Preparing to return to lobby..." << std::endl;
         std::cout << "======================================\n"
                   << std::endl;
 
@@ -1456,8 +1480,37 @@ void GameLoop::perform_race_reset()
         return;
 
     broadcast_race_end_message();
-    reset_all_players_to_lobby();
-    transition_to_lobby_state();
+    advance_round_or_reset_to_lobby();
+}
+
+void GameLoop::advance_round_or_reset_to_lobby()
+{
+    // Si quedan rondas, avanzar y VOLVER A LOBBY para que el host inicie manualmente.
+    if (current_round < 2)
+    {
+        current_round++;
+        std::cout << "[GameLoop] Advancing to round " << (current_round + 1) << " of 3" << std::endl;
+
+        // Preparar siguiente ronda: recargar checkpoints
+        load_current_round_checkpoints();
+
+        // Mandar jugadores al lobby (spawns) y limpiar estado de carrera
+        reset_all_players_to_lobby();
+
+        // Limpiar flags y volver a LOBBY; el host debe apretar I para iniciar
+        pending_race_reset.store(false);
+        transition_to_lobby_state();
+    }
+    else
+    {
+        // Terminar campeonato: volver a lobby y preparar para reinicio
+        std::cout << "[GameLoop] Championship finished. Returning to lobby." << std::endl;
+        reset_all_players_to_lobby();
+        transition_to_lobby_state();
+        current_round = 0;
+        // Recargar checkpoints del primer recorrido para próxima vez
+        load_current_round_checkpoints();
+    }
 }
 
 bool GameLoop::update_bridge_state_for_player(PlayerData &player_data)
