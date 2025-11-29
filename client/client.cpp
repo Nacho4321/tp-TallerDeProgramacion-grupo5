@@ -17,7 +17,7 @@ Client::Client(const char *address, const char *port, StartMode mode, int join_g
       auto_create_game_name(game_name)
 {
     handler_core.start(); // iniciar handler (sender+receiver)
-    handler.setAudioManager(game_renderer.getAudioManager());  
+    handler.setAudioManager(game_renderer.getAudioManager());
 }
 
 Client::~Client()
@@ -176,19 +176,8 @@ void Client::start()
                 float(-std::sin(angle)),
                 float(std::cos(angle)),
                 main_pos.new_pos.on_bridge};
-            auto mapCarType = [](const std::string &t) -> int
-            {
-                if (t == "lambo")
-                    return 0;
-                if (t == "truck")
-                    return 1;
-                if (t == "sports_car")
-                    return 2;
-                if (t == "rally")
-                    return 3;
-                return 0; // default
-            };
-            int mainTypeId = mapCarType(main_pos.car_type);
+            auto it = car_type_map.find(main_pos.car_type);
+            int mainTypeId = (it != car_type_map.end()) ? it->second : 0;
 
             std::map<int, std::pair<CarPosition, int>> otherCars;
             for (size_t i = 0; i < latest_message.positions.size(); ++i)
@@ -204,8 +193,9 @@ void Client::start()
                     float(-std::sin(ang)),
                     float(std::cos(ang)),
                     pos.new_pos.on_bridge};
-                int typeId = mapCarType(pos.car_type);
-                otherCars[pos.player_id] = std::make_pair(cp, typeId);
+                auto other_it = car_type_map.find(pos.car_type);
+                int other_type_id = (other_it != car_type_map.end()) ? other_it->second : 0;
+                otherCars[pos.player_id] = std::make_pair(cp, other_type_id);
             }
 
             const std::vector<Position> &next_cps = main_pos.next_checkpoints;

@@ -1,5 +1,5 @@
-#ifndef PLAYERDATA_H
-#define PLAYERDATA_H
+#ifndef PLAYER_DATA_H
+#define PLAYER_DATA_H
 #include "event.h"
 #include <box2d/b2_body.h>
 #include <chrono>
@@ -24,5 +24,10 @@ struct PlayerData
     std::chrono::steady_clock::time_point lap_start_time;
     // Si el jugador ya completó la carrera (esperando a que otros terminen)
     bool race_finished = false;
+    // Si el jugador murió (HP <= 0)
+    bool is_dead = false;
+    // Flags para colisiones y body management
+    bool collision_this_frame = false;
+    bool mark_body_for_removal = false;
 };
 #endif

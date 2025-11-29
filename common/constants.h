@@ -74,4 +74,35 @@ const std::string LEAVE_GAME_STR = "leave_game";   // NOLINT
 #define CAR_GROUND 0x0020 // 32
 #define CAR_BRIDGE 0x0040 // 64
 
+#define GREEN_CAR "green_car"
+#define RED_SQUARED_CAR "red_squared_car"
+#define RED_SPORTS_CAR "red_sports_car"
+#define LIGHT_BLUE_CAR "light_blue_car"
+#define RED_JEEP_CAR "red_jeep_car"
+#define PURPLE_TRUCK "purple_truck"
+#define LIMOUSINE_CAR "limousine_car"
+#define DEFAULTS "defaults"
+
+// Constantes para parseo del JSON del mapa
+#define LAYERS_STR "layers"
+#define TYPE_STR "type"
+#define OBJECTGROUP_STR "objectgroup"
+#define NAME_STR "name"
+#define OBJECTS_STR "objects"
+#define X_STR "x"
+#define Y_STR "y"
+#define WIDTH_STR "width"
+#define HEIGHT_STR "height"
+#define POLYGON_STR "polygon"
+#define CONNECTIONS_STR "connections"
+#define CHECKPOINTS_STR "checkpoints"
+#define WAYPOINTS_STR "waypoints"
+#define PARKED_CARS_STR "parked_cars"
+#define HORIZONTAL_STR "value"
+#define LAYER_COLLISIONS_STR "Collisions"
+#define LAYER_COLLISIONS_BRIDGE_STR "Collisions_Bridge"
+#define LAYER_END_BRIDGE_STR "End_Bridge"
+#define LAYER_COLLISIONS_UNDER_STR "Collisions_under"
+#define LAYER_START_BRIDGE_STR "Start_Bridge"
+
 #endif
