@@ -34,7 +34,6 @@ private:
     Texture backgroundTexture;
     Camera camera;
     Minimap minimap;
-    std::unique_ptr<Car> mainCar;
     std::map<int, Car> otherCars;
     std::vector<Checkpoint> checkpoints;
     int logicalWidth;
@@ -49,10 +48,11 @@ private:
     void renderUpperLayer();
     void renderCheckpoints();
 
-    void updateMainCar(const CarPosition &position);
+    void updateMainCar(const CarPosition &position, bool collisionFlag);
     void updateCheckpoints(const std::vector<Position> &positions);
 
-    void updateOtherCars(const std::map<int, std::pair<CarPosition, int>> &positions);
+    void updateOtherCars(const std::map<int, std::pair<CarPosition, int>> &positions,
+                         const std::map<int, bool> &collisionFlags);
 
     std::set<int> computeNearestCars(
         const std::map<int, std::pair<CarPosition, int>> &positions,
@@ -60,6 +60,7 @@ private:
 
     void updateOrCreateCars(
         const std::map<int, std::pair<CarPosition, int>> &positions,
+        const std::map<int, bool> &collisionFlags,
         const std::set<int> &nearest4,
         const CarPosition &mainPos);
 
@@ -70,6 +71,8 @@ private:
     void updateEngineStates(const std::set<int> &nearest4);
 
 public:
+    std::unique_ptr<Car> mainCar;
+
     GameRenderer(const char *windowTitle,
                  int windowWidth,
                  int windowHeight,
@@ -79,7 +82,9 @@ public:
     void render(const CarPosition &mainCarPos,
                 int mainCarTypeId,
                 const std::map<int, std::pair<CarPosition, int>> &otherCarPositions,
-                const std::vector<Position> &next_checkpoints);
+                const std::vector<Position> &next_checkpoints,
+                bool mainCarCollisionFlag,
+                const std::map<int, bool> &otherCarsCollisionFlags);
 
     void setMainCarType(int typeId)
     {
