@@ -27,6 +27,9 @@ void GameClientReceiver::run() {
                 // Enviar la lista de partidas a incoming messages para que get_games_blocking lareciba
                 std::cout << "[ClientReceiver] Lista de partidas recibida (" << positionsMsg.games.size() << " juegos)" << std::endl;
                 incoming_messages.push(std::move(positionsMsg));
+            } else if (opcode == STARTING_COUNTDOWN) {
+                // Pasar el mensaje de inicio de countdown al cliente
+                incoming_messages.push(std::move(positionsMsg));
             } else {
                 // Paquete desconocido: ignorar
             }

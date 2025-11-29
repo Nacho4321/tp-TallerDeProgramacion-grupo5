@@ -116,6 +116,12 @@ bool Protocol::receiveAnyServerPacket(ServerMessage& outServer,
         outServer = receiveGamesList();
         return true;
     }
+    // Passthrough de opcodes simples sin payload (p.ej., STARTING_COUNTDOWN)
+    if (outOpcode == STARTING_COUNTDOWN) {
+        outServer = {};
+        outServer.opcode = STARTING_COUNTDOWN;
+        return true;
+    }
     return false;
 }
 
