@@ -18,6 +18,9 @@ struct CarPosition
 
 class Car
 {
+public:
+    static constexpr int FLASH_DURATION = 6;  // ~100ms at 60fps
+
 private:
     CarPosition position;
     int spriteIndex;
@@ -26,6 +29,9 @@ private:
     bool exploding;
     int explosionFrame;
     int explosionFrameDelay;
+
+    bool flashing;
+    int flashFrame;
 
 public:
     Car(int carTypeId = 0);
@@ -41,6 +47,14 @@ public:
     void updateExplosion();
     bool isExploding() const;
     bool isExplosionComplete() const;
+    void stopExplosion();
+
+    void startFlash();
+    void updateFlash();
+    bool isFlashing() const { return flashing; }
+    bool isFlashComplete() const;
+    void stopFlash();
+    int getFlashFrame() const { return flashFrame; }
 
     void setCarType(int newType);
 

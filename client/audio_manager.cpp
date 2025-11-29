@@ -220,7 +220,7 @@ void AudioManager::updateCarEngineVolume(int carId, float worldX, float worldY,
     }
 
     try {
-        int scaledVolume = (volume * masterVolume) / 128;
+        int scaledVolume = (volume * masterVolume * 0.25) / 128;
         mixer->SetVolume(channel, scaledVolume);
     } catch (const SDL2pp::Exception& e) {
         std::cerr << "Warning: Failed to update engine volume for car " << carId

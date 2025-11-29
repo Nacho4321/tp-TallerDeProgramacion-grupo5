@@ -2,12 +2,12 @@
 #include <cmath>
 
 Car::Car(int carTypeId)
-    : position{0, 0, 0, 0, false}, spriteIndex(0), renderedAngle(0.0), carType(carTypeId), exploding(false), explosionFrame(0), explosionFrameDelay(0)
+    : position{0, 0, 0, 0, false}, spriteIndex(0), renderedAngle(0.0), carType(carTypeId), exploding(false), explosionFrame(0), explosionFrameDelay(0), flashing(false), flashFrame(0)
 {
 }
 
 Car::Car(const CarPosition &pos, int carTypeId)
-    : position(pos), spriteIndex(0), renderedAngle(0.0), carType(carTypeId), exploding(false), explosionFrame(0), explosionFrameDelay(0)
+    : position(pos), spriteIndex(0), renderedAngle(0.0), carType(carTypeId), exploding(false), explosionFrame(0), explosionFrameDelay(0), flashing(false), flashFrame(0)
 {
     updateSpriteIndex();
 }
@@ -52,6 +52,7 @@ void Car::startExplosion()
     exploding = true;
     explosionFrame = 0;
     explosionFrameDelay = 3; // Show each frame for n render cycles
+    stopFlash();
 }
 
 void Car::updateExplosion()
@@ -65,7 +66,7 @@ void Car::updateExplosion()
         else
         {
             explosionFrame++;
-            explosionFrameDelay = 0; // Reset delay for next frame
+            explosionFrameDelay = 0; 
         }
     }
 }
@@ -80,9 +81,41 @@ bool Car::isExplosionComplete() const
     return exploding && explosionFrame >= NUM_EXPLOSION_SPRITES - 1;
 }
 
+void Car::stopExplosion()
+{
+    exploding = false;
+    explosionFrame = 0;
+    explosionFrameDelay = 0;
+}
+
 void Car::setCarType(int newType)
 {
     carType = newType;
     spriteIndex = 0;
     updateSpriteIndex();
+}
+
+void Car::startFlash()
+{
+    flashing = true;
+    flashFrame = 0;
+}
+
+void Car::updateFlash()
+{
+    if (flashing && flashFrame < FLASH_DURATION - 1)
+    {
+        flashFrame++;
+    }
+}
+
+bool Car::isFlashComplete() const
+{
+    return flashing && flashFrame >= FLASH_DURATION - 1;
+}
+
+void Car::stopFlash()
+{
+    flashing = false;
+    flashFrame = 0;
 }
