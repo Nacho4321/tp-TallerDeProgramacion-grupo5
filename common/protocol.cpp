@@ -1,9 +1,9 @@
-#include "protocol.h"
 
+#include "protocol.h"
 #include <iostream>
 #include <utility>
-
 #include <netinet/in.h>
+
 
 Protocol::Protocol(Socket&& socket) noexcept: skt(std::move(socket)), buffer() {
     init_handlers();
@@ -58,7 +58,7 @@ void Protocol::init_handlers() {
 }
 
 void Protocol::init_cmd_map() {
-    // Inicializar mapa de comandos string -> opcode para encodeClientMessage
+    // Inicializar mapa de comandos string a opcode para encodeClientMessage
     cmd_to_opcode[MOVE_UP_PRESSED_STR] = MOVE_UP_PRESSED;
     cmd_to_opcode[MOVE_UP_RELEASED_STR] = MOVE_UP_RELEASED;
     cmd_to_opcode[MOVE_DOWN_PRESSED_STR] = MOVE_DOWN_PRESSED;
@@ -88,18 +88,6 @@ ClientMessage Protocol::receiveClientMessage() {
     return {};  // Opcode desconocido
 }
 
-ServerMessage Protocol::receiveServerMessage() {
-    uint8_t opcode;
-    if (skt.recvall(&opcode, sizeof(opcode)) <= 0)
-        return {};
-
-    if (opcode == UPDATE_POSITIONS) {
-        return receivePositionsUpdate();
-    } else {
-        return {};  // desconocido
-    }
-}
-
 bool Protocol::receiveAnyServerPacket(ServerMessage& outServer,
                                       GameJoinedResponse& outJoined,
                                       uint8_t& outOpcode) {
@@ -116,10 +104,16 @@ bool Protocol::receiveAnyServerPacket(ServerMessage& outServer,
         outServer = receiveGamesList();
         return true;
     }
-    // Passthrough de opcodes simples sin payload (p.ej., STARTING_COUNTDOWN)
     if (outOpcode == STARTING_COUNTDOWN) {
-        outServer = {};
-        outServer.opcode = STARTING_COUNTDOWN;
+        outServer = receiveStartingCountdown();
+        return true;
+    }
+    if (outOpcode == RACE_TIMES) {
+        outServer = receiveRaceTimes();
+        return true;
+    }
+    if (outOpcode == TOTAL_TIMES) {
+        outServer = receiveTotalTimes();
         return true;
     }
     return false;
@@ -138,24 +132,6 @@ void Protocol::sendMessage(ClientMessage& out) {
     skt.sendall(msg.data(), msg.size());
 }
 
-void Protocol::sendMessage(const GameJoinedResponse& response) {
-    auto msg = encodeGameJoinedResponse(response);
-    skt.sendall(msg.data(), msg.size());
-}
-
-// Cliente recibe respuesta del servidor
-GameJoinedResponse Protocol::receiveGameJoined() {
-    uint8_t opcode;
-    if (skt.recvall(&opcode, sizeof(opcode)) <= 0) {
-        return {0, 0, false};
-    }
-    
-    if (opcode == GAME_JOINED) {
-        return receiveGameJoinedResponse();
-    }
-    
-    return {0, 0, false};
-}
 
 void Protocol::shutdown() {
     try {

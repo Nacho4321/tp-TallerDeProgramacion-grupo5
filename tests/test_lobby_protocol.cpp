@@ -24,12 +24,16 @@ TEST(LobbyProtocolTest, CreateGameFlow)
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
         
         // El servidor responde
-        GameJoinedResponse response;
-        response.game_id = 1;
-        response.player_id = 100;
-        response.success = true;
-        
-        proto.sendMessage(response);
+    GameJoinedResponse response;
+    response.game_id = 1;
+    response.player_id = 100;
+    response.success = true;
+    ServerMessage msg;
+    msg.opcode = GAME_JOINED;
+    msg.game_id = response.game_id;
+    msg.player_id = response.player_id;
+    msg.success = response.success;
+    proto.sendMessage(msg);
     });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -43,11 +47,15 @@ TEST(LobbyProtocolTest, CreateGameFlow)
     proto_client.sendMessage(create_msg);
     
     // Cliente espera respuesta
-    GameJoinedResponse resp = proto_client.receiveGameJoined();
-    
-    EXPECT_TRUE(resp.success);
-    EXPECT_EQ(resp.game_id, 1);
-    EXPECT_EQ(resp.player_id, 100);
+    ServerMessage outServer;
+    GameJoinedResponse outJoined;
+    uint8_t outOpcode;
+    bool ok = proto_client.receiveAnyServerPacket(outServer, outJoined, outOpcode);
+    EXPECT_TRUE(ok);
+    EXPECT_EQ(outOpcode, GAME_JOINED);
+    EXPECT_TRUE(outJoined.success);
+    EXPECT_EQ(outJoined.game_id, 1);
+    EXPECT_EQ(outJoined.player_id, 100);
 
     server_thread.join();
 }
@@ -70,12 +78,16 @@ TEST(LobbyProtocolTest, JoinGameFlow)
     EXPECT_EQ(msg.game_id, 42);
         
         // Servidor responde con GAME_JOINED
-        GameJoinedResponse response;
-        response.game_id = 42;
-        response.player_id = 200;
-        response.success = true;
-        
-        proto.sendMessage(response);
+    GameJoinedResponse response;
+    response.game_id = 42;
+    response.player_id = 200;
+    response.success = true;
+    ServerMessage serverMsg;
+    serverMsg.opcode = GAME_JOINED;
+    serverMsg.game_id = response.game_id;
+    serverMsg.player_id = response.player_id;
+    serverMsg.success = response.success;
+    proto.sendMessage(serverMsg);
     });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -90,11 +102,15 @@ TEST(LobbyProtocolTest, JoinGameFlow)
     proto_client.sendMessage(join_msg);
     
     // Cliente espera respuesta
-    GameJoinedResponse resp = proto_client.receiveGameJoined();
-    
-    EXPECT_TRUE(resp.success);
-    EXPECT_EQ(resp.game_id, 42);
-    EXPECT_EQ(resp.player_id, 200);
+    ServerMessage outServer;
+    GameJoinedResponse outJoined;
+    uint8_t outOpcode;
+    bool ok = proto_client.receiveAnyServerPacket(outServer, outJoined, outOpcode);
+    EXPECT_TRUE(ok);
+    EXPECT_EQ(outOpcode, GAME_JOINED);
+    EXPECT_TRUE(outJoined.success);
+    EXPECT_EQ(outJoined.game_id, 42);
+    EXPECT_EQ(outJoined.player_id, 200);
 
     server_thread.join();
 }
@@ -113,12 +129,16 @@ TEST(LobbyProtocolTest, JoinGameFailure)
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
         
         // Servidor responde con error (partida no existe)
-        GameJoinedResponse response;
-        response.game_id = 999;
-        response.player_id = 0;
-        response.success = false;
-        
-        proto.sendMessage(response);
+    GameJoinedResponse response;
+    response.game_id = 999;
+    response.player_id = 0;
+    response.success = false;
+    ServerMessage serverMsg;
+    serverMsg.opcode = GAME_JOINED;
+    serverMsg.game_id = response.game_id;
+    serverMsg.player_id = response.player_id;
+    serverMsg.success = response.success;
+    proto.sendMessage(serverMsg);
     });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -132,11 +152,15 @@ TEST(LobbyProtocolTest, JoinGameFailure)
     proto_client.sendMessage(join_msg);
     
     // Cliente espera respuesta de error
-    GameJoinedResponse resp = proto_client.receiveGameJoined();
-    
-    EXPECT_FALSE(resp.success);
-    EXPECT_EQ(resp.game_id, 999);
-    EXPECT_EQ(resp.player_id, 0);
+    ServerMessage outServer;
+    GameJoinedResponse outJoined;
+    uint8_t outOpcode;
+    bool ok = proto_client.receiveAnyServerPacket(outServer, outJoined, outOpcode);
+    EXPECT_TRUE(ok);
+    EXPECT_EQ(outOpcode, GAME_JOINED);
+    EXPECT_FALSE(outJoined.success);
+    EXPECT_EQ(outJoined.game_id, 999);
+    EXPECT_EQ(outJoined.player_id, 0);
 
     server_thread.join();
 }
@@ -162,11 +186,16 @@ TEST(LobbyProtocolTest, CreateAndJoinGame)
         
         // Servidor asigna un ID de partida (por ejemplo, 5)
         assigned_game_id = 5;
-        GameJoinedResponse response1;
-        response1.game_id = assigned_game_id;
-        response1.player_id = 1;
-        response1.success = true;
-        proto1.sendMessage(response1);
+    GameJoinedResponse response1;
+    response1.game_id = assigned_game_id;
+    response1.player_id = 1;
+    response1.success = true;
+    ServerMessage serverMsg1;
+    serverMsg1.opcode = GAME_JOINED;
+    serverMsg1.game_id = response1.game_id;
+    serverMsg1.player_id = response1.player_id;
+    serverMsg1.success = response1.success;
+    proto1.sendMessage(serverMsg1);
         
         // Segundo cliente se conecta
         Socket peer2 = acceptor.accept();
@@ -178,11 +207,16 @@ TEST(LobbyProtocolTest, CreateAndJoinGame)
     EXPECT_EQ(msg2.game_id, 5);
         
         // Servidor responde permitiendo el join
-        GameJoinedResponse response2;
-        response2.game_id = assigned_game_id;
-        response2.player_id = 2;
-        response2.success = true;
-        proto2.sendMessage(response2);
+    GameJoinedResponse response2;
+    response2.game_id = assigned_game_id;
+    response2.player_id = 2;
+    response2.success = true;
+    ServerMessage serverMsg2;
+    serverMsg2.opcode = GAME_JOINED;
+    serverMsg2.game_id = response2.game_id;
+    serverMsg2.player_id = response2.player_id;
+    serverMsg2.success = response2.success;
+    proto2.sendMessage(serverMsg2);
     });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -195,24 +229,34 @@ TEST(LobbyProtocolTest, CreateAndJoinGame)
     create_msg.cmd = "create_game";
     proto_client1.sendMessage(create_msg);
     
-    GameJoinedResponse resp1 = proto_client1.receiveGameJoined();
-    EXPECT_TRUE(resp1.success);
-    EXPECT_EQ(resp1.player_id, 1);
-    uint32_t game_id = resp1.game_id;
-    
+    ServerMessage outServer1;
+    GameJoinedResponse outJoined1;
+    uint8_t outOpcode1;
+    bool ok1 = proto_client1.receiveAnyServerPacket(outServer1, outJoined1, outOpcode1);
+    EXPECT_TRUE(ok1);
+    EXPECT_EQ(outOpcode1, GAME_JOINED);
+    EXPECT_TRUE(outJoined1.success);
+    EXPECT_EQ(outJoined1.player_id, 1);
+    uint32_t game_id = outJoined1.game_id;
+
     // Segundo cliente: se joinea a la partida creada
     Socket client2("localhost", TEST_PORT_MULTI);
     Protocol proto_client2(std::move(client2));
-    
+
     ClientMessage join_msg;
     join_msg.cmd = "join_game";
     join_msg.game_id = static_cast<int32_t>(game_id);
     proto_client2.sendMessage(join_msg);
-    
-    GameJoinedResponse resp2 = proto_client2.receiveGameJoined();
-    EXPECT_TRUE(resp2.success);
-    EXPECT_EQ(resp2.game_id, game_id);
-    EXPECT_EQ(resp2.player_id, 2);
+
+    ServerMessage outServer2;
+    GameJoinedResponse outJoined2;
+    uint8_t outOpcode2;
+    bool ok2 = proto_client2.receiveAnyServerPacket(outServer2, outJoined2, outOpcode2);
+    EXPECT_TRUE(ok2);
+    EXPECT_EQ(outOpcode2, GAME_JOINED);
+    EXPECT_TRUE(outJoined2.success);
+    EXPECT_EQ(outJoined2.game_id, game_id);
+    EXPECT_EQ(outJoined2.player_id, 2);
 
     server_thread.join();
 }

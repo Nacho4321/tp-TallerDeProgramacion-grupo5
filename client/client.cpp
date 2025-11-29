@@ -139,11 +139,15 @@ void Client::start()
             }
         }
 
-        ServerMessage message;
-        ServerMessage latest_message;
+    ServerMessage message;
+    ServerMessage latest_message;
         bool got_message = false;
         uint8_t latest_opcode = 0;
         bool saw_starting_countdown = false;
+    bool saw_race_times = false;
+    bool saw_total_times = false;
+    ServerMessage last_race_times_msg;
+    ServerMessage last_total_times_msg;
 
         while (handler_core.try_receive(message))
         {
@@ -151,6 +155,16 @@ void Client::start()
             if (message.opcode == STARTING_COUNTDOWN)
             {
                 saw_starting_countdown = true;
+            }
+            else if (message.opcode == RACE_TIMES)
+            {
+                saw_race_times = true;
+                last_race_times_msg = message;
+            }
+            else if (message.opcode == TOTAL_TIMES)
+            {
+                saw_total_times = true;
+                last_total_times_msg = message;
             }
 
             latest_message = message;
@@ -162,6 +176,41 @@ void Client::start()
         if (got_message && (latest_opcode == STARTING_COUNTDOWN || saw_starting_countdown))
         {
             std::cout << "[Client] STARTING countdown begun (10s)." << std::endl;
+        }
+
+        // Mostrar resultados por carrera (RACE_TIMES)
+        if (saw_race_times)
+        {
+            std::cout << "[Client] === Race Results (Round " << (last_race_times_msg.race_times.empty()? -1 : int(last_race_times_msg.race_times[0].round_index)) << ") ===" << std::endl;
+            for (const auto &rt : last_race_times_msg.race_times)
+            {
+                uint32_t ms = rt.time_ms;
+                uint32_t minutes = ms / 60000u;
+                uint32_t seconds = (ms % 60000u) / 1000u;
+                uint32_t millis = ms % 1000u;
+                std::cout << " player=" << rt.player_id
+                          << (rt.disqualified ? " (DQ)" : "")
+                          << " time=" << minutes << ":" << (seconds < 10 ? "0" : "") << seconds
+                          << "." << (millis < 100 ? (millis < 10 ? "00" : "0") : "") << millis
+                          << std::endl;
+            }
+        }
+
+        // Mostrar totales del campeonato (TOTAL_TIMES)
+        if (saw_total_times)
+        {
+            std::cout << "[Client] === Championship Totals ===" << std::endl;
+            for (const auto &tt : last_total_times_msg.total_times)
+            {
+                uint32_t ms = tt.total_ms;
+                uint32_t minutes = ms / 60000u;
+                uint32_t seconds = (ms % 60000u) / 1000u;
+                uint32_t millis = ms % 1000u;
+                std::cout << " player=" << tt.player_id
+                          << " total=" << minutes << ":" << (seconds < 10 ? "0" : "") << seconds
+                          << "." << (millis < 100 ? (millis < 10 ? "00" : "0") : "") << millis
+                          << std::endl;
+            }
         }
 
         if (got_message && latest_message.opcode == UPDATE_POSITIONS && !latest_message.positions.empty())

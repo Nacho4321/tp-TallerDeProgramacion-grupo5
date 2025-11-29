@@ -95,6 +95,10 @@ private:
     ServerMessage receivePositionsUpdate();
     ServerMessage receiveGamesList();
     GameJoinedResponse receiveGameJoinedResponse();
+    ServerMessage receiveRaceTimes();
+    ServerMessage receiveTotalTimes();
+    // Helper para decodificar STARTING_COUNTDOWN (sin payload)
+    ServerMessage receiveStartingCountdown();
 
 public:
     explicit Protocol(Socket &&socket) noexcept; // constructor que toma ownership del socket
@@ -105,7 +109,6 @@ public:
 
     // Recibe mensaje del socket en formato DecodedMessage
     ClientMessage receiveClientMessage();
-    ServerMessage receiveServerMessage();
     // Lee el próximo paquete del servidor y devuelve true si pudo decodificar alguno.
     // outOpcode indicará el tipo (p.ej. UPDATE_POSITIONS o GAME_JOINED).
     bool receiveAnyServerPacket(ServerMessage& outServer,
@@ -113,7 +116,6 @@ public:
                                 uint8_t& outOpcode);
     
     // Lobby methods (cliente recibe respuesta del servidor)
-    GameJoinedResponse receiveGameJoined();
 
     // Envía mensaje al socket
     void sendMessage(ServerMessage& out);
