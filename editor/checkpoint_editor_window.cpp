@@ -1,4 +1,5 @@
 #include "checkpoint_editor_window.h"
+#include "editor_config.h"
 #include <QGraphicsSceneMouseEvent>
 #include <QMouseEvent>
 #include <QWheelEvent>
@@ -31,18 +32,26 @@ CheckpointEditorWindow::CheckpointEditorWindow(QWidget* parent)
       resetZoomButton(nullptr),
       infoLabel(nullptr),
       routeLine(nullptr),
-      // por ahora hardcodeado, despues cambiar
-      mapImagePath("../data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png"),
-      checkpointsJsonPath("../data/cities/base_liberty_city_checkpoints.json"),
       isDragging(false),
       lastDragPos() {
+    
+    // cargar config
+    EditorConfig& config = EditorConfig::getInstance();
+    if (!config.loadFromFile("")) {
+        QMessageBox::critical(this, "Error", 
+            "No se pudo cargar la configuración del editor.\n");
+
+        mapImagePath = "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png";
+        checkpointsJsonPath = "data/cities/base_liberty_city_checkpoints.json";
+    } else {
+        mapImagePath = config.getMapImagePath();
+        checkpointsJsonPath = config.getCheckpointsFilePath();
+    }
     
     setupUI();
     loadMapImage();
     loadCheckpointsFromJSON();
-}
-
-CheckpointEditorWindow::~CheckpointEditorWindow() {
+}CheckpointEditorWindow::~CheckpointEditorWindow() {
 }
 
 void CheckpointEditorWindow::setupUI() {
@@ -199,13 +208,18 @@ void CheckpointEditorWindow::loadCheckpointsFromJSON() {
         }
         checkpointItems.clear();
         
+        // cargo desde json
         for (const auto& cp : j["checkpoints"]) {
             int id = cp["id"];
             float x = cp["x"];
             float y = cp["y"];
             
             checkpoints.push_back(CheckpointData(id, x, y));
-            addCheckpointItem(x, y);
+            
+            int index = checkpointItems.size();
+            CheckpointItem* item = new CheckpointItem(x, y, index);
+            mapScene->addItem(item);
+            checkpointItems.push_back(item);
         }
         
         updateCheckpointList();
@@ -412,7 +426,6 @@ bool CheckpointEditorWindow::eventFilter(QObject* obj, QEvent* event) {
         if (event->type() == QEvent::MouseButtonPress) {
             QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
 
-            // click derecho: drag del mapa
             if (mouseEvent->button() == Qt::RightButton) {
                 isDragging = true;
                 lastDragPos = mouseEvent->pos();
@@ -424,7 +437,6 @@ bool CheckpointEditorWindow::eventFilter(QObject* obj, QEvent* event) {
             if (mouseEvent->button() == Qt::LeftButton) {
                 QPointF scenePos = mapView->mapToScene(mouseEvent->pos());
                 
-                // verificar que no se hizo clic sobre un item existente
                 QGraphicsItem* itemAtPos = mapScene->itemAt(scenePos, mapView->transform());
                 if (!itemAtPos || itemAtPos == backgroundItem || itemAtPos == routeLine) {
                     onMapClicked(scenePos);
@@ -435,12 +447,10 @@ bool CheckpointEditorWindow::eventFilter(QObject* obj, QEvent* event) {
         else if (event->type() == QEvent::MouseMove) {
             QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
             
-            // Si estamos arrastrando con click derecho
             if (isDragging) {
                 QPoint delta = mouseEvent->pos() - lastDragPos;
                 lastDragPos = mouseEvent->pos();
                 
-                // Mover las barras de scroll
                 mapView->horizontalScrollBar()->setValue(
                     mapView->horizontalScrollBar()->value() - delta.x());
                 mapView->verticalScrollBar()->setValue(
@@ -452,7 +462,7 @@ bool CheckpointEditorWindow::eventFilter(QObject* obj, QEvent* event) {
         else if (event->type() == QEvent::MouseButtonRelease) {
             QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
             
-            // Soltar click derecho: terminar drag
+            // Soltar click derecho: terminar de mover mapa
             if (mouseEvent->button() == Qt::RightButton && isDragging) {
                 isDragging = false;
                 mapView->setCursor(Qt::ArrowCursor);
