@@ -427,13 +427,23 @@ bool GameLoop::is_valid_checkpoint_collision(b2Fixture *player_fixture, b2Fixtur
 void GameLoop::complete_player_race(PlayerData &player_data, int player_id)
 {
     auto lap_end_time = std::chrono::steady_clock::now();
-    float lap_time = std::chrono::duration<float>(lap_end_time - player_data.lap_start_time).count();
+    auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(lap_end_time - player_data.lap_start_time).count();
 
     player_data.laps_completed += 1;
     player_data.race_finished = true;
+    player_data.disqualified = false;
 
-    int minutes = static_cast<int>(lap_time) / 60;
-    float seconds = lap_time - (minutes * 60);
+    // Registrar tiempo de la ronda actual (limitar a 3 rondas)
+    if (static_cast<int>(player_data.round_times_ms.size()) < 3) {
+        player_data.round_times_ms.push_back(static_cast<uint32_t>(elapsed_ms));
+    } else {
+        player_data.round_times_ms[player_data.rounds_completed % 3] = static_cast<uint32_t>(elapsed_ms);
+    }
+    player_data.rounds_completed = std::min(player_data.rounds_completed + 1, 3);
+    player_data.total_time_ms += static_cast<uint32_t>(elapsed_ms);
+
+    int minutes = static_cast<int>(elapsed_ms / 60000);
+    float seconds = static_cast<float>((elapsed_ms % 60000)) / 1000.0f;
 
     std::cout << "\n========================================" << std::endl;
     std::cout << "   PLAYER " << player_id << " FINISHED THE RACE!" << std::endl;
@@ -661,7 +671,17 @@ void GameLoop::apply_collision_damage(PlayerData &player_data, float impact_velo
     {
         player_data.car.hp = 0.0f;
         player_data.is_dead = true;
-        player_data.race_finished = true; // TODO: Player pierde
+        player_data.race_finished = true; // Player pierde
+        player_data.disqualified = true;
+        // Asignar tiempo de descalificación: 10 minutos
+        uint32_t dq_ms = 10u * 60u * 1000u;
+        if (static_cast<int>(player_data.round_times_ms.size()) < 3) {
+            player_data.round_times_ms.push_back(dq_ms);
+        } else {
+            player_data.round_times_ms[player_data.rounds_completed % 3] = dq_ms;
+        }
+        player_data.rounds_completed = std::min(player_data.rounds_completed + 1, 3);
+        player_data.total_time_ms += dq_ms;
         
         // Marcar el body para destrucción en lugar de solo detenerlo
         player_data.mark_body_for_removal = true;
@@ -951,6 +971,25 @@ bool GameLoop::should_reset_race() const
 void GameLoop::broadcast_race_end_message()
 {
     std::cout << "[GameLoop] Executing race reset..." << std::endl;
+    // Enviar tiempos de la carrera actual a los clientes
+    ServerMessage msg;
+    msg.opcode = RACE_TIMES;
+    {
+        std::lock_guard<std::mutex> lk(players_map_mutex);
+        uint8_t round_index = static_cast<uint8_t>(current_round);
+        for (auto &entry : players)
+        {
+            int pid = entry.first;
+            PlayerData &pd = entry.second;
+            uint32_t time_ms = 10u * 60u * 1000u;
+            bool dq = pd.disqualified || pd.is_dead;
+            if (!pd.round_times_ms.empty()) {
+                time_ms = pd.round_times_ms.back();
+            }
+            msg.race_times.push_back({static_cast<uint32_t>(pid), time_ms, dq, round_index});
+        }
+    }
+    broadcast_positions(msg);
 }
 
 void GameLoop::reset_all_players_to_lobby()
@@ -1563,14 +1602,26 @@ void GameLoop::advance_round_or_reset_to_lobby()
     }
     else
     {
-        // Terminar campeonato: reiniciar al round 1 y entrar a STARTING directamente
+        // Terminar campeonato: antes de reiniciar, enviar TOTAL_TIMES
+        ServerMessage totals;
+        totals.opcode = TOTAL_TIMES;
+        {
+            std::lock_guard<std::mutex> lk(players_map_mutex);
+            for (auto &entry : players)
+            {
+                totals.total_times.push_back({static_cast<uint32_t>(entry.first), entry.second.total_time_ms});
+            }
+        }
+        broadcast_positions(totals);
+
+        // Reiniciar al round 1 y entrar a STARTING directamente
         std::cout << "[GameLoop] Championship finished. Restarting at round 1 (auto STARTING)." << std::endl;
         current_round = 0;
         load_current_round_checkpoints();
         reset_all_players_to_lobby();
         pending_race_reset.store(false);
         std::cout << "[GameLoop] About to call transition_to_starting_state for championship restart" << std::endl;
-        transition_to_starting_state(10);
+    transition_to_starting_state(10);
     }
 }
 

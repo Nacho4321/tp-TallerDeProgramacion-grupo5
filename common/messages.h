@@ -61,6 +61,22 @@ struct ServerMessage
         uint32_t player_count;
     };
     std::vector<GameSummary> games; // sólo usado si opcode == GAMES_LIST
+
+    // Payload para resultados por carrera (RACE_TIMES)
+    struct PlayerRaceTime {
+        uint32_t player_id;
+        uint32_t time_ms;
+        bool disqualified;
+        uint8_t round_index; // 0..2
+    };
+    std::vector<PlayerRaceTime> race_times; // usado si opcode == RACE_TIMES
+
+    // Payload para totales del campeonato (TOTAL_TIMES)
+    struct PlayerTotalTime {
+        uint32_t player_id;
+        uint32_t total_ms;
+    };
+    std::vector<PlayerTotalTime> total_times; // usado si opcode == TOTAL_TIMES
 };
 
 struct ClientMessage

@@ -29,5 +29,15 @@ struct PlayerData
     // Flags para colisiones y body management
     bool collision_this_frame = false;
     bool mark_body_for_removal = false;
+
+    // --- Timing de carreras y campeonato ---
+    // Tiempos por ronda (en ms), máx 3 rondas
+    std::vector<uint32_t> round_times_ms;
+    // Tiempo total acumulado del campeonato (en ms)
+    uint32_t total_time_ms = 0;
+    // Cantidad de rondas completadas (0..3)
+    int rounds_completed = 0;
+    // Flag de descalificación de la ronda actual (muerte cuenta como 10 min)
+    bool disqualified = false;
 };
 #endif

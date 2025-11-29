@@ -157,7 +157,12 @@ TEST(AcceptorIntegrationTest, BroadcastMessageToClient)
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     // Recibimos el mensaje broadcast
-    ServerMessage received = proto_client.receiveServerMessage();
+    ServerMessage received;
+    GameJoinedResponse jr{};
+    uint8_t opcode = 0;
+    bool ok = proto_client.receiveAnyServerPacket(received, jr, opcode);
+    EXPECT_TRUE(ok);
+    EXPECT_EQ(opcode, UPDATE_POSITIONS);
     EXPECT_EQ(received.positions.size(), 2);
     EXPECT_EQ(received.positions[0].player_id, 1);
     EXPECT_FLOAT_EQ(received.positions[0].new_pos.new_X, 50.0f);
@@ -252,8 +257,15 @@ TEST(AcceptorIntegrationTest, BroadcastToMultipleClients)
     
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    auto m1 = p1.receiveServerMessage();
-    auto m2 = p2.receiveServerMessage();
+    ServerMessage m1, m2;
+    GameJoinedResponse jr1{}, jr2{};
+    uint8_t op1 = 0, op2 = 0;
+    bool ok1 = p1.receiveAnyServerPacket(m1, jr1, op1);
+    bool ok2 = p2.receiveAnyServerPacket(m2, jr2, op2);
+    EXPECT_TRUE(ok1);
+    EXPECT_TRUE(ok2);
+    EXPECT_EQ(op1, UPDATE_POSITIONS);
+    EXPECT_EQ(op2, UPDATE_POSITIONS);
 
     EXPECT_EQ(m1.positions.size(), 2);
     EXPECT_EQ(m2.positions.size(), 2);
