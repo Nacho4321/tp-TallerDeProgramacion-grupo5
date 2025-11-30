@@ -259,6 +259,11 @@ ServerMessage Protocol::receivePositionsUpdate()
             return msg;
         update.collision_flag = (collision_byte != 0);
 
+        // Leer is_stopping (frenazo)
+        uint8_t stopping_byte;
+        if (skt.recvall(&stopping_byte, sizeof(stopping_byte)) <= 0)
+            return msg;
+        update.is_stopping = (stopping_byte != 0);
         msg.positions.push_back(update);
     }
 

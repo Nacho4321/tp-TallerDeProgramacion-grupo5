@@ -39,5 +39,7 @@ struct PlayerData
     int rounds_completed = 0;
     // Flag de descalificación de la ronda actual (muerte cuenta como 10 min)
     bool disqualified = false;
+    // Flag de frenazo 
+    bool is_stopping = false;
 };
 #endif

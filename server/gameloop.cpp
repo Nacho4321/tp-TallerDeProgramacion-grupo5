@@ -409,6 +409,19 @@ void GameLoop::update_drive_for_player(PlayerData &player_data)
     bool want_left = (player_data.position.direction_x == left);
     bool want_right = (player_data.position.direction_x == right);
 
+
+    // Detectar frenazo
+    player_data.is_stopping = false;
+    if (want_down) {
+        b2Vec2 forwardNormal = body->GetWorldVector(b2Vec2(FORWARD_VECTOR_X, FORWARD_VECTOR_Y));
+        float current_speed = b2Dot(body->GetLinearVelocity(), forwardNormal);
+        float threshold = 1.0f; // habria q ver el threshold 
+        if (current_speed > threshold) {
+            player_data.is_stopping = true;
+            std::cout << "[FRENAZO] Player " << " frenazo Velocidad: " << current_speed << std::endl;
+        }
+    }
+
     if (want_up || want_down)
     {
         float desired_speed = calculate_desired_speed(want_up, want_down, car_physics);

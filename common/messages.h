@@ -36,6 +36,8 @@ struct PlayerPositionUpdate
     // HP system
     float hp = 100.0f;  //  HP actual 
     bool collision_flag = false;  // True si hubo colisión este frame (para animación de explosión)
+    // Flag de frenazo 
+    bool is_stopping = false;
 };
 
 // Mensaje unificado del servidor: puede ser una actualización de posiciones

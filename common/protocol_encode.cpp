@@ -123,6 +123,8 @@ std::vector<std::uint8_t> Protocol::encodeServerMessage(ServerMessage &out)
 
             // Enviar collision flag
             buffer.push_back(pos_update.collision_flag ? 1 : 0);
+            // Enviar is_stopping (frenazo)
+            buffer.push_back(pos_update.is_stopping ? 1 : 0);
         }
         return buffer;
     }
