@@ -2,6 +2,18 @@
 #include "../client/client.h"
 #include <iostream>
 
+int GameLauncher::launchWithConnection(std::unique_ptr<GameConnection> connection) {
+    try {
+        Client client(std::move(connection));
+        client.start();
+        return 0;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[GameLauncher] Error lanzando juego: " << e.what() << std::endl;
+        return 1;
+    }
+}
+
 int GameLauncher::launchGame(const std::string& address, const std::string& port, 
                             const std::string& game_name) {
     return launchGameInternal(address, port, StartMode::AUTO_CREATE, -1, game_name);

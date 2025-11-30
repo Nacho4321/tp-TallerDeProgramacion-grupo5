@@ -7,15 +7,11 @@
 #include "../common/protocol.h"
 #include "../common/socket.h"
 #include "../common/messages.h"
-#include "../client/game_client_handler.h"
+#include "../client/game_connection.h"
 
 class LobbyClient {
 private:
-    std::unique_ptr<Protocol> protocol_;
-    std::unique_ptr<GameClientHandler> handler_;
-    std::string address_;
-    std::string port_;
-    bool connected_;
+    std::unique_ptr<GameConnection> connection_;
 
 public:
     LobbyClient();
@@ -25,12 +21,23 @@ public:
     
     std::vector<ServerMessage::GameSummary> listGames();
     
-    // Getters
+    bool createGame(const std::string& gameName, uint32_t& outGameId, uint32_t& outPlayerId);
+    bool joinGame(uint32_t gameId, uint32_t& outPlayerId);
+    bool startGame();
+    void leaveGame();
+    bool checkGameStarted();
+    bool selectCar(const std::string& carType);
+    
     bool isConnected() const;
     std::string getAddress() const;
     std::string getPort() const;
+    uint32_t getCurrentGameId() const;
+    uint32_t getCurrentPlayerId() const;
     
     void disconnect();
+    
+    // este metodo sirve para pasarle la conexion a SDL
+    std::unique_ptr<GameConnection> extractConnection();
 };
 
 #endif

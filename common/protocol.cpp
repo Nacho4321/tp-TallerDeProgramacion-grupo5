@@ -104,6 +104,10 @@ bool Protocol::receiveAnyServerPacket(ServerMessage& outServer,
         outServer = receiveGamesList();
         return true;
     }
+    if (outOpcode == GAME_STARTED) {
+        outServer.opcode = GAME_STARTED;
+        return true;
+    }
     if (outOpcode == STARTING_COUNTDOWN) {
         outServer = receiveStartingCountdown();
         return true;

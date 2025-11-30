@@ -22,8 +22,10 @@ const std::uint8_t GET_GAMES = 0x13;
 const std::uint8_t GAMES_LIST = 0x14;
 // Start game (transition from lobby to playing)
 const std::uint8_t START_GAME = 0x15;
+// Notificacion de que el juego comenzo
+const std::uint8_t GAME_STARTED = 0x16;
 // Notify clients that STARTING countdown began (no payload; client assumes duration)
-const std::uint8_t STARTING_COUNTDOWN = 0x16;
+const std::uint8_t STARTING_COUNTDOWN = 0x17;
 // Race timing results per round
 const std::uint8_t RACE_TIMES = 0x40;
 // Championship totals after 3 rounds
@@ -88,6 +90,18 @@ const std::string LEAVE_GAME_STR = "leave_game";   // NOLINT
 #define PURPLE_TRUCK "purple_truck"
 #define LIMOUSINE_CAR "limousine_car"
 #define DEFAULTS "defaults"
+
+constexpr int CAR_TYPES_COUNT = 7;
+
+inline const char* const CAR_TYPES[] = {
+    GREEN_CAR,        
+    RED_JEEP_CAR,    
+    RED_SPORTS_CAR, 
+    LIGHT_BLUE_CAR, 
+    RED_SQUARED_CAR, 
+    PURPLE_TRUCK,   
+    LIMOUSINE_CAR   
+};
 
 // Constantes para parseo del JSON del mapa
 #define LAYERS_STR "layers"

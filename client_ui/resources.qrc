@@ -2,5 +2,12 @@
   <qresource prefix="/img">
     <file alias="mainMenu.jpg">img/mainMenu.jpg</file>
     <file alias="connectionMenu.jpg">img/connectionMenu.jpg</file>
+    <file alias="car_1.png">img/car_1.png</file>
+    <file alias="car_2.png">img/car_2.png</file>
+    <file alias="car_3.png">img/car_3.png</file>
+    <file alias="car_4.png">img/car_4.png</file>
+    <file alias="car_5.png">img/car_5.png</file>
+    <file alias="car_6.png">img/car_6.png</file>
+    <file alias="car_7.png">img/car_7.png</file>
   </qresource>
 </RCC>

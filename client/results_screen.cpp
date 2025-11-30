@@ -2,7 +2,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cstdio>
-#include <SDL2/SDL_ttf.h>
+#include <SDL_ttf.h>
 
 ResultsScreen::ResultsScreen(Renderer& renderer, int width, int height)
     : visible(false),

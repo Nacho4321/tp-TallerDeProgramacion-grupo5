@@ -198,7 +198,10 @@ if(TALLER_CLIENT)
     add_dependencies(taller_client taller_common SDL2pp::SDL2pp)
     add_subdirectory(client)
     set_project_warnings(taller_client ${TALLER_MAKE_WARNINGS_AS_ERRORS} FALSE)
-    target_include_directories(taller_client PRIVATE ${libSDL2pp_SOURCE_DIR})
+    target_include_directories(taller_client PRIVATE 
+        ${libSDL2pp_SOURCE_DIR}
+        ${sdl2_ttf_SOURCE_DIR}
+    )
     
     # Link SDL2pp AND the SDL2 extension libraries
     target_link_libraries(taller_client 
@@ -215,11 +218,19 @@ if(TALLER_CLIENT_UI)
     add_dependencies(taller_client_ui taller_common)
     add_subdirectory(client_ui)
     set_project_warnings(taller_client_ui ${TALLER_MAKE_WARNINGS_AS_ERRORS} FALSE)
+    target_include_directories(taller_client_ui PRIVATE 
+        ${libSDL2pp_SOURCE_DIR}
+        ${sdl2_ttf_SOURCE_DIR}
+    )
     
     # Link common library and Qt6
     target_link_libraries(taller_client_ui PRIVATE
         taller_common 
         Qt6::Widgets
+        SDL2pp::SDL2pp
+        SDL2_image::SDL2_image
+        SDL2_mixer::SDL2_mixer
+        SDL2_ttf::SDL2_ttf
     )
     
     file(WRITE ${CMAKE_BINARY_DIR}/qt.conf "[Platforms]\nPlatforms = xcb\n")

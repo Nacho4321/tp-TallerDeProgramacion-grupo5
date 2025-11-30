@@ -1,14 +1,23 @@
 #include "NewGameWindow.h"
 #include "ui_NewGameWindow.h"
+#include "GameLobbyWindow.h"
 #include "GameLauncher.h"
+#include "CarSelectionDialog.h"
 
 #include <QMessageBox>
+#include <QApplication>
 #include <iostream>
 
 NewGameWindow::NewGameWindow(std::shared_ptr<LobbyClient> lobby, QWidget* parent)
-    : QDialog(parent), ui(new Ui::NewGameWindow), lobbyClient_(std::move(lobby)) {
+    : QDialog(parent)
+    ,ui(new Ui::NewGameWindow)
+    ,lobbyClient_(std::move(lobby))
+    ,gameStarted_(false)
+    ,gameId_(0)
+    ,playerId_(0)
+{
     ui->setupUi(this);
-    ui->gameNameLineEdit->setText("Lobby");
+    ui->gameNameLineEdit->setText("Name...");
     ui->maxPlayersSpinBox->setMinimum(1);
     ui->maxPlayersSpinBox->setMaximum(8);
     ui->maxPlayersSpinBox->setValue(2);
@@ -29,32 +38,73 @@ void NewGameWindow::onCreate() {
     
     const QString gameName = ui->gameNameLineEdit->text().trimmed();
     const int maxPlayers = ui->maxPlayersSpinBox->value();
+    (void)maxPlayers;
 
     if (gameName.isEmpty()) {
         QMessageBox::warning(this, "New Game", "Game name is missing.");
         return;
     }
 
-    std::string host = lobbyClient_->getAddress();
-    std::string port = lobbyClient_->getPort();
-    
-    if (host.empty() || port.empty()) {
-        QMessageBox::warning(this, "Error", "No server information configured.");
+    if (!lobbyClient_->isConnected()) {
+        QMessageBox::warning(this, "Error", "Lost connection to server.");
         return;
     }
     
-    accept();
-
-    std::cout << "Creating new game: " << gameName.toStdString()
-              << " with max players: " << maxPlayers << std::endl;
+    uint32_t outGameId = 0;
+    uint32_t outPlayerId = 0;
+    bool success = lobbyClient_->createGame(gameName.toStdString(), outGameId, outPlayerId);
     
-    // Desconectar lobby antes de lanzar el juego
-    lobbyClient_->disconnect();
-              
-    // Lanzar el cliente SDL
-    GameLauncher::launchGame(host, port, gameName.toStdString());
+    if (!success) {
+        QMessageBox::warning(this, "Error", "Failed to create game. Please try again.");
+        return;
+    }
+    
+    gameId_ = outGameId;
+    playerId_ = outPlayerId;
+    
+    std::cout << "[NewGameWindow] Game created successfully. game_id=" << gameId_ 
+              << " player_id=" << playerId_ << std::endl;
+    
+    this->hide();
+    
+    CarSelectionDialog carDialog(this);
+    if (carDialog.exec() == QDialog::Accepted) {
+        std::string selectedCar = carDialog.getSelectedCarType();
+        lobbyClient_->selectCar(selectedCar);
+    }
+    
+    GameLobbyWindow lobbyWindow(lobbyClient_, gameName, gameId_, playerId_, true, this);
+    int result = lobbyWindow.exec();
+    
+    if (result == QDialog::Accepted && lobbyWindow.wasGameStarted()) {
+        gameStarted_ = true;
+        
+        auto connection = lobbyClient_->extractConnection();
+        
+        std::cout << "[NewGameWindow] Transfiriendo conexión al cliente SDL" << std::endl;
+        GameLauncher::launchWithConnection(std::move(connection));
+        
+        accept(); 
+    } else if (lobbyWindow.wasForceClosed()) {
+        QApplication::quit();
+    } else {
+        gameStarted_ = false;
+        this->show();
+    }
 }
 
 void NewGameWindow::onBack() { 
     reject(); 
+}
+
+bool NewGameWindow::wasGameStarted() const {
+    return gameStarted_;
+}
+
+uint32_t NewGameWindow::getGameId() const {
+    return gameId_;
+}
+
+uint32_t NewGameWindow::getPlayerId() const {
+    return playerId_;
 }

@@ -184,6 +184,7 @@ private:
     void transition_to_playing_state();
     void reset_players_for_race_start();
     void reset_npcs_velocities();
+    void broadcast_game_started();
     void transition_to_starting_state(int countdown_seconds);
     void maybe_finish_starting_and_play();
 
@@ -201,5 +202,6 @@ public:
     void add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_outbox);
     void remove_player(int client_id);
     size_t get_player_count() const;
+    bool is_joinable() const;
 };
 #endif
