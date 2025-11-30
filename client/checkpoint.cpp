@@ -94,7 +94,7 @@ void Checkpoint::renderScreenIndicator(Renderer& renderer, const Position& check
     dy /= dist;
     
     int indicatorX = screenWidth / 2;
-    int indicatorY = 40;
+    int indicatorY = 80;
     
     renderer.SetDrawBlendMode(SDL_BLENDMODE_BLEND);
     renderer.SetDrawColor(255, 220, 0, 255);
