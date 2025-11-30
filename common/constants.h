@@ -73,6 +73,10 @@ const std::string GET_GAMES_STR = "get_games";     // NOLINT
 const std::string START_GAME_STR = "start_game";   // NOLINT
 const std::string LEAVE_GAME_STR = "leave_game";   // NOLINT
 
+const int LIBERTY_CITY_MAP_ID = 1;
+const int SAN_ANDREAS_MAP_ID = 2;
+const int VICE_CITY_MAP_ID = 3;
+
 #define COLLISION_FLOOR 0x0001     // 1
 #define COLLISION_BRIDGE 0x0002    // 2
 #define COLLISION_UNDER 0x0004     // 4

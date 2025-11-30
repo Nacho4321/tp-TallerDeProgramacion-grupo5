@@ -7,9 +7,9 @@
 #include <algorithm>
 
 static std::unordered_map<int, std::string> mapsDataPaths = {
-    {1, "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png"},
-    {2, "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - San Andreas.png"},
-    {3, "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Vice City.png"}};
+    {LIBERTY_CITY_MAP_ID, "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png"},
+    {SAN_ANDREAS_MAP_ID, "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - San Andreas.png"},
+    {VICE_CITY_MAP_ID, "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Vice City.png"}};
 
 static std::string CarDataPath = "data/cars/Mobile - Grand Theft Auto 4 - Miscellaneous - Cars.png";
 static std::string ExplosionDataPath = "data/cars/explosion_pixelfied.png";
@@ -44,8 +44,6 @@ GameRenderer::GameRenderer(const char *windowTitle, int windowWidth, int windowH
 
     audioManager = std::make_unique<AudioManager>();
     audioManager->playBackgroundMusic("data/music/background_loop.ogg");
-
-    audioManager->startCarEngine(-1, 0, 0, 0, 0, true);
 
     resultsScreen = std::make_unique<ResultsScreen>(renderer, logicalWidth, logicalHeight);
 
@@ -96,11 +94,8 @@ void GameRenderer::updateOtherCars(const std::map<int, std::pair<CarPosition, in
 {
     CarPosition mainPos = mainCar->getPosition();
 
-    auto nearest4 = computeNearestCars(positions, mainPos);
-    updateOrCreateCars(positions, collisionFlags, nearest4, mainPos);
+    updateOrCreateCars(positions, collisionFlags, mainPos);
     cleanupRemovedCars(positions, mainPos);
-    if (audioManager)
-        audioManager->stopEnginesExcept(nearest4);
 }
 
 std::set<int> GameRenderer::computeNearestCars(
@@ -130,14 +125,12 @@ std::set<int> GameRenderer::computeNearestCars(
 void GameRenderer::updateOrCreateCars(
     const std::map<int, std::pair<CarPosition, int>> &positions,
     const std::map<int, bool> &collisionFlags,
-    const std::set<int> &nearest4,
     const CarPosition &mainPos)
 {
     for (const auto &[id, data] : positions)
     {
         const CarPosition &pos = data.first;
         int typeId = data.second;
-        bool isNearby = nearest4.count(id) > 0;
         auto it = otherCars.find(id);
 
         if (it != otherCars.end())
@@ -158,14 +151,6 @@ void GameRenderer::updateOrCreateCars(
                     audioManager->playCollisionSound(pos.x, pos.y, mainPos.x, mainPos.y);
                 }
             }
-
-            if (isNearby && audioManager)
-            {
-                if (audioManager->isEnginePlayingForCar(id))
-                    audioManager->updateCarEngineVolume(id, pos.x, pos.y, mainPos.x, mainPos.y);
-                else
-                    audioManager->startCarEngine(id, pos.x, pos.y, mainPos.x, mainPos.y, false);
-            }
         }
         else
         {
@@ -185,9 +170,6 @@ void GameRenderer::updateOrCreateCars(
                     audioManager->playCollisionSound(pos.x, pos.y, mainPos.x, mainPos.y);
                 }
             }
-
-            if (isNearby && audioManager)
-                audioManager->startCarEngine(id, pos.x, pos.y, mainPos.x, mainPos.y, false);
         }
 
         previousCarPositions[id] = pos;
@@ -219,9 +201,6 @@ void GameRenderer::cleanupRemovedCars(
             }
             else if (car.isExplosionComplete())
             {
-                if (audioManager)
-                    audioManager->stopCarEngine(id);
-
                 previousCarPositions.erase(id);
                 it = otherCars.erase(it);
             }
@@ -413,6 +392,7 @@ void GameRenderer::renderUpperLayer()
     for (const auto &rect : upperRects)
     {
         renderer.Copy(
+
             backgroundTexture,
             Rect((int)rect.x, (int)rect.y, (int)rect.w, (int)rect.h),
             Rect((int)(rect.x - camPos.x), (int)(rect.y - camPos.y), (int)rect.w, (int)rect.h));
@@ -434,4 +414,12 @@ void GameRenderer::hideResults()
 void GameRenderer::startCountDown()
 {
     resultsScreen->startCountdown(10);
+}
+
+void GameRenderer::winSound()
+{
+    if (audioManager)
+    {
+        audioManager->playWinSound();
+    }
 }
