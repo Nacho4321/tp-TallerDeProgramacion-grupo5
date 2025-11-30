@@ -3,6 +3,7 @@
 
 #include <QDialog>
 #include <QTimer>
+#include <QCloseEvent>
 #include <memory>
 #include "LobbyClient.h"
 
@@ -23,12 +24,16 @@ public:
     ~GameLobbyWindow();
     
     bool wasGameStarted() const { return gameStarted_; }
+    bool wasForceClosed() const { return forceClosed_; }
     
     uint32_t getGameId() const { return gameId_; }
     uint32_t getPlayerId() const { return playerId_; }
 
 signals:
     void gameStartedSignal();
+
+protected:
+    void closeEvent(QCloseEvent* event) override;
 
 private slots:
     void onStartGameClicked();
@@ -42,6 +47,7 @@ private:
     uint32_t playerId_;
     bool isHost_;
     bool gameStarted_;
+    bool forceClosed_;
     
     QTimer* pollTimer_;
     

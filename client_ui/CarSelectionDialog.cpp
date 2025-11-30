@@ -11,8 +11,6 @@ CarSelectionDialog::CarSelectionDialog(QWidget* parent)
     , currentIndex_(0)
 {
     ui->setupUi(this);
-    
-
     ui->carNameLabel->hide();
     
     connect(ui->prevButton, &QPushButton::clicked, this, &CarSelectionDialog::onPrevCar);

@@ -36,12 +36,13 @@ std::vector<ServerMessage::GameSummary> GameMonitor::list_games() {
     for (auto &entry : games) {
         int gid = entry.first;
         auto &loopPtr = entry.second;
-        uint32_t count = 0;
-        if (loopPtr) {
-            // Necesitamos método para obtener cantidad de jugadores
-            // Agregaremos get_player_count() a GameLoop
-            count = static_cast<uint32_t>(loopPtr->get_player_count());
+        
+        // Solo mostrar partidas que estén en estado LOBBY (joinable)
+        if (!loopPtr || !loopPtr->is_joinable()) {
+            continue;
         }
+        
+        uint32_t count = static_cast<uint32_t>(loopPtr->get_player_count());
         ServerMessage::GameSummary summary{static_cast<uint32_t>(gid), game_names[gid], count};
         result.push_back(std::move(summary));
     }

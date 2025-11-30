@@ -1423,6 +1423,11 @@ size_t GameLoop::get_player_count() const
     return players.size();
 }
 
+bool GameLoop::is_joinable() const
+{
+    return game_state == GameState::LOBBY;
+}
+
 void GameLoop::check_race_completion()
 {
     // Asume que ya estamos bajo players_map_mutex lock (llamado desde process_pair o apply_collision_damage)

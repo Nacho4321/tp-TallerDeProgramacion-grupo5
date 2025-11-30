@@ -18,6 +18,7 @@ GameLobbyWindow::GameLobbyWindow(std::shared_ptr<LobbyClient> lobby,
     ,playerId_(playerId)
     ,isHost_(isHost)
     ,gameStarted_(false)
+    ,forceClosed_(false)
     ,pollTimer_(nullptr)
 {
     ui->setupUi(this);
@@ -40,17 +41,19 @@ GameLobbyWindow::~GameLobbyWindow() {
 
 void GameLobbyWindow::updateUI() {
     ui->gameNameLabel->setText(gameName_);
-    ui->gameIdLabel->setText(QString("Game ID: %1").arg(gameId_));
-    ui->playerIdLabel->setText(QString("Your Player ID: %1").arg(playerId_));
+    
+    // Ocultar los labels de IDs - no son necesarios para el usuario
+    ui->gameIdLabel->hide();
+    ui->playerIdLabel->hide();
     
     if (isHost_) {
         setWindowTitle("Game Lobby - Host");
-        ui->roleLabel->setText("You are the HOST");
+        ui->roleLabel->setText("You are the HOST\nPress Start when ready!");
         ui->startGameButton->setEnabled(true);
-        ui->startGameButton->setText("Start Game");
+        ui->startGameButton->setText("▶ Start Game");
     } else {
         setWindowTitle("Game Lobby");
-        ui->roleLabel->setText("Waiting for host to start...");
+        ui->roleLabel->setText("Waiting for host to start the race...");
         ui->startGameButton->setEnabled(false);
         ui->startGameButton->setText("Waiting...");
     }
@@ -91,4 +94,21 @@ void GameLobbyWindow::onPollTimer() {
         emit gameStartedSignal();
         accept();
     }
+}
+
+void GameLobbyWindow::closeEvent(QCloseEvent* event) {
+    // Si el usuario cierra con X, marcamos que fue cerrado forzosamente
+    if (pollTimer_) {
+        pollTimer_->stop();
+    }
+    
+    forceClosed_ = true;
+    
+    // Desconectar del servidor para limpiar recursos
+    if (lobbyClient_) {
+        lobbyClient_->leaveGame();
+    }
+    
+    event->accept();
+    reject();
 }

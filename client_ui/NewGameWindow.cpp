@@ -5,6 +5,7 @@
 #include "CarSelectionDialog.h"
 
 #include <QMessageBox>
+#include <QApplication>
 #include <iostream>
 
 NewGameWindow::NewGameWindow(std::shared_ptr<LobbyClient> lobby, QWidget* parent)
@@ -84,6 +85,10 @@ void NewGameWindow::onCreate() {
         GameLauncher::launchWithConnection(std::move(connection));
         
         accept(); 
+    } else if (lobbyWindow.wasForceClosed()) {
+        // El usuario cerró el lobby con X - cerrar toda la aplicación
+        std::cout << "[NewGameWindow] Lobby cerrado con X, cerrando aplicación" << std::endl;
+        QApplication::quit();
     } else {
         gameStarted_ = false;
         this->show();

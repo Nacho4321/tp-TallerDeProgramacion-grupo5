@@ -5,6 +5,7 @@
 #include "CarSelectionDialog.h"
 
 #include <QMessageBox>
+#include <QApplication>
 #include <iostream>
 
 JoinGameWindow::JoinGameWindow(std::shared_ptr<LobbyClient> lobby, QWidget* parent)
@@ -57,9 +58,8 @@ void JoinGameWindow::loadGamesList() {
 
         } else {
             for (const auto& game : games) {
-                QString itemText = QString("🏎️  %1  |  ID: %2  |  👥 %3 player(s)")
+                QString itemText = QString("🏎️  %1  |  👥 %2 player(s)")
                     .arg(QString::fromStdString(game.name))
-                    .arg(game.game_id)
                     .arg(game.player_count);
                 
                 QListWidgetItem* item = new QListWidgetItem(itemText);
@@ -102,8 +102,6 @@ void JoinGameWindow::onJoin() {
     
     playerId_ = outPlayerId;
     
-    std::cout << "[JoinGameWindow] Joined game successfully. player_id=" << playerId_ << std::endl;
-    
     this->hide();
     
     CarSelectionDialog carDialog(this);
@@ -119,12 +117,13 @@ void JoinGameWindow::onJoin() {
     
     if (result == QDialog::Accepted && lobbyWindow.wasGameStarted()) {
         gameStarted_ = true;
-        
         auto connection = lobbyClient_->extractConnection();
-        
         GameLauncher::launchWithConnection(std::move(connection));
-        
         accept();
+    } else if (lobbyWindow.wasForceClosed()) {
+        // El usuario cerró el lobby con X - cerrar toda la aplicación
+        std::cout << "[JoinGameWindow] Lobby cerrado con X, cerrando aplicación" << std::endl;
+        QApplication::quit();
     } else {
         gameStarted_ = false;
         this->show();
@@ -150,13 +149,16 @@ void JoinGameWindow::onGameSelected(QListWidgetItem* item) {
     if (data.isValid()) {
         selectedGameId_ = data.toInt();
         selectedGameName_ = nameData.toString();
+
     } else {
         selectedGameId_ = -1;
         selectedGameName_ = "";
     }
+
     updateJoinButtonState();
 }
 
 void JoinGameWindow::updateJoinButtonState() {
     ui->joinButton->setEnabled(selectedGameId_ >= 0);
 }
+
