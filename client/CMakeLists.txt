@@ -3,7 +3,7 @@ target_sources(taller_client
     # .cpp files
     main.cpp
     client.cpp
-    input_handler.cpp          
+    input_handler.cpp
     game_client_receiver.cpp
     game_client_sender.cpp
     game_client_handler.cpp
@@ -14,6 +14,7 @@ target_sources(taller_client
     minimap.cpp
     game_renderer.cpp
     audio_manager.cpp
+    results_screen.cpp
     PUBLIC
     # .h files
     game_client_receiver.h
@@ -30,4 +31,5 @@ target_sources(taller_client
     vector2.h
     minimap.h
     audio_manager.h
+    results_screen.h
 )

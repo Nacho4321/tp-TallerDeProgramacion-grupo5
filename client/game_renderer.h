@@ -6,12 +6,17 @@
 #include <memory>
 #include <map>
 #include <string>
+#include <chrono>
+#include <algorithm>
+#include <array>
 #include "../common/constants.h"
+#include "../common/messages.h"
 #include "camera.h"
 #include "car.h"
 #include "minimap.h"
 #include "checkpoint.h"
 #include "audio_manager.h"
+#include "results_screen.h"
 
 using namespace SDL2pp;
 
@@ -41,13 +46,13 @@ private:
     std::vector<UpperLayerRect> upperRects;
     std::unique_ptr<AudioManager> audioManager;
     std::map<int, CarPosition> previousCarPositions;
+    std::unique_ptr<ResultsScreen> resultsScreen;
 
     // --- Rendering ---
     void renderBackground();
     void renderCar(Car &car);
     void renderUpperLayer();
     void renderCheckpoints();
-
     void updateMainCar(const CarPosition &position, bool collisionFlag);
     void updateCheckpoints(const std::vector<Position> &positions);
 
@@ -91,6 +96,12 @@ public:
         if (mainCar)
             mainCar->setCarType(typeId);
     }
+
+    void startCountDown();
+    void showResults(const std::vector<ServerMessage::PlayerRaceTime>& raceTimes,
+                     const std::vector<ServerMessage::PlayerTotalTime>& totalTimes,
+                     int32_t mainPlayerId);
+    void hideResults();
 
     AudioManager* getAudioManager() { return audioManager.get(); }
 };

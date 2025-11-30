@@ -24,6 +24,12 @@ const std::uint8_t GAMES_LIST = 0x14;
 const std::uint8_t START_GAME = 0x15;
 // Notificacion de que el juego comenzo
 const std::uint8_t GAME_STARTED = 0x16;
+// Notify clients that STARTING countdown began (no payload; client assumes duration)
+const std::uint8_t STARTING_COUNTDOWN = 0x17;
+// Race timing results per round
+const std::uint8_t RACE_TIMES = 0x40;
+// Championship totals after 3 rounds
+const std::uint8_t TOTAL_TIMES = 0x41;
 
 // Game opcodes
 const std::uint8_t UPDATE_POSITIONS = 0x20;

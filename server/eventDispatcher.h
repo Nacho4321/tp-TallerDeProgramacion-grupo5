@@ -7,12 +7,14 @@
 #include "../common/constants.h"
 #include "PlayerData.h"
 #include "car_physics_config.h"
+#include "game_state.h"
 class EventDispatcher
 {
 private:
     std::unordered_map<std::string, std::function<void(Event &)>> listeners;
     std::mutex &players_map_mutex;
     std::unordered_map<int, PlayerData> &players;
+    GameState current_state{GameState::LOBBY};
     void init_handlers();
     void move_up(Event &event);
     void move_up_released(Event &event);
@@ -30,5 +32,6 @@ public:
         init_handlers();
     }
 
+    inline void set_game_state(GameState s) { current_state = s; }
     void handle_event(Event &event);
 };

@@ -32,6 +32,15 @@ void GameClientReceiver::run() {
                 ServerMessage m;
                 m.opcode = GAME_STARTED;
                 join_results.push(std::move(m)); 
+            } else if (opcode == STARTING_COUNTDOWN) {
+                // Pasar el mensaje de inicio de countdown al cliente
+                incoming_messages.push(std::move(positionsMsg));
+            } else if (opcode == RACE_TIMES) {
+                // Tiempos de la ronda: pasar para que el cliente los muestre
+                incoming_messages.push(std::move(positionsMsg));
+            } else if (opcode == TOTAL_TIMES) {
+                // Totales del campeonato
+                incoming_messages.push(std::move(positionsMsg));
             } else {
                 // Paquete desconocido: ignorar
             }

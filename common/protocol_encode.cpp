@@ -85,7 +85,10 @@ std::vector<std::uint8_t> Protocol::encodeServerMessage(ServerMessage &out)
         {
             insertInt(pos_update.player_id);
 
-            buffer.push_back(pos_update.new_pos.on_bridge ? 1 : 0);
+	    buffer.push_back(pos_update.new_pos.on_bridge ? 1 : 0);
+            // Add direction_x and direction_y as int8_t
+            buffer.push_back(static_cast<int8_t>(pos_update.new_pos.direction_x));
+            buffer.push_back(static_cast<int8_t>(pos_update.new_pos.direction_y));
 
             insertFloat(pos_update.new_pos.new_X);
             insertFloat(pos_update.new_pos.new_Y);
@@ -98,6 +101,9 @@ std::vector<std::uint8_t> Protocol::encodeServerMessage(ServerMessage &out)
             for (const auto &cp : pos_update.next_checkpoints)
             {
                 buffer.push_back(cp.on_bridge ? 1 : 0);
+                // Add direction_x and direction_y for checkpoint
+                buffer.push_back(static_cast<int8_t>(cp.direction_x));
+                buffer.push_back(static_cast<int8_t>(cp.direction_y));
 
                 insertFloat(cp.new_X);
                 insertFloat(cp.new_Y);
@@ -142,6 +148,31 @@ std::vector<std::uint8_t> Protocol::encodeServerMessage(ServerMessage &out)
             {
                 buffer.push_back(static_cast<uint8_t>(c));
             }
+        }
+        return buffer;
+    }
+    else if (out.opcode == RACE_TIMES)
+    {
+        buffer.push_back(RACE_TIMES);
+        // cantidad de entries
+        insertUint32(static_cast<uint32_t>(out.race_times.size()));
+        for (const auto &rt : out.race_times)
+        {
+            insertUint32(rt.player_id);
+            insertUint32(rt.time_ms);
+            buffer.push_back(rt.disqualified ? 1 : 0);
+            buffer.push_back(rt.round_index);
+        }
+        return buffer;
+    }
+    else if (out.opcode == TOTAL_TIMES)
+    {
+        buffer.push_back(TOTAL_TIMES);
+        insertUint32(static_cast<uint32_t>(out.total_times.size()));
+        for (const auto &tt : out.total_times)
+        {
+            insertUint32(tt.player_id);
+            insertUint32(tt.total_ms);
         }
         return buffer;
     }

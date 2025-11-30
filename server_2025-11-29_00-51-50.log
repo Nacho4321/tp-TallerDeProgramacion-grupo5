@@ -1,0 +1,175 @@
+[Acceptor] Esperando conexiones en el puerto...
+[ClientHandler] Cliente creado con ID: 0
+[Acceptor] Esperando conexiones en el puerto...
+[ClientReceiver(Server)] Hilo receiver iniciado para cliente 0
+[Protocol(Server)] Decodificado CREATE_GAME player_id=-1 game_id=-1
+[MessageHandler] Cliente 0 solicita crear partida
+[CarPhysicsConfig] Loaded config for car type: green_car
+[CarPhysicsConfig] Loaded config for car type: red_squared_car
+[CarPhysicsConfig] Loaded config for car type: red_sports_car
+[CarPhysicsConfig] Loaded config for car type: light_blue_car
+[CarPhysicsConfig] Loaded config for car type: red_jeep_car
+[CarPhysicsConfig] Loaded config for car type: purple_truck
+[CarPhysicsConfig] Loaded config for car type: limousine_car
+[CarPhysicsConfig] Successfully loaded 7 car configurations from config/car_physics.yaml
+[MapLayout] Loaded 8 spawn points from data/cities/spawn_points.json
+[GameLoop] add_player: id=0 players.size()=0 outbox.valid=true
+[GameLoop] add_player: assigning spawn point 0 at (890,700)
+[GameLoop] add_player: done. players.size()=1 messengers.size()=1
+GameMonitor: juego 1 creado para cliente 0
+[MessageHandler] Enviando respuesta: game_id=1 player_id=0
+[MessageHandler] Pushing GameJoined (ServerMessage) al outbox del cliente 0
+[MessageHandler] Respuesta enviada a la cola del cliente
+[GameLoop] Created 5 checkpoint sensors (from data/cities/base_liberty_city_checkpoints_race_1.json).
+[GameLoop] Round 1 loaded checkpoints from: data/cities/base_liberty_city_checkpoints_race_1.json
+[GameLoop][NPC] Spawned 20 parked NPCs (out of 81 available positions).
+[GameLoop][NPC] Moving NPC spawn candidates: 64 chosen: 20
+[GameLoop][NPC] Spawned 20 moving NPCs.
+[GameLoop][NPC] Total NPCs: 40
+[Protocol(Server)] Decodificado START_GAME player_id=0 game_id=1
+[MessageHandler] Cliente 0 solicita iniciar partida (game_id=1)
+[GameLoop] Game started! Transitioning from LOBBY to PLAYING
+[GameLoop] Created 5 checkpoint sensors (from data/cities/base_liberty_city_checkpoints_race_1.json).
+[GameLoop] Round 1 loaded checkpoints from: data/cities/base_liberty_city_checkpoints_race_1.json
+[GameLoop] start_game: Player 0 at body_pos=(890,700) stored_pos=(890,700) HP=100 - race timer started
+[MessageHandler] Partida 1 iniciada exitosamente
+[GameLoop] Physics accumulator reset on start.
+[GameLoop] Player 0 passed checkpoint 0 next=1
+[BRIDGE] Player entering bridge (CAR_GROUND -> CAR_BRIDGE)
+[BRIDGE] Player entering bridge (CAR_GROUND -> CAR_BRIDGE)
+[Collision] PLAYER vs PLAYER | Player 0 | Impact: 6.87573 m/s
+[Collision] Player car 'green_car' took 6.87573 damage (impact: 6.87573 m/s). HP remaining: 93.1243
+[Collision] PLAYER vs PLAYER | Player 0 | Impact: 1.22731 m/s
+[Collision] Player car 'green_car' took 1.22731 damage (impact: 1.22731 m/s). HP remaining: 91.897
+[Collision] PLAYER vs PLAYER | Player 0 | Impact: 2.34213 m/s
+[Collision] Player car 'green_car' took 2.34213 damage (impact: 2.34213 m/s). HP remaining: 89.5548
+[Collision] PLAYER vs PLAYER | Player 0 | Impact: 2.19626 m/s
+[Collision] Player car 'green_car' took 2.19626 damage (impact: 2.19626 m/s). HP remaining: 87.3586
+[Collision] PLAYER vs PLAYER | Player 0 | Impact: 0.593932 m/s
+[Collision] Player car 'green_car' took 0.593932 damage (impact: 0.593932 m/s). HP remaining: 86.7646
+[Collision] PLAYER vs PLAYER | Player 0 | Impact: 0.347078 m/s
+[Collision] Impact too weak (0.347078 m/s), damage=0.347078 < 0.5, skipping
+[Collision] PLAYER vs PLAYER | Player 0 | Impact: 2.98746 m/s
+[Collision] Player car 'green_car' took 2.98746 damage (impact: 2.98746 m/s). HP remaining: 83.7772
+[BRIDGE] Player leaving bridge (CAR_BRIDGE -> CAR_GROUND)
+[GameLoop] Player 0 passed checkpoint 1 next=2
+[BRIDGE] Player leaving bridge (CAR_BRIDGE -> CAR_GROUND)
+[Collision] PLAYER vs WALL | Player 0 | Impact: 6.51664 m/s
+[Collision] Player car 'green_car' took 6.51664 damage (impact: 6.51664 m/s). HP remaining: 77.2605
+[GameLoop] Player 0 passed checkpoint 2 next=3
+[GameLoop] Player 0 passed checkpoint 3 next=4
+[Collision] PLAYER vs WALL | Player 0 | Impact: 6.44625 m/s
+[Collision] Player car 'green_car' took 6.44625 damage (impact: 6.44625 m/s). HP remaining: 70.8143
+[Collision] PLAYER vs WALL | Player 0 | Impact: 0.82708 m/s
+[Collision] Player car 'green_car' took 0.82708 damage (impact: 0.82708 m/s). HP remaining: 69.9872
+[Collision] PLAYER vs WALL | Player 0 | Impact: 0.785204 m/s
+[Collision] Player car 'green_car' took 0.785204 damage (impact: 0.785204 m/s). HP remaining: 69.202
+[Collision] PLAYER vs WALL | Player 0 | Impact: 2.80352 m/s
+[Collision] Player car 'green_car' took 2.80352 damage (impact: 2.80352 m/s). HP remaining: 66.3985
+[Collision] PLAYER vs WALL | Player 0 | Impact: 5.04149 m/s
+[Collision] Player car 'green_car' took 5.04149 damage (impact: 5.04149 m/s). HP remaining: 61.357
+[Collision] PLAYER vs WALL | Player 0 | Impact: 4.55873 m/s
+[Collision] Player car 'green_car' took 4.55873 damage (impact: 4.55873 m/s). HP remaining: 56.7983
+[Collision] PLAYER vs WALL | Player 0 | Impact: 4.41529 m/s
+[Collision] Player car 'green_car' took 4.41529 damage (impact: 4.41529 m/s). HP remaining: 52.383
+[BRIDGE] Player entering bridge (CAR_GROUND -> CAR_BRIDGE)
+
+========================================
+   PLAYER 0 FINISHED THE RACE!
+   Time: 0:14.378
+   Waiting for other players...
+========================================
+
+
+======================================
+   ALL PLAYERS FINISHED!
+   Preparing to return to lobby...
+======================================
+
+[GameLoop] Executing race reset...
+[GameLoop] Advancing to round 2 of 3
+[GameLoop] Created 6 checkpoint sensors (from data/cities/base_liberty_city_checkpoints_race_2.json).
+[GameLoop] Round 2 loaded checkpoints from: data/cities/base_liberty_city_checkpoints_race_2.json
+[GameLoop] start_game: Player 0 at body_pos=(1368.036,82.137) stored_pos=(1370.858,80.922) HP=100.000 - race timer started
+[GameLoop] New race started for round 2
+[GameLoop] Physics accumulator reset on start.
+[GameLoop] Executing race reset...
+[GameLoop] Advancing to round 3 of 3
+[GameLoop] Created 5 checkpoint sensors (from data/cities/base_liberty_city_checkpoints_race_3.json).
+[GameLoop] Round 3 loaded checkpoints from: data/cities/base_liberty_city_checkpoints_race_3.json
+[GameLoop] start_game: Player 0 at body_pos=(1368.036,82.137) stored_pos=(1368.036,82.137) HP=100.000 - race timer started
+[GameLoop] New race started for round 3
+[GameLoop] Physics accumulator reset on start.
+[GameLoop] Executing race reset...
+[GameLoop] Championship finished. Returning to lobby.
+[GameLoop] Race reset complete. Returning to LOBBY.
+[GameLoop] Created 5 checkpoint sensors (from data/cities/base_liberty_city_checkpoints_race_1.json).
+[GameLoop] Round 1 loaded checkpoints from: data/cities/base_liberty_city_checkpoints_race_1.json
+[Protocol(Server)] Decodificado START_GAME player_id=0 game_id=1
+[MessageHandler] Cliente 0 solicita iniciar partida (game_id=1)
+[GameLoop] Game started! Transitioning from LOBBY to PLAYING
+[GameLoop] Created 5 checkpoint sensors (from data/cities/base_liberty_city_checkpoints_race_1.json).
+[GameLoop] Round 1 loaded checkpoints from: data/cities/base_liberty_city_checkpoints_race_1.json
+[GameLoop] start_game: Player 0 at body_pos=(890.000,700.000) stored_pos=(890.000,700.000) HP=100.000 - race timer started
+[MessageHandler] Partida 1 iniciada exitosamente
+[GameLoop] Physics accumulator reset on start.
+[GameLoop] Player 0 passed checkpoint 0 next=1
+[BRIDGE] Player leaving bridge (CAR_BRIDGE -> CAR_GROUND)
+[GameLoop] Player 0 passed checkpoint 1 next=2
+[BRIDGE] Player entering bridge (CAR_GROUND -> CAR_BRIDGE)
+[GameLoop] Player 0 passed checkpoint 2 next=3
+[BRIDGE] Player leaving bridge (CAR_BRIDGE -> CAR_GROUND)
+[GameLoop] Player 0 passed checkpoint 3 next=4
+[BRIDGE] Player entering bridge (CAR_GROUND -> CAR_BRIDGE)
+[Collision] PLAYER vs PLAYER | Player 0 | Impact: 9.678 m/s
+[Collision] **FRONTAL HEAD-ON CRASH** Player car 'green_car' took 23.548 damage (impact: 9.678 m/s, frontal multiplier: 2.433). HP remaining: 76.452
+[Collision] PLAYER vs PLAYER | Player 0 | Impact: 4.430 m/s
+[Collision] Player car 'green_car' took 4.430 damage (impact: 4.430 m/s). HP remaining: 72.022
+[BRIDGE] Player entering bridge (CAR_GROUND -> CAR_BRIDGE)
+[Collision] PLAYER vs PLAYER | Player 0 | Impact: 2.604 m/s
+[Collision] Player car 'green_car' took 2.604 damage (impact: 2.604 m/s). HP remaining: 69.418
+[Collision] PLAYER vs PLAYER | Player 0 | Impact: 7.763 m/s
+[Collision] **FRONTAL HEAD-ON CRASH** Player car 'green_car' took 17.189 damage (impact: 7.763 m/s, frontal multiplier: 2.214). HP remaining: 52.229
+[Collision] PLAYER vs PLAYER | Player 0 | Impact: 4.529 m/s
+[Collision] Player car 'green_car' took 4.529 damage (impact: 4.529 m/s). HP remaining: 47.700
+[BRIDGE] Player leaving bridge (CAR_BRIDGE -> CAR_GROUND)
+[BRIDGE] Player leaving bridge (CAR_BRIDGE -> CAR_GROUND)
+[Collision] PLAYER vs WALL | Player 0 | Impact: 6.118 m/s
+[Collision] Player car 'green_car' took 6.118 damage (impact: 6.118 m/s). HP remaining: 41.582
+[Collision] PLAYER vs WALL | Player 0 | Impact: 1.302 m/s
+[Collision] Player car 'green_car' took 1.302 damage (impact: 1.302 m/s). HP remaining: 40.280
+
+========================================
+   PLAYER 0 FINISHED THE RACE!
+   Time: 0:16.376
+   Waiting for other players...
+========================================
+
+
+======================================
+   ALL PLAYERS FINISHED!
+   Preparing to return to lobby...
+======================================
+
+[GameLoop] Executing race reset...
+[GameLoop] Advancing to round 2 of 3
+[GameLoop] Created 6 checkpoint sensors (from data/cities/base_liberty_city_checkpoints_race_2.json).
+[GameLoop] Round 2 loaded checkpoints from: data/cities/base_liberty_city_checkpoints_race_2.json
+[GameLoop] start_game: Player 0 at body_pos=(1302.243,78.365) stored_pos=(1299.547,78.190) HP=100.000 - race timer started
+[GameLoop] New race started for round 2
+[GameLoop] Physics accumulator reset on start.
+[GameLoop] Executing race reset...
+[GameLoop] Advancing to round 3 of 3
+[GameLoop] Created 5 checkpoint sensors (from data/cities/base_liberty_city_checkpoints_race_3.json).
+[GameLoop] Round 3 loaded checkpoints from: data/cities/base_liberty_city_checkpoints_race_3.json
+[GameLoop] start_game: Player 0 at body_pos=(1302.243,78.365) stored_pos=(1302.243,78.365) HP=100.000 - race timer started
+[GameLoop] New race started for round 3
+[GameLoop] Physics accumulator reset on start.
+[GameLoop] Executing race reset...
+[GameLoop] Championship finished. Returning to lobby.
+[GameLoop] Race reset complete. Returning to LOBBY.
+[GameLoop] Created 5 checkpoint sensors (from data/cities/base_liberty_city_checkpoints_race_1.json).
+[GameLoop] Round 1 loaded checkpoints from: data/cities/base_liberty_city_checkpoints_race_1.json
+[MessageHandler] Cliente 0 solicita dejar partida
+[MessageHandler] Outbox del cliente 0 cerrada
+[ClientReceiver(Server)] Terminando receiver de cliente 0

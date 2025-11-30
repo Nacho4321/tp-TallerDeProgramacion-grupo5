@@ -74,6 +74,7 @@ void Client::start()
         {
             my_game_id = gid;
             my_player_id = static_cast<int32_t>(pid);
+            original_player_id = my_player_id;
         }
         else
         {
@@ -98,6 +99,7 @@ void Client::start()
             std::cout << "[Client] Joined game. game_id=" << auto_join_game_id << " player_id=" << pid << std::endl;
             my_game_id = static_cast<uint32_t>(auto_join_game_id);
             my_player_id = static_cast<int32_t>(pid);
+            original_player_id = my_player_id;
         }
         else
         {
@@ -127,6 +129,7 @@ void Client::start()
                     // Guardar mis IDs actuales
                     my_game_id = gid;
                     my_player_id = static_cast<int32_t>(pid);
+                    original_player_id = my_player_id;
                 }
                 else
                 {
@@ -152,6 +155,7 @@ void Client::start()
                             // Guardar mis IDs actuales
                             my_game_id = static_cast<uint32_t>(gid);
                             my_player_id = static_cast<int32_t>(pid);
+                            original_player_id = my_player_id;
                         }
                         else
                         {
@@ -176,17 +180,91 @@ void Client::start()
             }
         }
 
-        ServerMessage message;
-        ServerMessage latest_message;
-        bool got_message = false;
+    ServerMessage message;
+    ServerMessage latest_message;
+    bool got_message = false;
+    uint8_t latest_opcode = 0;
+    bool saw_starting_countdown = false;
+    bool saw_race_times = false;
+    bool saw_total_times = false;
+    ServerMessage last_race_times_msg;
+    ServerMessage last_total_times_msg;
 
         while (active_handler_->try_receive(message))
         {
+            // Track the last message for rendering, but also note if any STARTING_COUNTDOWN arrived
+            if (message.opcode == STARTING_COUNTDOWN)
+            {
+                saw_starting_countdown = true;
+            }
+            else if (message.opcode == RACE_TIMES)
+            {
+                saw_race_times = true;
+                last_race_times_msg = message;
+            }
+            else if (message.opcode == TOTAL_TIMES)
+            {
+                saw_total_times = true;
+                last_total_times_msg = message;
+            }
+
             latest_message = message;
             got_message = true;
+            latest_opcode = latest_message.opcode;
         }
 
-        if (got_message && !latest_message.positions.empty())
+        // Aviso simple de inicio de countdown
+        if (got_message && (latest_opcode == STARTING_COUNTDOWN || saw_starting_countdown))
+        {
+            std::cout << "[Client] STARTING countdown begun (10s)." << std::endl;
+            game_renderer.startCountDown();
+        }
+
+        // Mostrar resultados por carrera (RACE_TIMES)
+        if (saw_race_times)
+        {
+            std::cout << "[Client] === Race Results (Round " << (last_race_times_msg.race_times.empty()? -1 : int(last_race_times_msg.race_times[0].round_index)) << ") ===" << std::endl;
+            for (const auto &rt : last_race_times_msg.race_times)
+            {
+                uint32_t ms = rt.time_ms;
+                uint32_t minutes = ms / 60000u;
+                uint32_t seconds = (ms % 60000u) / 1000u;
+                uint32_t millis = ms % 1000u;
+                std::cout << " player=" << rt.player_id
+                          << (rt.disqualified ? " (DQ)" : "")
+                          << " time=" << minutes << ":" << (seconds < 10 ? "0" : "") << seconds
+                          << "." << (millis < 100 ? (millis < 10 ? "00" : "0") : "") << millis
+                          << std::endl;
+            }
+        }
+
+        // Mostrar totales del campeonato (TOTAL_TIMES)
+        if (saw_total_times)
+        {
+            std::cout << "[Client] === Championship Totals ===" << std::endl;
+            for (const auto &tt : last_total_times_msg.total_times)
+            {
+                uint32_t ms = tt.total_ms;
+                uint32_t minutes = ms / 60000u;
+                uint32_t seconds = (ms % 60000u) / 1000u;
+                uint32_t millis = ms % 1000u;
+                std::cout << " player=" << tt.player_id
+                          << " total=" << minutes << ":" << (seconds < 10 ? "0" : "") << seconds
+                          << "." << (millis < 100 ? (millis < 10 ? "00" : "0") : "") << millis
+                          << std::endl;
+            }
+        }
+
+        if (saw_race_times || saw_total_times)
+        {
+            game_renderer.showResults(
+                saw_race_times ? last_race_times_msg.race_times : std::vector<ServerMessage::PlayerRaceTime>(),
+                saw_total_times ? last_total_times_msg.total_times : std::vector<ServerMessage::PlayerTotalTime>(),
+                original_player_id  
+            );
+        }
+
+        if (got_message && latest_message.opcode == UPDATE_POSITIONS && !latest_message.positions.empty())
         {
             // Elegir como "auto principal" el correspondiente a mi player_id (si lo tengo asignado)
             size_t idx_main = 0;
@@ -257,11 +335,14 @@ void Client::start()
 
             std::map<int, std::pair<CarPosition, int>> otherCars;
             std::map<int, bool> otherCarsCollisionFlags;
+
             for (size_t i = 0; i < latest_message.positions.size(); ++i)
             {
-                if (i == idx_main)
-                    continue;
                 const PlayerPositionUpdate &pos = latest_message.positions[i];
+
+                if (pos.player_id == original_player_id)
+                    continue;
+
                 double ang = pos.new_pos.angle;
                 CarPosition cp{
                     pos.new_pos.new_X,
