@@ -75,10 +75,11 @@ GameRenderer::GameRenderer(const char *windowTitle, int windowWidth, int windowH
     }
 }
 
-void GameRenderer::updateMainCar(const CarPosition &position, bool collisionFlag)
+void GameRenderer::updateMainCar(const CarPosition &position, bool collisionFlag, float hp)
 {
     audioManager->updateCarEngineVolume(-1, 0, 0, 0, 0);
     mainCar->setPosition(position);
+    mainCar->setHP(hp);
 
     if (collisionFlag && mainCar)
     {
@@ -237,9 +238,9 @@ void GameRenderer::cleanupRemovedCars(
 }
 
 void GameRenderer::render(const CarPosition &mainCarPos, int mainCarTypeId, const std::map<int, std::pair<CarPosition, int>> &otherCarPositions,
-                          const std::vector<Position> &next_checkpoints, bool mainCarCollisionFlag, const std::map<int, bool> &otherCarsCollisionFlags)
+                          const std::vector<Position> &next_checkpoints, bool mainCarCollisionFlag, float mainCarHP, const std::map<int, bool> &otherCarsCollisionFlags)
 {
-    updateMainCar(mainCarPos, mainCarCollisionFlag);
+    updateMainCar(mainCarPos, mainCarCollisionFlag, mainCarHP);
     setMainCarType(mainCarTypeId);
     updateOtherCars(otherCarPositions, otherCarsCollisionFlags);
     updateCheckpoints(next_checkpoints);
@@ -283,7 +284,9 @@ void GameRenderer::render(const CarPosition &mainCarPos, int mainCarTypeId, cons
 
     minimap.render(renderer, *mainCar, otherCars, next_checkpoints, logicalWidth, logicalHeight);
 
-    if (resultsScreen->isVisible()) {
+    bool round_ended = resultsScreen->isVisible();
+
+    if (round_ended) {
         resultsScreen->render(renderer);
 
         if (resultsScreen->shouldAutoDismiss()) {
@@ -346,6 +349,29 @@ void GameRenderer::renderCar(Car &car)
 
         carSprites.SetBlendMode(SDL_BLENDMODE_BLEND);
         carSprites.SetAlphaMod(255);
+    }
+
+    // Render HP bar only for main car
+    if (&car == mainCar.get()) {
+        renderHPBar(car, carScreenX, carScreenY, sprite.w, sprite.h);
+    }
+}
+
+void GameRenderer::renderHPBar(const Car& car, int carScreenX, int carScreenY, int spriteWidth, int spriteHeight)
+{
+    int barX = carScreenX + (spriteWidth - HP_BAR_WIDTH) / 2;
+    int barY = carScreenY + spriteHeight + HP_BAR_OFFSET_Y;
+
+    renderer.SetDrawBlendMode(SDL_BLENDMODE_BLEND);
+    renderer.SetDrawColor(0, 0, 0, 255);
+    renderer.FillRect(Rect(barX, barY, HP_BAR_WIDTH, HP_BAR_HEIGHT));
+
+    float hpPercent = car.getHPPercentage();
+    int fillWidth = static_cast<int>((HP_BAR_WIDTH - 2) * hpPercent);
+
+    if (fillWidth > 0) {
+        renderer.SetDrawColor(0, 255, 0, 255);
+        renderer.FillRect(Rect(barX + 1, barY + 1, fillWidth, HP_BAR_HEIGHT - 2));
     }
 }
 

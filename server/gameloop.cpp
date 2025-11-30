@@ -159,6 +159,12 @@ void GameLoop::process_lobby_state()
     if (players.empty())
         return;
 
+    // Reset collision flags at the start of each frame
+    for (auto &entry : players)
+    {
+        entry.second.collision_this_frame = false;
+    }
+
     std::vector<PlayerPositionUpdate> broadcast;
     update_player_positions(broadcast);
 
@@ -172,6 +178,13 @@ void GameLoop::process_starting_state()
 {
     // Durante STARTING igual avanzamos la cuenta regresiva aunque no haya jugadores,
     // para evitar quedar trabados en este estado.
+
+    // Reset collision flags at the start of each frame
+    for (auto &entry : players)
+    {
+        entry.second.collision_this_frame = false;
+    }
+
     std::vector<PlayerPositionUpdate> broadcast;
     update_player_positions(broadcast);
 
@@ -1155,7 +1168,12 @@ void GameLoop::add_player_to_broadcast(std::vector<PlayerPositionUpdate> &broadc
         int total = static_cast<int>(checkpoint_centers.size());
         for (int k = 0; k < CHECKPOINT_LOOKAHEAD; ++k)
         {
-            int idx = (player_data.next_checkpoint + k) % total;
+            int idx = player_data.next_checkpoint + k;
+
+            // Stop at the last checkpoint, don't wrap around
+            if (idx >= total)
+                break;
+
             b2Vec2 checkpoint_center = checkpoint_centers[idx];
             Position cp_pos{false, checkpoint_center.x * SCALE, checkpoint_center.y * SCALE, not_horizontal, not_vertical, 0.0f};
             update.next_checkpoints.push_back(cp_pos);

@@ -95,6 +95,23 @@ void Car::setCarType(int newType)
     updateSpriteIndex();
 }
 
+void Car::setHP(float newHP)
+{
+    hp = std::max(0.0f, std::min(newHP, maxHP));
+}
+
+void Car::setMaxHP(float newMaxHP)
+{
+    maxHP = std::max(1.0f, newMaxHP);
+    hp = std::min(hp, maxHP);
+}
+
+float Car::getHPPercentage() const
+{
+    if (maxHP <= 0.0f) return 0.0f;
+    return std::max(0.0f, std::min(1.0f, hp / maxHP));
+}
+
 void Car::startFlash()
 {
     flashing = true;

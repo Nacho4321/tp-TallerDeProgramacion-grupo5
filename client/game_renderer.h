@@ -48,12 +48,17 @@ private:
     std::map<int, CarPosition> previousCarPositions;
     std::unique_ptr<ResultsScreen> resultsScreen;
 
+    static constexpr int HP_BAR_WIDTH = 20;
+    static constexpr int HP_BAR_HEIGHT = 6;
+    static constexpr int HP_BAR_OFFSET_Y = 3;
+
     // --- Rendering ---
     void renderBackground();
     void renderCar(Car &car);
+    void renderHPBar(const Car& car, int carScreenX, int carScreenY, int spriteWidth, int spriteHeight);
     void renderUpperLayer();
     void renderCheckpoints();
-    void updateMainCar(const CarPosition &position, bool collisionFlag);
+    void updateMainCar(const CarPosition &position, bool collisionFlag, float hp);
     void updateCheckpoints(const std::vector<Position> &positions);
 
     void updateOtherCars(const std::map<int, std::pair<CarPosition, int>> &positions,
@@ -89,6 +94,7 @@ public:
                 const std::map<int, std::pair<CarPosition, int>> &otherCarPositions,
                 const std::vector<Position> &next_checkpoints,
                 bool mainCarCollisionFlag,
+                float mainCarHP,
                 const std::map<int, bool> &otherCarsCollisionFlags);
 
     void setMainCarType(int typeId)

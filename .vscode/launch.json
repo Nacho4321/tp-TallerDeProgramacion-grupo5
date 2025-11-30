@@ -42,6 +42,27 @@
             ],
             "preLaunchTask": "build_and_wait",
             "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "Debug taller_client_ui",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/taller_client_ui",
+            "args": ["localhost", "8080"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build_and_wait",
+            "miDebuggerPath": "/usr/bin/gdb"
         }
     ],
     "compounds": [
@@ -51,6 +72,14 @@
             "stopAll": true,
             "presentation": {
                 "order": 1
+            }
+        },
+        {
+            "name": "Debug Server + ClientUI",
+            "configurations": ["Debug taller_server", "Debug taller_client_ui"],
+            "stopAll": true,
+            "presentation": {
+                "order": 2
             }
         }
     ]

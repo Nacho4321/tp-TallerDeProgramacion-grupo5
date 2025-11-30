@@ -22,7 +22,13 @@ void Checkpoint::render(Renderer& renderer, const Vector2& camPos) const {
     Uint8 alpha = 255 - (order * 100); 
 
     renderer.SetDrawBlendMode(SDL_BLENDMODE_BLEND);
-    renderer.SetDrawColor(255, 220, 0, alpha);
+    if (hasNext) {
+        renderer.SetDrawColor(255, 220, 0, alpha);
+    }
+    else {
+        renderer.SetDrawColor(0, 220, 0, alpha);
+    }
+    
 
     for (int dy = -radius; dy <= radius; ++dy) {
         int yy = cy + dy;
@@ -94,7 +100,7 @@ void Checkpoint::renderScreenIndicator(Renderer& renderer, const Position& check
     dy /= dist;
     
     int indicatorX = screenWidth / 2;
-    int indicatorY = 80;
+    int indicatorY = 20;
     
     renderer.SetDrawBlendMode(SDL_BLENDMODE_BLEND);
     renderer.SetDrawColor(255, 220, 0, 255);
