@@ -57,6 +57,12 @@ void AudioManager::loadSoundEffects() {
     } catch (const SDL2pp::Exception& e) {
         std::cerr << "Warning: Failed to load engine_loop.wav: " << e.what() << std::endl;
     }
+
+    try {
+        winSound = std::make_unique<SDL2pp::Chunk>("data/sounds/win.ogg");
+    } catch (const SDL2pp::Exception& e) {
+        std::cerr << "Warning: Failed to load win.ogg: " << e.what() << std::endl;
+    }
 }
 
 int AudioManager::calculateVolume(float soundX, float soundY,
@@ -75,7 +81,7 @@ int AudioManager::calculateVolume(float soundX, float soundY,
     float ratio = 1.0f - (distance / maxDistance);
     float volumeRatio = ratio * ratio;  
 
-    return static_cast<int>(MAX_VOLUME * volumeRatio);
+    return static_cast<int>(MAX_VOLUME * volumeRatio / 5);
 }
 
 int AudioManager::allocateChannel() {
@@ -130,7 +136,7 @@ void AudioManager::playExplosionSound(float worldX, float worldY,
     try {
         int channel = allocateChannel();
         if (channel >= 0) {
-            int scaledVolume = (volume * 2 * masterVolume) / 128;
+            int scaledVolume = (volume * 8 * masterVolume) / 128;
             explosionSound->SetVolume(scaledVolume);
             mixer->PlayChannel(channel, *explosionSound, 0);  
         }
@@ -150,7 +156,7 @@ void AudioManager::playCollisionSound(float worldX, float worldY,
     try {
         int channel = allocateChannel();
         if (channel >= 0) {
-            int scaledVolume = (volume * masterVolume) / 128;
+            int scaledVolume = (volume * 4 * masterVolume) / 128;
             collisionSound->SetVolume(scaledVolume);
             mixer->PlayChannel(channel, *collisionSound, 0); 
         }
@@ -280,5 +286,20 @@ void AudioManager::applyMasterVolume() {
     if (mixer && backgroundMusic) {
         int scaledMusicVol = (BACKGROUND_MUSIC_VOLUME * masterVolume) / 128;
         mixer->SetMusicVolume(scaledMusicVol);
+    }
+}
+
+void AudioManager::playWinSound() {
+    if (!mixer || !winSound) return;
+
+    try {
+        int channel = allocateChannel();
+        if (channel >= 0) {
+            int scaledVolume = (MAX_VOLUME * masterVolume) / 128;
+            winSound->SetVolume(scaledVolume);
+            mixer->PlayChannel(channel, *winSound, 0);
+        }
+    } catch (const SDL2pp::Exception& e) {
+        std::cerr << "Warning: Failed to play win sound: " << e.what() << std::endl;
     }
 }
