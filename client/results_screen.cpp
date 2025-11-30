@@ -90,9 +90,6 @@ void ResultsScreen::renderContent(Renderer& renderer)
         return;
     }
 
-    std::cout << "[ResultsScreen] Rendering results - Race results: " << raceResults.size()
-              << " | Total results: " << totalResults.size() << std::endl;
-
     constexpr int LEFT_COLUMN_X = 150;
     constexpr int RIGHT_COLUMN_X = 500;
     constexpr int START_Y = 150;
@@ -225,7 +222,7 @@ void ResultsScreen::renderCountDown(Renderer& renderer)
     Texture texture(renderer, surface);
 
     int x = (screenWidth - texture.GetWidth()) / 2;
-    int y = 20;
+    int y = 35;
 
     renderer.Copy(texture, NullOpt,
                   Rect(x, y, texture.GetWidth(), texture.GetHeight()));

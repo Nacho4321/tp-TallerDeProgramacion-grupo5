@@ -312,6 +312,7 @@ void Client::start()
             int mainTypeId = 0;
             std::vector<Position> next_cps;
             bool mainCarCollisionFlag = false;
+            float mainCarHP = 100.0f;
 
             if (player_found)
             {
@@ -327,6 +328,7 @@ void Client::start()
                 mainTypeId = (it != car_type_map.end()) ? it->second : 0;
                 next_cps = main_pos.next_checkpoints;
                 mainCarCollisionFlag = main_pos.collision_flag;
+                mainCarHP = main_pos.hp;
             }
             else if (game_renderer.mainCar)
             {
@@ -356,7 +358,7 @@ void Client::start()
                 otherCarsCollisionFlags[pos.player_id] = pos.collision_flag;
             }
 
-            game_renderer.render(mainCarPosition, mainTypeId, otherCars, next_cps, mainCarCollisionFlag, otherCarsCollisionFlags);
+            game_renderer.render(mainCarPosition, mainTypeId, otherCars, next_cps, mainCarCollisionFlag, mainCarHP, otherCarsCollisionFlags);
         }
 
         SDL_Delay(16);

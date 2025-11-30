@@ -33,6 +33,9 @@ private:
     bool flashing;
     int flashFrame;
 
+    float hp = 100.0f;
+    float maxHP = 100.0f;
+
 public:
     Car(int carTypeId = 0);
 
@@ -57,6 +60,12 @@ public:
     int getFlashFrame() const { return flashFrame; }
 
     void setCarType(int newType);
+
+    void setHP(float newHP);
+    void setMaxHP(float newMaxHP);
+    float getHP() const { return hp; }
+    float getMaxHP() const { return maxHP; }
+    float getHPPercentage() const;
 
 private:
     void updateSpriteIndex();
