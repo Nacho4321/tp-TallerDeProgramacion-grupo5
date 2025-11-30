@@ -235,3 +235,27 @@ bool GameConnection::selectCar(const std::string& carType) {
         return false;
     }
 }
+
+bool GameConnection::isConnected() const {
+    return connected_;
+}
+
+bool GameConnection::isStarted() const {
+    return started_;
+}
+
+std::string GameConnection::getAddress() const {
+    return address_;
+}
+
+std::string GameConnection::getPort() const {
+    return port_;
+}
+
+uint32_t GameConnection::getGameId() const {
+    return gameId_;
+}
+
+uint32_t GameConnection::getPlayerId() const {
+    return playerId_;
+}

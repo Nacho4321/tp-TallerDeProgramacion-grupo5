@@ -28,7 +28,6 @@ public:
     bool checkGameStarted();
     bool selectCar(const std::string& carType);
     
-    // getters
     bool isConnected() const;
     std::string getAddress() const;
     std::string getPort() const;

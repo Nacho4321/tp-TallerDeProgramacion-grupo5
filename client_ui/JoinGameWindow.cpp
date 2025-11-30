@@ -160,3 +160,18 @@ void JoinGameWindow::updateJoinButtonState() {
     ui->joinButton->setEnabled(selectedGameId_ >= 0);
 }
 
+int JoinGameWindow::getSelectedGameId() const {
+    return selectedGameId_;
+}
+
+bool JoinGameWindow::wasGameStarted() const {
+    return gameStarted_;
+}
+
+uint32_t JoinGameWindow::getPlayerId() const {
+    return playerId_;
+}
+
+QString JoinGameWindow::getSelectedGameName() const {
+    return selectedGameName_;
+}

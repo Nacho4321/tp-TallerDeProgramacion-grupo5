@@ -17,7 +17,7 @@ NewGameWindow::NewGameWindow(std::shared_ptr<LobbyClient> lobby, QWidget* parent
     ,playerId_(0)
 {
     ui->setupUi(this);
-    ui->gameNameLineEdit->setText("Lobby");
+    ui->gameNameLineEdit->setText("Name...");
     ui->maxPlayersSpinBox->setMinimum(1);
     ui->maxPlayersSpinBox->setMaximum(8);
     ui->maxPlayersSpinBox->setValue(2);
@@ -95,4 +95,16 @@ void NewGameWindow::onCreate() {
 
 void NewGameWindow::onBack() { 
     reject(); 
+}
+
+bool NewGameWindow::wasGameStarted() const {
+    return gameStarted_;
+}
+
+uint32_t NewGameWindow::getGameId() const {
+    return gameId_;
+}
+
+uint32_t NewGameWindow::getPlayerId() const {
+    return playerId_;
 }

@@ -51,18 +51,17 @@ public:
     bool startGame();
     bool checkGameStarted();
     std::vector<ServerMessage::GameSummary> listGames();
-    
+
     bool selectCar(const std::string& carType);
     
-    bool isConnected() const { return connected_; }
-    bool isStarted() const { return started_; }
+    bool isConnected() const;
+    bool isStarted() const;
     
-    std::string getAddress() const { return address_; }
-    std::string getPort() const { return port_; }
-    
-    uint32_t getGameId() const { return gameId_; }
-    uint32_t getPlayerId() const { return playerId_; }
-    
+    std::string getAddress() const;
+    std::string getPort() const;
+    uint32_t getGameId() const;
+    uint32_t getPlayerId() const;
+
     GameClientHandler* getHandler() { return handler_.get(); }
 };
 

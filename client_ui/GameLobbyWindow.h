@@ -23,11 +23,11 @@ public:
                              QWidget* parent = nullptr);
     ~GameLobbyWindow();
     
-    bool wasGameStarted() const { return gameStarted_; }
-    bool wasForceClosed() const { return forceClosed_; }
+    bool wasGameStarted() const;
+    bool wasForceClosed() const;
     
-    uint32_t getGameId() const { return gameId_; }
-    uint32_t getPlayerId() const { return playerId_; }
+    uint32_t getGameId() const;
+    uint32_t getPlayerId() const;
 
 signals:
     void gameStartedSignal();

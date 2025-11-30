@@ -109,3 +109,19 @@ void GameLobbyWindow::closeEvent(QCloseEvent* event) {
     event->accept();
     reject();
 }
+
+bool GameLobbyWindow::wasGameStarted() const {
+    return gameStarted_;
+}
+
+bool GameLobbyWindow::wasForceClosed() const {
+    return forceClosed_;
+}
+
+uint32_t GameLobbyWindow::getGameId() const {
+    return gameId_;
+}
+
+uint32_t GameLobbyWindow::getPlayerId() const {
+    return playerId_;
+}

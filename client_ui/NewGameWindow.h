@@ -16,10 +16,10 @@ public:
     explicit NewGameWindow(std::shared_ptr<LobbyClient> lobby, QWidget* parent = nullptr);
     ~NewGameWindow();
     
-    bool wasGameStarted() const { return gameStarted_; }
-    
-    uint32_t getGameId() const { return gameId_; }
-    uint32_t getPlayerId() const { return playerId_; }
+    bool wasGameStarted() const;
+
+    uint32_t getGameId() const;
+    uint32_t getPlayerId() const;
 
 private slots:
     void onCreate();
