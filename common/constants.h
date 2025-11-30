@@ -85,6 +85,18 @@ const std::string LEAVE_GAME_STR = "leave_game";   // NOLINT
 #define LIMOUSINE_CAR "limousine_car"
 #define DEFAULTS "defaults"
 
+constexpr int CAR_TYPES_COUNT = 7;
+
+inline const char* const CAR_TYPES[] = {
+    GREEN_CAR,        
+    RED_JEEP_CAR,    
+    RED_SPORTS_CAR, 
+    LIGHT_BLUE_CAR, 
+    RED_SQUARED_CAR, 
+    PURPLE_TRUCK,   
+    LIMOUSINE_CAR   
+};
+
 // Constantes para parseo del JSON del mapa
 #define LAYERS_STR "layers"
 #define TYPE_STR "type"

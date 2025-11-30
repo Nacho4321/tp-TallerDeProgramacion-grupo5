@@ -2,6 +2,7 @@
 #include "ui_JoinGameWindow.h"
 #include "GameLobbyWindow.h"
 #include "GameLauncher.h"
+#include "CarSelectionDialog.h"
 
 #include <QMessageBox>
 #include <iostream>
@@ -104,6 +105,12 @@ void JoinGameWindow::onJoin() {
     std::cout << "[JoinGameWindow] Joined game successfully. player_id=" << playerId_ << std::endl;
     
     this->hide();
+    
+    CarSelectionDialog carDialog(this);
+    if (carDialog.exec() == QDialog::Accepted) {
+        std::string selectedCar = carDialog.getSelectedCarType();
+        lobbyClient_->selectCar(selectedCar);
+    }
     
     GameLobbyWindow lobbyWindow(lobbyClient_, selectedGameName_, 
                                  static_cast<uint32_t>(selectedGameId_), 

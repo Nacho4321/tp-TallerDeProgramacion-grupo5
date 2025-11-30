@@ -26,6 +26,7 @@ public:
     bool startGame();
     void leaveGame();
     bool checkGameStarted();
+    bool selectCar(const std::string& carType);
     
     // getters
     bool isConnected() const;

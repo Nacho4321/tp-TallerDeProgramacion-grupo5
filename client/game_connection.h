@@ -52,6 +52,8 @@ public:
     bool checkGameStarted();
     std::vector<ServerMessage::GameSummary> listGames();
     
+    bool selectCar(const std::string& carType);
+    
     bool isConnected() const { return connected_; }
     bool isStarted() const { return started_; }
     

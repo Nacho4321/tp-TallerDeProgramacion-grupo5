@@ -220,3 +220,18 @@ std::vector<ServerMessage::GameSummary> GameConnection::listGames() {
         return games;
     }
 }
+
+bool GameConnection::selectCar(const std::string& carType) {
+    if (!connected_ || !handler_ || !started_) {
+        std::cerr << "[GameConnection] No conectado, no se puede seleccionar auto" << std::endl;
+        return false;
+    }
+    
+    try {
+        std::string cmd = std::string(CHANGE_CAR_STR) + " " + carType;
+        handler_->send(cmd);
+        return true;
+    } catch (const std::exception& e) {
+        return false;
+    }
+}

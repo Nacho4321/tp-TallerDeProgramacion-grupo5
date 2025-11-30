@@ -83,6 +83,16 @@ bool LobbyClient::checkGameStarted() {
 }
 
 
+bool LobbyClient::selectCar(const std::string& carType) {
+    if (!connection_ || !connection_->isConnected()) {
+        std::cerr << "[LobbyClient] No conectado, no se pudo seleccionar auto" << std::endl;
+        return false;
+    }
+    
+    return connection_->selectCar(carType);
+}
+
+
 bool LobbyClient::isConnected() const {
     return connection_ && connection_->isConnected();
 }

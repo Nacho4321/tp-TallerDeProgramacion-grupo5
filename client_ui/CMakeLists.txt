@@ -9,6 +9,7 @@ target_sources(taller_client_ui
     GameLobbyWindow.cpp
     GameLauncher.cpp
     LobbyClient.cpp
+    CarSelectionDialog.cpp
 
     # Designer
     ui/MainWindow.ui
@@ -16,6 +17,7 @@ target_sources(taller_client_ui
     ui/NewGameWindow.ui
     ui/JoinGameWindow.ui
     ui/GameLobbyWindow.ui
+    ui/CarSelectionDialog.ui
 
     # Recursos
     resources.qrc
@@ -28,6 +30,7 @@ target_sources(taller_client_ui
     GameLobbyWindow.h
     GameLauncher.h
     LobbyClient.h
+    CarSelectionDialog.h
     )
 
 target_sources(taller_client_ui PRIVATE

@@ -2,6 +2,7 @@
 #include "ui_NewGameWindow.h"
 #include "GameLobbyWindow.h"
 #include "GameLauncher.h"
+#include "CarSelectionDialog.h"
 
 #include <QMessageBox>
 #include <iostream>
@@ -64,6 +65,12 @@ void NewGameWindow::onCreate() {
               << " player_id=" << playerId_ << std::endl;
     
     this->hide();
+    
+    CarSelectionDialog carDialog(this);
+    if (carDialog.exec() == QDialog::Accepted) {
+        std::string selectedCar = carDialog.getSelectedCarType();
+        lobbyClient_->selectCar(selectedCar);
+    }
     
     GameLobbyWindow lobbyWindow(lobbyClient_, gameName, gameId_, playerId_, true, this);
     int result = lobbyWindow.exec();
