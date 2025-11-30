@@ -47,6 +47,8 @@ GameRenderer::GameRenderer(const char *windowTitle, int windowWidth, int windowH
 
     audioManager->startCarEngine(-1, 0, 0, 0, 0, true);
 
+    resultsScreen = std::make_unique<ResultsScreen>(renderer, logicalWidth, logicalHeight);
+
     std::ifstream file(tiledJsonPath);
     nlohmann::json data;
     file >> data;
@@ -82,7 +84,9 @@ void GameRenderer::updateMainCar(const CarPosition &position, bool collisionFlag
     {
         mainCar->startFlash();
 
-        audioManager->playCollisionSound(position.x, position.y, position.x, position.y);
+        if (!resultsScreen->isVisible()) {
+            audioManager->playCollisionSound(position.x, position.y, position.x, position.y);
+        }
     }
 }
 
@@ -106,7 +110,7 @@ std::set<int> GameRenderer::computeNearestCars(
 
     for (const auto &[id, data] : positions)
     {
-        if (id < 0) continue; // skip NPCs
+        if (id < 0) continue; 
         float dx = data.first.x - mainPos.x;
         float dy = data.first.y - mainPos.y;
         float dist = std::sqrt(dx * dx + dy * dy);
@@ -148,7 +152,7 @@ void GameRenderer::updateOrCreateCars(
                     it->second.startFlash();
                 }
 
-                if (audioManager)
+                if (audioManager && !resultsScreen->isVisible())
                 {
                     audioManager->playCollisionSound(pos.x, pos.y, mainPos.x, mainPos.y);
                 }
@@ -175,7 +179,7 @@ void GameRenderer::updateOrCreateCars(
                     otherCars[id].startFlash();
                 }
 
-                if (audioManager)
+                if (audioManager && !resultsScreen->isVisible())
                 {
                     audioManager->playCollisionSound(pos.x, pos.y, mainPos.x, mainPos.y);
                 }
@@ -246,9 +250,6 @@ void GameRenderer::render(const CarPosition &mainCarPos, int mainCarTypeId, cons
     renderer.Clear();
     renderBackground();
     
-    renderCheckpoints();
-    renderUpperLayer();
-
     std::vector<Car> on_bridge_cars;
     if (mainCar->getPosition().on_bridge)
     {
@@ -272,11 +273,26 @@ void GameRenderer::render(const CarPosition &mainCarPos, int mainCarTypeId, cons
     }
 
     renderUpperLayer();
+
     for (auto &car : on_bridge_cars)
     {
         renderCar(car);
     }
+
+    renderCheckpoints();
+
     minimap.render(renderer, *mainCar, otherCars, next_checkpoints, logicalWidth, logicalHeight);
+
+    if (resultsScreen->isVisible()) {
+        resultsScreen->render(renderer);
+
+        if (resultsScreen->shouldAutoDismiss()) {
+            resultsScreen->hide();
+        }
+    }
+
+    resultsScreen->updateCountdown();       
+    resultsScreen->renderCountDown(renderer);  
 
     renderer.Present();
 }
@@ -375,4 +391,21 @@ void GameRenderer::renderUpperLayer()
             Rect((int)rect.x, (int)rect.y, (int)rect.w, (int)rect.h),
             Rect((int)(rect.x - camPos.x), (int)(rect.y - camPos.y), (int)rect.w, (int)rect.h));
     }
+}
+
+void GameRenderer::showResults(const std::vector<ServerMessage::PlayerRaceTime>& raceTimes,
+                                const std::vector<ServerMessage::PlayerTotalTime>& totalTimes,
+                                int32_t mainPlayerId)
+{
+    resultsScreen->show(raceTimes, totalTimes, mainPlayerId);
+}
+
+void GameRenderer::hideResults()
+{
+    resultsScreen->hide();
+}
+
+void GameRenderer::startCountDown()
+{
+    resultsScreen->startCountdown(10);
 }

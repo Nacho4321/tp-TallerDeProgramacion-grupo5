@@ -167,6 +167,10 @@ if(TALLER_CLIENT OR TALLER_EDITOR)
         ${libsdl2pp_SOURCE_DIR}/SDL2pp/Chunk.cc
     )
 
+    target_sources(SDL2pp PRIVATE
+        ${libsdl2pp_SOURCE_DIR}/SDL2pp/Font.cc
+    )
+
     target_link_libraries(SDL2pp PUBLIC SDL2_image::SDL2_image SDL2_mixer::SDL2_mixer SDL2_ttf::SDL2_ttf)
 endif()
 

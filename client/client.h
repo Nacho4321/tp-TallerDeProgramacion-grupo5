@@ -44,6 +44,7 @@ private:
     // IDs asignados por el servidor para identificar mi partida/jugador actuales
     uint32_t my_game_id = 0;   // 0 => no asignado aún
     int32_t my_player_id = -1; // -1 => no asignado aún
+    int32_t original_player_id = -1; 
 
     // Configuración de inicio
     StartMode start_mode;
