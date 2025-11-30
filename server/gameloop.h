@@ -192,8 +192,6 @@ public:
     void add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_outbox);
     void remove_player(int client_id);
     size_t get_player_count() const;
-    
-    // Retorna true si la partida está en estado LOBBY (se puede unir)
     bool is_joinable() const;
 };
 #endif

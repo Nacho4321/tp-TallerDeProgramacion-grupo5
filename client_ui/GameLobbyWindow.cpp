@@ -42,7 +42,6 @@ GameLobbyWindow::~GameLobbyWindow() {
 void GameLobbyWindow::updateUI() {
     ui->gameNameLabel->setText(gameName_);
     
-    // Ocultar los labels de IDs - no son necesarios para el usuario
     ui->gameIdLabel->hide();
     ui->playerIdLabel->hide();
     
@@ -50,7 +49,7 @@ void GameLobbyWindow::updateUI() {
         setWindowTitle("Game Lobby - Host");
         ui->roleLabel->setText("You are the HOST\nPress Start when ready!");
         ui->startGameButton->setEnabled(true);
-        ui->startGameButton->setText("▶ Start Game");
+        ui->startGameButton->setText("Start Game");
     } else {
         setWindowTitle("Game Lobby");
         ui->roleLabel->setText("Waiting for host to start the race...");
@@ -97,14 +96,12 @@ void GameLobbyWindow::onPollTimer() {
 }
 
 void GameLobbyWindow::closeEvent(QCloseEvent* event) {
-    // Si el usuario cierra con X, marcamos que fue cerrado forzosamente
     if (pollTimer_) {
         pollTimer_->stop();
     }
     
     forceClosed_ = true;
     
-    // Desconectar del servidor para limpiar recursos
     if (lobbyClient_) {
         lobbyClient_->leaveGame();
     }

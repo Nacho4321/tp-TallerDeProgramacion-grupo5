@@ -36,8 +36,6 @@ std::vector<ServerMessage::GameSummary> GameMonitor::list_games() {
     for (auto &entry : games) {
         int gid = entry.first;
         auto &loopPtr = entry.second;
-        
-        // Solo mostrar partidas que estén en estado LOBBY (joinable)
         if (!loopPtr || !loopPtr->is_joinable()) {
             continue;
         }

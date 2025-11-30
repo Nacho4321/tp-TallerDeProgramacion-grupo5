@@ -121,8 +121,6 @@ void JoinGameWindow::onJoin() {
         GameLauncher::launchWithConnection(std::move(connection));
         accept();
     } else if (lobbyWindow.wasForceClosed()) {
-        // El usuario cerró el lobby con X - cerrar toda la aplicación
-        std::cout << "[JoinGameWindow] Lobby cerrado con X, cerrando aplicación" << std::endl;
         QApplication::quit();
     } else {
         gameStarted_ = false;
