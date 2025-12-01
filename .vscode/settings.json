@@ -76,6 +76,7 @@
         "stdfloat": "cpp",
         "csignal": "cpp",
         "valarray": "cpp",
-        "ranges": "cpp"
+        "ranges": "cpp",
+        "cerrno": "cpp"
     }
 }

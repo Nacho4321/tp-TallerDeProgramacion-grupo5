@@ -3,7 +3,8 @@
 #include <iostream>
 #include <utility>
 #include <netinet/in.h>
-
+#include <cerrno>
+#include <cstring>
 
 Protocol::Protocol(Socket&& socket) noexcept: skt(std::move(socket)), buffer() {
     init_handlers();
@@ -98,7 +99,16 @@ ClientMessage Protocol::receiveClientMessage() {
 bool Protocol::receiveAnyServerPacket(ServerMessage& outServer,
                                       GameJoinedResponse& outJoined,
                                       uint8_t& outOpcode) {
-    if (skt.recvall(&outOpcode, sizeof(outOpcode)) <= 0) return false;
+    ssize_t recv_result = skt.recvall(&outOpcode, sizeof(outOpcode));
+    if (recv_result <= 0) {
+        if (recv_result == 0) {
+            std::cout << "[Protocol] receiveAnyServerPacket: conexión cerrada por el servidor (recv=0)" << std::endl;
+        } else {
+            std::cout << "[Protocol] receiveAnyServerPacket: error en recv, errno=" << errno 
+                      << " (" << strerror(errno) << ")" << std::endl;
+        }
+        return false;
+    }
     if (outOpcode == UPDATE_POSITIONS) {
         outServer = receivePositionsUpdate();
         return true;
@@ -127,13 +137,67 @@ bool Protocol::receiveAnyServerPacket(ServerMessage& outServer,
         outServer = receiveTotalTimes();
         return true;
     }
-    return false;
+    std::cout << "[Protocol] receiveAnyServerPacket: opcode desconocido " << int(outOpcode) << std::endl;
+     return false;
 }
 
 void Protocol::sendMessage(ServerMessage& out) {
+    switch (out.opcode) {
+
+    case CREATE_GAME:
+        std::cout << "Sending CREATE_GAME\n";
+        break;
+
+    case JOIN_GAME:
+        std::cout << "Sending JOIN_GAME\n";
+        break;
+
+    case GAME_JOINED:
+        std::cout << "Sending GAME_JOINED: game_id=" << out.game_id
+                  << " player_id=" << out.player_id
+                  << " success=" << out.success << "\n";
+        break;
+
+    case GET_GAMES:
+        std::cout << "Sending GET_GAMES\n";
+        break;
+
+    case GAMES_LIST:
+        std::cout << "Sending GAMES_LIST (" << out.games.size() << " games)\n";
+        break;
+
+    case START_GAME:
+        std::cout << "Sending START_GAME\n";
+        break;
+
+    case GAME_STARTED:
+        std::cout << "Sending GAME_STARTED\n";
+        break;
+
+    case STARTING_COUNTDOWN:
+        std::cout << "Sending STARTING_COUNTDOWN\n";
+        break;
+
+    case RACE_TIMES:
+        std::cout << "Sending RACE_TIMES (" << out.race_times.size() << " results)\n";
+        break;
+
+    case TOTAL_TIMES:
+        std::cout << "Sending TOTAL_TIMES (" << out.total_times.size() << " totals)\n";
+        break;
+    case UPDATE_POSITIONS:
+        break;
+    default:
+        std::cout << "Sending UNKNOWN OPCODE: 0x"
+                  << std::hex << (int)out.opcode << std::dec << "\n";
+        break;
+    }
+
+    // Encode and send
     auto msg = encodeServerMessage(out);
     skt.sendall(msg.data(), msg.size());
 }
+
 
 void Protocol::sendMessage(ClientMessage& out) {
     auto msg = encodeClientMessage(out);
