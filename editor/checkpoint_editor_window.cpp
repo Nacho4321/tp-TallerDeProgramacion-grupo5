@@ -131,7 +131,6 @@ void CheckpointEditorWindow::setupSidePanel() {
     
     mainLayout->addWidget(checkpointsGroup);
 
-    // ===== Sección: Zoom =====
     QGroupBox* zoomGroup = new QGroupBox("Zoom", panelWidget);
     QVBoxLayout* zoomLayout = new QVBoxLayout(zoomGroup);
     
@@ -165,7 +164,6 @@ void CheckpointEditorWindow::setupSidePanel() {
     QLabel* helpLabel = new QLabel(
         "• <b>Left Click:</b> Add checkpoint<br>"
         "• <b>Right Click + Drag:</b> Move map<br>"
-        "• <b>Mouse Wheel:</b> Zoom<br>"
         "• <b>Green (S):</b> Start<br>"
         "• <b>Red (F):</b> Finish<br>"
         "• <b>Yellow:</b> Intermediate checkpoints",
@@ -214,37 +212,10 @@ void CheckpointEditorWindow::loadMapImage() {
 }
 
 void CheckpointEditorWindow::switchToRace(RaceId race) {
-    if (race == currentRace) {
-        return;
-    }
-    
-    if (hasUnsavedChanges && !confirmDiscardChanges()) {
-        raceSelector->blockSignals(true);
-        raceSelector->setCurrentIndex(static_cast<int>(currentRace) - 1);
-        raceSelector->blockSignals(false);
-        return;
-    }
-    
+    if (race == currentRace) return;
     currentRace = race;
     loadCheckpoints();
     updateInfoLabels();
-}
-
-bool CheckpointEditorWindow::confirmDiscardChanges() {
-    QMessageBox::StandardButton reply = QMessageBox::question(
-        this,
-        "Unsaved Changes",
-        "You have unsaved changes. Do you want to save before switching?",
-        QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel
-    );
-    
-    if (reply == QMessageBox::Save) {
-        saveCheckpoints();
-        return true;
-    } else if (reply == QMessageBox::Discard) {
-        return true;
-    }
-    return false; 
 }
 
 std::string CheckpointEditorWindow::getCurrentCheckpointsPath() const {
@@ -394,17 +365,6 @@ void CheckpointEditorWindow::removeSelectedCheckpoint() {
     int currentRow = checkpointList->currentRow();
     
     if (currentRow < 0 || currentRow >= static_cast<int>(checkpointItems.size())) {
-        QMessageBox::information(this, "Delete", "Please select a checkpoint to delete.");
-        return;
-    }
-    
-    QMessageBox::StandardButton reply = QMessageBox::question(
-        this, "Confirm Delete",
-        QString("Delete checkpoint %1?").arg(currentRow + 1),
-        QMessageBox::Yes | QMessageBox::No
-    );
-    
-    if (reply != QMessageBox::Yes) {
         return;
     }
     
@@ -514,8 +474,7 @@ void CheckpointEditorWindow::refreshRouteLine() {
 
 void CheckpointEditorWindow::updateInfoLabels() {
     if (infoLabel) {
-        QString status = hasUnsavedChanges ? " *" : "";
-        infoLabel->setText(QString("Total checkpoints: %1%2").arg(checkpoints.size()).arg(status));
+        infoLabel->setText(QString("Total checkpoints: %1").arg(checkpoints.size()));
     }
     
     if (currentFileLabel) {
@@ -523,17 +482,12 @@ void CheckpointEditorWindow::updateInfoLabels() {
         currentFileLabel->setText(QString("File: %1").arg(QString::fromStdString(path)));
     }
     
-    QString title = QString("Checkpoint Editor - %1")
-        .arg(QString::fromStdString(EditorConfig::getRaceName(currentRace)));
-    if (hasUnsavedChanges) {
-        title += " *";
-    }
-    setWindowTitle(title);
+    setWindowTitle(QString("Checkpoint Editor - %1")
+        .arg(QString::fromStdString(EditorConfig::getRaceName(currentRace))));
 }
 
 void CheckpointEditorWindow::markAsModified() {
     hasUnsavedChanges = true;
-    updateInfoLabels();
 }
 
 void CheckpointEditorWindow::zoomIn() {
@@ -546,27 +500,6 @@ void CheckpointEditorWindow::zoomOut() {
 
 void CheckpointEditorWindow::resetZoom() {
     mapView->resetTransform();
-}
-
-void CheckpointEditorWindow::centerOnCheckpoints() {
-    if (checkpoints.empty()) return;
-    
-    float minX = checkpoints[0].x, maxX = checkpoints[0].x;
-    float minY = checkpoints[0].y, maxY = checkpoints[0].y;
-    
-    for (const auto& cp : checkpoints) {
-        minX = std::min(minX, cp.x);
-        maxX = std::max(maxX, cp.x);
-        minY = std::min(minY, cp.y);
-        maxY = std::max(maxY, cp.y);
-    }
-    
-    constexpr float margin = 200.0f;
-    QRectF rect(minX - margin, minY - margin, 
-                (maxX - minX) + 2 * margin, 
-                (maxY - minY) + 2 * margin);
-    
-    mapView->fitInView(rect, Qt::KeepAspectRatio);
 }
 
 bool CheckpointEditorWindow::eventFilter(QObject* obj, QEvent* event) {
@@ -620,34 +553,11 @@ bool CheckpointEditorWindow::eventFilter(QObject* obj, QEvent* event) {
 }
 
 void CheckpointEditorWindow::wheelEvent(QWheelEvent* event) {
-    if (event->angleDelta().y() > 0) {
-        zoomIn();
-    } else if (event->angleDelta().y() < 0) {
-        zoomOut();
-    }
-    event->accept();
+    QMainWindow::wheelEvent(event);
 }
 
 void CheckpointEditorWindow::closeEvent(QCloseEvent* event) {
-    if (hasUnsavedChanges) {
-        QMessageBox::StandardButton reply = QMessageBox::question(
-            this,
-            "Unsaved Changes",
-            "You have unsaved changes. Do you want to save before closing?",
-            QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel
-        );
-        
-        if (reply == QMessageBox::Save) {
-            saveCheckpoints();
-            event->accept();
-        } else if (reply == QMessageBox::Discard) {
-            event->accept();
-        } else {
-            event->ignore();
-        }
-    } else {
-        event->accept();
-    }
+    event->accept();
 }
 
 void CheckpointEditorWindow::onRaceSelectionChanged(int index) {
@@ -664,18 +574,6 @@ void CheckpointEditorWindow::onSaveClicked() {
 }
 
 void CheckpointEditorWindow::onLoadClicked() {
-    if (hasUnsavedChanges) {
-        QMessageBox::StandardButton reply = QMessageBox::question(
-            this, "Reload",
-            "You have unsaved changes. Reload from file?",
-            QMessageBox::Yes | QMessageBox::No
-        );
-        
-        if (reply != QMessageBox::Yes) {
-            return;
-        }
-    }
-    
     loadCheckpoints();
 }
 
@@ -701,8 +599,4 @@ void CheckpointEditorWindow::onMoveDownClicked() {
     
     swapCheckpoints(currentRow, currentRow + 1);
     checkpointList->setCurrentRow(currentRow + 1);
-}
-
-void CheckpointEditorWindow::onCheckpointListItemChanged(QListWidgetItem* item) {
-    Q_UNUSED(item);
 }

@@ -33,36 +33,33 @@ protected:
     void closeEvent(QCloseEvent* event) override;
 
 private:
+    // UI Components
     QGraphicsScene* mapScene;
     QGraphicsView* mapView;
     QGraphicsPixmapItem* backgroundItem;
     QGraphicsPathItem* routeLine;
     QDockWidget* sidePanel;
     QComboBox* raceSelector;
-    
     QListWidget* checkpointList;
     QPushButton* moveUpButton;
     QPushButton* moveDownButton;
     QPushButton* deleteButton;
-    
     QPushButton* zoomInButton;
     QPushButton* zoomOutButton;
     QPushButton* resetZoomButton;
-
     QPushButton* saveButton;
     QPushButton* loadButton;
-    
     QLabel* infoLabel;
     QLabel* currentFileLabel;
 
     std::vector<CheckpointData> checkpoints;
     std::vector<CheckpointItem*> checkpointItems;
-    
     std::string mapImagePath;
     RaceId currentRace;
     bool hasUnsavedChanges;
     bool isDragging;
     QPoint lastDragPos;
+
     void setupUI();
     void setupMapView();
     void setupSidePanel();
@@ -70,13 +67,11 @@ private:
     void loadMapImage();
 
     void switchToRace(RaceId race);
-    bool confirmDiscardChanges();
     std::string getCurrentCheckpointsPath() const;
 
     void loadCheckpoints();
     void saveCheckpoints();
     void clearAllCheckpoints();
-
     void addCheckpointAt(float x, float y);
     void removeSelectedCheckpoint();
     void swapCheckpoints(int indexA, int indexB);
@@ -90,7 +85,6 @@ private:
     void zoomIn();
     void zoomOut();
     void resetZoom();
-    void centerOnCheckpoints();
 
 private slots:
     void onRaceSelectionChanged(int index);
@@ -100,7 +94,6 @@ private slots:
     void onDeleteClicked();
     void onMoveUpClicked();
     void onMoveDownClicked();
-    void onCheckpointListItemChanged(QListWidgetItem* item);
 };
 
 #endif
