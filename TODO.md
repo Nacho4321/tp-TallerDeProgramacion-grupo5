@@ -1,0 +1,17 @@
+- Refactorizar gameloop
+- Limpieza de prints
+- Limpieza de comentarios
+- Patron dispatch
+- Cheats
+- Docu (player y programador)
+- Video
+- Instalador
+- Eleccion de mapas
+- Editor (mapas)
+- Refactorizar client
+- Sonido de frenado
+- Editor (spawnpoints)
+- SDL de taller
+- Logica en .h
+- Seleccion de autos (stats)
+- Sacar broadcast en lobby
