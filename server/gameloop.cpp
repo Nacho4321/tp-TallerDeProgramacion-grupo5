@@ -128,6 +128,20 @@ void GameLoop::process_playing_state(float &acum)
         std::lock_guard<std::mutex> lk(players_map_mutex);
         for (auto &[id, player_data] : players)
         {
+            // Procesar cheat de completar ronda pendiente
+            if (player_data.pending_race_complete && !player_data.race_finished)
+            {
+                complete_player_race(player_data, id);
+                player_data.pending_race_complete = false;
+            }
+            
+            // Procesar cheat de descalificación pendiente
+            if (player_data.pending_disqualification && !player_data.is_dead)
+            {
+                disqualify_player(player_data, id);
+                player_data.pending_disqualification = false;
+            }
+            
             if (player_data.mark_body_for_removal && player_data.body)
             {
                 if (world.IsLocked())
@@ -459,18 +473,20 @@ void GameLoop::complete_player_race(PlayerData &player_data, int player_id)
     auto lap_end_time = std::chrono::steady_clock::now();
     auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(lap_end_time - player_data.lap_start_time).count();
 
-    player_data.laps_completed += 1;
     player_data.race_finished = true;
     player_data.disqualified = false;
 
     // Registrar tiempo de la ronda actual (limitar a 3 rondas)
-    if (static_cast<int>(player_data.round_times_ms.size()) < 3) {
+    if (static_cast<int>(player_data.round_times_ms.size()) < TOTAL_ROUNDS) {
         player_data.round_times_ms.push_back(static_cast<uint32_t>(elapsed_ms));
     } else {
-        player_data.round_times_ms[player_data.rounds_completed % 3] = static_cast<uint32_t>(elapsed_ms);
+        player_data.round_times_ms[player_data.rounds_completed % TOTAL_ROUNDS] = static_cast<uint32_t>(elapsed_ms);
     }
-    player_data.rounds_completed = std::min(player_data.rounds_completed + 1, 3);
+    player_data.rounds_completed = std::min(player_data.rounds_completed + 1, TOTAL_ROUNDS);
     player_data.total_time_ms += static_cast<uint32_t>(elapsed_ms);
+    
+    // Activar inmortalidad al terminar la ronda (para que no muera mientras espera)
+    player_data.god_mode = true;
 
     int minutes = static_cast<int>(elapsed_ms / 60000);
     float seconds = static_cast<float>((elapsed_ms % 60000)) / 1000.0f;
@@ -478,10 +494,38 @@ void GameLoop::complete_player_race(PlayerData &player_data, int player_id)
     std::cout << "\n========================================" << std::endl;
     std::cout << "   PLAYER " << player_id << " FINISHED THE RACE!" << std::endl;
     std::cout << "   Time: " << minutes << ":" << std::fixed << std::setprecision(3) << seconds << std::endl;
-    std::cout << "   Waiting for other players..." << std::endl;
+    std::cout << "   Waiting for other players... (GOD MODE ON)" << std::endl;
     std::cout << "========================================\n"
               << std::endl;
 
+    check_race_completion();
+}
+
+void GameLoop::disqualify_player(PlayerData &player_data, int player_id)
+{
+    // Marcar como muerto y descalificado
+    player_data.car.hp = 0.0f;
+    player_data.is_dead = true;
+    player_data.race_finished = true;
+    player_data.disqualified = true;
+    player_data.god_mode = false;  // Desactivar god mode
+    
+    // Asignar tiempo de descalificación: 10 minutos
+    uint32_t dq_ms = 10u * 60u * 1000u;
+    if (static_cast<int>(player_data.round_times_ms.size()) < TOTAL_ROUNDS) {
+        player_data.round_times_ms.push_back(dq_ms);
+    } else {
+        player_data.round_times_ms[player_data.rounds_completed % TOTAL_ROUNDS] = dq_ms;
+    }
+    player_data.rounds_completed = std::min(player_data.rounds_completed + 1, TOTAL_ROUNDS);
+    player_data.total_time_ms += dq_ms;
+    
+    // Marcar el body para destrucción
+    player_data.mark_body_for_removal = true;
+    player_data.collision_this_frame = true;
+    
+    std::cout << "[Death] Player " << player_id << " DISQUALIFIED! (HP=0, 10min penalty)" << std::endl;
+    
     check_race_completion();
 }
 
@@ -611,7 +655,7 @@ void GameLoop::handle_car_collision(b2Fixture *fixture_a, b2Fixture *fixture_b)
                           << " | Player " << player_a_id 
                           << " | Impact: " << impact_velocity << " m/s" << std::endl;
 
-                apply_collision_damage(it_a->second, impact_velocity, it_a->second.car.car_name, frontal_multiplier);
+                apply_collision_damage(it_a->second, player_a_id, impact_velocity, it_a->second.car.car_name, frontal_multiplier);
             }
         }
     }
@@ -651,13 +695,13 @@ void GameLoop::handle_car_collision(b2Fixture *fixture_a, b2Fixture *fixture_b)
                               << " | Impact: " << impact_velocity << " m/s" << std::endl;
                 }
 
-                apply_collision_damage(it_b->second, impact_velocity, it_b->second.car.car_name, frontal_multiplier);
+                apply_collision_damage(it_b->second, player_b_id, impact_velocity, it_b->second.car.car_name, frontal_multiplier);
             }
         }
     }
 }
 
-void GameLoop::apply_collision_damage(PlayerData &player_data, float impact_velocity, const std::string &car_name, float frontal_multiplier)
+void GameLoop::apply_collision_damage(PlayerData &player_data, int player_id, float impact_velocity, const std::string &car_name, float frontal_multiplier)
 {
     if (player_data.is_dead)
     {
@@ -682,6 +726,13 @@ void GameLoop::apply_collision_damage(PlayerData &player_data, float impact_velo
         return;
     }
 
+    // God mode: no recibe daño
+    if (player_data.god_mode)
+    {
+        std::cout << "[Collision] Player has GOD MODE - damage ignored (" << damage << ")" << std::endl;
+        return;
+    }
+
     player_data.car.hp -= damage;
 
     player_data.collision_this_frame = true;
@@ -697,31 +748,9 @@ void GameLoop::apply_collision_damage(PlayerData &player_data, float impact_velo
                   << " m/s). HP remaining: " << player_data.car.hp << std::endl;
     }
 
-
     if (player_data.car.hp <= 0.0f)
     {
-        player_data.car.hp = 0.0f;
-        player_data.is_dead = true;
-        player_data.race_finished = true; // Player pierde
-        player_data.disqualified = true;
-        // Asignar tiempo de descalificación: 10 minutos
-        uint32_t dq_ms = 10u * 60u * 1000u;
-        if (static_cast<int>(player_data.round_times_ms.size()) < 3) {
-            player_data.round_times_ms.push_back(dq_ms);
-        } else {
-            player_data.round_times_ms[player_data.rounds_completed % 3] = dq_ms;
-        }
-        player_data.rounds_completed = std::min(player_data.rounds_completed + 1, 3);
-        player_data.total_time_ms += dq_ms;
-        
-        // Marcar el body para destrucción en lugar de solo detenerlo
-        player_data.mark_body_for_removal = true;
-        
-        player_data.collision_this_frame = true;  
-        
-        std::cout << "[Death] Player car '" << car_name << "' DESTROYED! Player has lost the race." << std::endl;
-
-        check_race_completion();
+        disqualify_player(player_data, player_id);
     }
 }
 
@@ -756,9 +785,9 @@ PlayerData GameLoop::create_default_player_data(int spawn_idx)
     player_data.car = CarInfo{GREEN_CAR, car_phys.max_speed, car_phys.max_acceleration, car_phys.max_hp, car_phys.collision_damage_multiplier, car_phys.torque};
     player_data.position = pos;
     player_data.next_checkpoint = 0;
-    player_data.laps_completed = 0;
     player_data.lap_start_time = std::chrono::steady_clock::now();
     player_data.race_finished = false;
+    player_data.god_mode = false;
 
     return player_data;
 }
@@ -884,9 +913,9 @@ void GameLoop::reset_players_for_race_start()
 
         player_data.lap_start_time = race_start_time;
         player_data.next_checkpoint = 0;
-        player_data.laps_completed = 0;
         player_data.race_finished = false;
         player_data.is_dead = false;
+        player_data.god_mode = false;  // Reset god mode para nueva ronda
         player_data.position.on_bridge = false;
         player_data.position.direction_x = not_horizontal;
         player_data.position.direction_y = not_vertical;
@@ -1064,9 +1093,9 @@ void GameLoop::reset_all_players_to_lobby()
         player_data.position = new_pos;
 
         player_data.next_checkpoint = 0;
-        player_data.laps_completed = 0;
         player_data.race_finished = false;
         player_data.is_dead = false;
+        player_data.god_mode = false;  // Reset god mode para nueva ronda
         player_data.lap_start_time = std::chrono::steady_clock::now();
         
         // Reseteo HP

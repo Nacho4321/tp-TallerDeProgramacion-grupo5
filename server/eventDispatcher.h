@@ -29,6 +29,11 @@ private:
     void upgrade_max_acceleration(Event &event);
     void upgrade_durability(Event &event);
     void upgrade_handling(Event &event);
+    // Cheats
+    void cheat_god_mode(Event &event);
+    void cheat_die(Event &event);
+    void cheat_skip_round(Event &event);
+    void cheat_full_upgrade(Event &event);
 
 public:
     EventDispatcher(std::mutex &map_mutex, std::unordered_map<int, PlayerData> &map) : players_map_mutex(map_mutex), players(map)

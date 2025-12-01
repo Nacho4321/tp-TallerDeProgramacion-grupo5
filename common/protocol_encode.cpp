@@ -24,6 +24,13 @@ std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage &msg
         opcode = UPGRADE_CAR;
         std::cout << "[Protocol(Client)] Encoding UPGRADE_CAR with upgrade_type=" << static_cast<int>(msg.upgrade_type) << std::endl;
     }
+    // Cheats - todos mapean al mismo opcode CHEAT_CMD
+    else if (cmd == CHEAT_GOD_MODE_STR || cmd == CHEAT_DIE_STR || 
+             cmd == CHEAT_SKIP_LAP_STR || cmd == CHEAT_FULL_UPGRADE_STR)
+    {
+        opcode = CHEAT_CMD;
+        std::cout << "[Protocol(Client)] Encoding CHEAT_CMD type=" << static_cast<int>(msg.cheat_type) << std::endl;
+    }
     else
     {
         // Búsqueda directa en el mapa
@@ -70,6 +77,10 @@ std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage &msg
     else if (opcode == UPGRADE_CAR)
     {
         buffer.push_back(static_cast<uint8_t>(msg.upgrade_type));
+    }
+    else if (opcode == CHEAT_CMD)
+    {
+        buffer.push_back(static_cast<uint8_t>(msg.cheat_type));
     }
     return buffer;
 }

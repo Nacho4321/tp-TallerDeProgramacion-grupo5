@@ -31,11 +31,9 @@ struct PlayerData
     Position position;
     // Indice del próximo checkpoint que el jugador debe pasar (empieza en 0)
     int next_checkpoint = 0;
-    // Cuántas vueltas completas (listas de checkpoints) el jugador ha completado
-    int laps_completed = 0;
-    // Tiempo de inicio de la vuelta actual
+    // Tiempo de inicio de la ronda actual
     std::chrono::steady_clock::time_point lap_start_time;
-    // Si el jugador ya completó la carrera (esperando a que otros terminen)
+    // Si el jugador ya completó la ronda actual (esperando a que otros terminen)
     bool race_finished = false;
     // Si el jugador murió (HP <= 0)
     bool is_dead = false;
@@ -54,5 +52,11 @@ struct PlayerData
     bool disqualified = false;
     // Flag de frenazo 
     bool is_stopping = false;
+    // Cheat: modo dios (vida infinita)
+    bool god_mode = false;
+    // Cheat: pendiente de descalificación (procesado por gameloop)
+    bool pending_disqualification = false;
+    // Cheat: pendiente de completar ronda (procesado por gameloop)
+    bool pending_race_complete = false;
 };
 #endif

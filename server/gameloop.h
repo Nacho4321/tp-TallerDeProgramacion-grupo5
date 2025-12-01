@@ -134,10 +134,11 @@ private:
                                        int &out_player_id, int &out_checkpoint_index);
     void handle_checkpoint_reached(PlayerData &player_data, int player_id, int checkpoint_index);
     void complete_player_race(PlayerData &player_data, int player_id);
+    void disqualify_player(PlayerData &player_data, int player_id);
     
     // Car collision damage system
     void handle_car_collision(b2Fixture *fixture_a, b2Fixture *fixture_b);
-    void apply_collision_damage(PlayerData &player_data, float impact_velocity, const std::string &car_name, float frontal_multiplier = 1.0f);
+    void apply_collision_damage(PlayerData &player_data, int player_id, float impact_velocity, const std::string &car_name, float frontal_multiplier = 1.0f);
 
     // Setup and initialization helpers
     void setup_world();

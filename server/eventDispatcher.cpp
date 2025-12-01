@@ -46,6 +46,15 @@ void EventDispatcher::init_handlers()
     { upgrade_handling(e); };  // HANDLING_IMPROVEMENT
     listeners[std::string(UPGRADE_CAR_STR) + " 3"] = [this](Event &e)
     { upgrade_durability(e); };  // DURABILITY_ENHANCEMENT
+    // Cheats handlers
+    listeners[CHEAT_GOD_MODE_STR] = [this](Event &e)
+    { cheat_god_mode(e); };
+    listeners[CHEAT_DIE_STR] = [this](Event &e)
+    { cheat_die(e); };
+    listeners[CHEAT_SKIP_LAP_STR] = [this](Event &e)
+    { cheat_skip_round(e); };
+    listeners[CHEAT_FULL_UPGRADE_STR] = [this](Event &e)
+    { cheat_full_upgrade(e); };
 }
 
 void EventDispatcher::move_up(Event &event)
@@ -303,4 +312,74 @@ void EventDispatcher::upgrade_handling(Event &event)
     std::cout << "[EventDispatcher] Player " << event.client_id << " handling upgraded to level " 
               << static_cast<int>(it->second.upgrades.handling) << ": " 
               << old_handling << " -> " << it->second.car.handling << std::endl;
+}
+
+// ============== CHEATS ==============
+void EventDispatcher::cheat_god_mode(Event &event)
+{
+    std::lock_guard<std::mutex> lock(players_map_mutex);
+    auto it = players.find(event.client_id);
+    if (it == players.end())
+        return;
+    
+    it->second.god_mode = !it->second.god_mode;
+    std::cout << "[CHEAT] Player " << event.client_id << " GOD MODE " 
+              << (it->second.god_mode ? "ENABLED" : "DISABLED") << std::endl;
+}
+
+void EventDispatcher::cheat_die(Event &event)
+{
+    std::lock_guard<std::mutex> lock(players_map_mutex);
+    auto it = players.find(event.client_id);
+    if (it == players.end())
+        return;
+    
+    // Marcar para descalificación - el gameloop lo procesará
+    it->second.pending_disqualification = true;
+    it->second.god_mode = false;  // Desactivar god mode
+    std::cout << "[CHEAT] Player " << event.client_id << " marked for INSTANT DIE (will be processed by gameloop)" << std::endl;
+}
+
+void EventDispatcher::cheat_skip_round(Event &event)
+{
+    std::lock_guard<std::mutex> lock(players_map_mutex);
+    auto it = players.find(event.client_id);
+    if (it == players.end())
+        return;
+    
+    // Marcar para completar ronda - el gameloop lo procesará
+    it->second.pending_race_complete = true;
+    std::cout << "[CHEAT] Player " << event.client_id << " marked for SKIP ROUND (will be processed by gameloop)" << std::endl;
+}
+
+void EventDispatcher::cheat_full_upgrade(Event &event)
+{
+    std::lock_guard<std::mutex> lock(players_map_mutex);
+    auto it = players.find(event.client_id);
+    if (it == players.end())
+        return;
+    
+    // Aplicar multiplicadores para todos los upgrades restantes
+    while (it->second.upgrades.speed < MAX_UPGRADES_PER_STAT) {
+        it->second.car.speed *= SPEED_UPGRADE_MULTIPLIER;
+        it->second.upgrades.speed++;
+    }
+    while (it->second.upgrades.acceleration < MAX_UPGRADES_PER_STAT) {
+        it->second.car.acceleration *= ACCELERATION_UPGRADE_MULTIPLIER;
+        it->second.upgrades.acceleration++;
+    }
+    while (it->second.upgrades.handling < MAX_UPGRADES_PER_STAT) {
+        it->second.car.handling *= HANDLING_UPGRADE_MULTIPLIER;
+        it->second.upgrades.handling++;
+    }
+    while (it->second.upgrades.durability < MAX_UPGRADES_PER_STAT) {
+        it->second.car.durability -= DURABILITY_UPGRADE_REDUCTION;
+        it->second.upgrades.durability++;
+    }
+    
+    std::cout << "[CHEAT] Player " << event.client_id << " FULL UPGRADE activated. Stats: "
+              << "speed=" << it->second.car.speed 
+              << " accel=" << it->second.car.acceleration
+              << " handling=" << it->second.car.handling
+              << " durability=" << it->second.car.durability << std::endl;
 }

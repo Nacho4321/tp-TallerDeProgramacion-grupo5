@@ -75,6 +75,20 @@ void GameClientSender::run() {
                     std::cout << "[Sender] UPGRADE_CAR sin argumento, cmd='" << client_msg.cmd << "'" << std::endl;
                 }
             }
+            // Parse cheats - mapear comando a CheatType
+            if (client_msg.cmd == CHEAT_GOD_MODE_STR) {
+                client_msg.cheat_type = CheatType::GOD_MODE;
+                std::cout << "[Sender] Sending CHEAT: GOD_MODE" << std::endl;
+            } else if (client_msg.cmd == CHEAT_DIE_STR) {
+                client_msg.cheat_type = CheatType::DIE;
+                std::cout << "[Sender] Sending CHEAT: DIE" << std::endl;
+            } else if (client_msg.cmd == CHEAT_SKIP_LAP_STR) {
+                client_msg.cheat_type = CheatType::SKIP_LAP;
+                std::cout << "[Sender] Sending CHEAT: SKIP_LAP" << std::endl;
+            } else if (client_msg.cmd == CHEAT_FULL_UPGRADE_STR) {
+                client_msg.cheat_type = CheatType::FULL_UPGRADE;
+                std::cout << "[Sender] Sending CHEAT: FULL_UPGRADE" << std::endl;
+            }
             if (client_msg.cmd == GET_GAMES_STR) {
                 // no payload extra
             }

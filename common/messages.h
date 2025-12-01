@@ -102,5 +102,7 @@ struct ClientMessage
     std::string car_type;
     // Mejora solicitada
     CarUpgrade upgrade_type = CarUpgrade::ACCELERATION_BOOST;
+    // Cheat solicitado
+    CheatType cheat_type = CheatType::GOD_MODE;
 };
 #endif

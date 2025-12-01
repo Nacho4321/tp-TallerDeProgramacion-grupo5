@@ -170,6 +170,34 @@ ClientMessage Protocol::receiveUpgradeCar()
     return msg;
 }
 
+ClientMessage Protocol::receiveCheat()
+{
+    ClientMessage msg;
+    msg.cmd = "cheat";
+    readClientIds(msg);
+    // Leer cheat_type
+    uint8_t cheat_byte;
+    if (skt.recvall(&cheat_byte, sizeof(cheat_byte)) <= 0)
+        return msg;
+    msg.cheat_type = static_cast<CheatType>(cheat_byte);
+    // Construir cmd con el tipo de cheat para el dispatcher
+    switch (msg.cheat_type) {
+        case CheatType::GOD_MODE:
+            msg.cmd = CHEAT_GOD_MODE_STR;
+            break;
+        case CheatType::DIE:
+            msg.cmd = CHEAT_DIE_STR;
+            break;
+        case CheatType::SKIP_LAP:
+            msg.cmd = CHEAT_SKIP_LAP_STR;
+            break;
+        case CheatType::FULL_UPGRADE:
+            msg.cmd = CHEAT_FULL_UPGRADE_STR;
+            break;
+    }
+    return msg;
+}
+
 ServerMessage Protocol::receivePositionsUpdate()
 {
     ServerMessage msg;

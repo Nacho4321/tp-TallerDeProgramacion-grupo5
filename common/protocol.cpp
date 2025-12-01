@@ -62,6 +62,12 @@ void Protocol::init_handlers() {
                   << " game_id=" << msg.game_id << " upgrade_type=" << static_cast<int>(msg.upgrade_type) << std::endl;
         return msg;
     };
+    receive_handlers[CHEAT_CMD] = [this]() {
+        auto msg = receiveCheat();
+        std::cout << "[Protocol(Server)] Decodificado CHEAT player_id=" << msg.player_id
+                  << " game_id=" << msg.game_id << " cheat_type=" << static_cast<int>(msg.cheat_type) << std::endl;
+        return msg;
+    };
 }
 
 void Protocol::init_cmd_map() {
@@ -80,6 +86,11 @@ void Protocol::init_cmd_map() {
     cmd_to_opcode[START_GAME_STR] = START_GAME;
     cmd_to_opcode[CHANGE_CAR_STR] = CHANGE_CAR;
     cmd_to_opcode[UPGRADE_CAR_STR] = UPGRADE_CAR;
+    // Cheats
+    cmd_to_opcode[CHEAT_GOD_MODE_STR] = CHEAT_CMD;
+    cmd_to_opcode[CHEAT_DIE_STR] = CHEAT_CMD;
+    cmd_to_opcode[CHEAT_SKIP_LAP_STR] = CHEAT_CMD;
+    cmd_to_opcode[CHEAT_FULL_UPGRADE_STR] = CHEAT_CMD;
 }
 
 ClientMessage Protocol::receiveClientMessage() {

@@ -60,6 +60,21 @@ constexpr uint8_t CHANGE_CAR = 0x30;             // opcode para cambio de auto
 const std::string CHANGE_CAR_STR = "change_car"; // comando base
 const std::string UPGRADE_CAR_STR = "upgrade_car"; // comando para mejora de auto
 
+// Cheats opcodes y strings
+constexpr uint8_t CHEAT_CMD = 0x50;                         // opcode para cheats
+const std::string CHEAT_GOD_MODE_STR = "cheat_god";         // vida infinita toggle
+const std::string CHEAT_DIE_STR = "cheat_die";              // morir/perder
+const std::string CHEAT_SKIP_LAP_STR = "cheat_skip_lap";    // completar vuelta actual
+const std::string CHEAT_FULL_UPGRADE_STR = "cheat_full_upgrade"; // todas las mejoras al max
+
+// Tipos de cheat (para el payload del opcode CHEAT_CMD)
+enum class CheatType : uint8_t {
+    GOD_MODE = 0,
+    DIE = 1,
+    SKIP_LAP = 2,
+    FULL_UPGRADE = 3
+};
+
 const std::string MOVE_UP_PRESSED_STR = "move_up_pressed";         // NOLINT
 const std::string MOVE_UP_RELEASED_STR = "move_up_released";       // NOLINT
 const std::string MOVE_DOWN_PRESSED_STR = "move_down_pressed";     // NOLINT
@@ -143,4 +158,8 @@ enum class CarUpgrade {
 #define DURABILITY_UPGRADE_REDUCTION 1.0f
 #define HANDLING_UPGRADE_MULTIPLIER 1.15f
 #define MAX_UPGRADES_PER_STAT 3
+
+// Campeonato: 3 rondas
+constexpr int TOTAL_ROUNDS = 3;
+
 #endif

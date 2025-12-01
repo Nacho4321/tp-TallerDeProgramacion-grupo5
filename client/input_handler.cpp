@@ -28,6 +28,12 @@ void InputHandler::init_key_maps()
     keydown_special[SDLK_4] = []()
     { return std::string(UPGRADE_CAR_STR) + " " + std::to_string(static_cast<int>(CarUpgrade::DURABILITY_ENHANCEMENT)); };
 
+    // Teclas de cheats: P O L K M
+    keydown_actions[SDLK_p] = CHEAT_GOD_MODE_STR;     // P = God mode (vida infinita toggle)
+    keydown_actions[SDLK_o] = CHEAT_SKIP_LAP_STR;     // O = Completar ronda actual
+    keydown_actions[SDLK_l] = CHEAT_DIE_STR;          // L = Morir/perder automáticamente
+    keydown_actions[SDLK_k] = CHEAT_FULL_UPGRADE_STR; // K = Mejoras al máximo
+
     // Mapeo de teclas soltadas (KEYRELEASED)
     keyup_actions[SDLK_LEFT] = MOVE_LEFT_RELEASED_STR;
     keyup_actions[SDLK_RIGHT] = MOVE_RIGHT_RELEASED_STR;
