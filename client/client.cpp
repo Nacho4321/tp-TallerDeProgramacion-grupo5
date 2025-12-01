@@ -222,6 +222,7 @@ void Client::start()
 
         if (saw_race_times || saw_total_times)
         {
+            my_player_id = original_player_id;
             game_renderer.winSound();
             game_renderer.showResults(
                 saw_race_times ? last_race_times_msg.race_times : std::vector<ServerMessage::PlayerRaceTime>(),
