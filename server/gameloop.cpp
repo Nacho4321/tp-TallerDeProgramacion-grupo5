@@ -1180,6 +1180,13 @@ void GameLoop::add_player_to_broadcast(std::vector<PlayerPositionUpdate> &broadc
     update.car_type = player_data.car.car_name;
     update.hp = player_data.car.hp;
     update.collision_flag = player_data.collision_this_frame;
+    update.is_stopping = player_data.is_stopping;
+    
+    // Enviar niveles de mejora
+    update.upgrade_speed = player_data.upgrades.speed;
+    update.upgrade_acceleration = player_data.upgrades.acceleration;
+    update.upgrade_handling = player_data.upgrades.handling;
+    update.upgrade_durability = player_data.upgrades.durability;
 
     // Solo enviar checkpoints si el jugador no ha terminado la carrera
     if (!player_data.race_finished && !checkpoint_centers.empty())

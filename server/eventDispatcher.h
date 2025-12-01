@@ -29,7 +29,6 @@ private:
     void upgrade_max_acceleration(Event &event);
     void upgrade_durability(Event &event);
     void upgrade_handling(Event &event);
-    bool can_upgrade(float current_value, float original_value, float multiplier);
 
 public:
     EventDispatcher(std::mutex &map_mutex, std::unordered_map<int, PlayerData> &map) : players_map_mutex(map_mutex), players(map)

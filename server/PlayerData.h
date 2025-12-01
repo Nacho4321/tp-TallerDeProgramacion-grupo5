@@ -3,6 +3,16 @@
 #include "event.h"
 #include <box2d/b2_body.h>
 #include <chrono>
+
+// Niveles de mejora por stat (0 = sin mejora, máx 3)
+struct UpgradeLevels
+{
+    uint8_t speed = 0;
+    uint8_t acceleration = 0;
+    uint8_t handling = 0;
+    uint8_t durability = 0;
+};
+
 struct CarInfo
 {
     std::string car_name;
@@ -17,6 +27,7 @@ struct PlayerData
     b2Body *body;
     std::string state;
     CarInfo car;
+    UpgradeLevels upgrades;  // Contadores de niveles de mejora
     Position position;
     // Indice del próximo checkpoint que el jugador debe pasar (empieza en 0)
     int next_checkpoint = 0;

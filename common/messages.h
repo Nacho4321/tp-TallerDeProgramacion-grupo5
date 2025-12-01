@@ -38,6 +38,12 @@ struct PlayerPositionUpdate
     bool collision_flag = false;  // True si hubo colisión este frame (para animación de explosión)
     // Flag de frenazo 
     bool is_stopping = false;
+    
+    // Niveles de mejora
+    uint8_t upgrade_speed = 0;
+    uint8_t upgrade_acceleration = 0;
+    uint8_t upgrade_handling = 0;
+    uint8_t upgrade_durability = 0;
 };
 
 // Mensaje unificado del servidor: puede ser una actualización de posiciones

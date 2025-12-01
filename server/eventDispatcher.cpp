@@ -213,12 +213,6 @@ void EventDispatcher::handle_event(Event &event)
     }
 }
 
-bool EventDispatcher::can_upgrade(float current_value, float original_value, float multiplier)
-{
-    float max_value = original_value * std::pow(multiplier, MAX_UPGRADES_PER_STAT);
-    return current_value < max_value;
-}
-
 void EventDispatcher::upgrade_max_speed(Event &event)
 {
     std::cout << "[EventDispatcher] upgrade_max_speed called, client_id=" << event.client_id 
@@ -231,14 +225,14 @@ void EventDispatcher::upgrade_max_speed(Event &event)
     if (it == players.end())
         return;
 
-    const CarPhysics &original = CarPhysicsConfig::getInstance().getCarPhysics(it->second.car.car_name);
-
-    if (!can_upgrade(it->second.car.speed, original.max_speed, SPEED_UPGRADE_MULTIPLIER))
+    if (it->second.upgrades.speed >= MAX_UPGRADES_PER_STAT)
         return;
 
     float old_speed = it->second.car.speed;
     it->second.car.speed *= SPEED_UPGRADE_MULTIPLIER;
-    std::cout << "[EventDispatcher] Player " << event.client_id << " speed upgraded: " 
+    it->second.upgrades.speed++;
+    std::cout << "[EventDispatcher] Player " << event.client_id << " speed upgraded to level " 
+              << static_cast<int>(it->second.upgrades.speed) << ": " 
               << old_speed << " -> " << it->second.car.speed << std::endl;
 }
 
@@ -254,19 +248,21 @@ void EventDispatcher::upgrade_max_acceleration(Event &event)
     if (it == players.end())
         return;
 
-    const CarPhysics &original = CarPhysicsConfig::getInstance().getCarPhysics(it->second.car.car_name);
-
-    if (!can_upgrade(it->second.car.acceleration, original.max_acceleration, ACCELERATION_UPGRADE_MULTIPLIER))
+    if (it->second.upgrades.acceleration >= MAX_UPGRADES_PER_STAT)
         return;
 
     float old_accel = it->second.car.acceleration;
     it->second.car.acceleration *= ACCELERATION_UPGRADE_MULTIPLIER;
-    std::cout << "[EventDispatcher] Player " << event.client_id << " acceleration upgraded: " 
+    it->second.upgrades.acceleration++;
+    std::cout << "[EventDispatcher] Player " << event.client_id << " acceleration upgraded to level " 
+              << static_cast<int>(it->second.upgrades.acceleration) << ": " 
               << old_accel << " -> " << it->second.car.acceleration << std::endl;
 }
 
 void EventDispatcher::upgrade_durability(Event &event)
 {
+    std::cout << "[EventDispatcher] upgrade_durability called, client_id=" << event.client_id 
+              << " current_state=" << static_cast<int>(current_state) << std::endl;
     if (current_state != GameState::STARTING)
         return;
 
@@ -275,15 +271,14 @@ void EventDispatcher::upgrade_durability(Event &event)
     if (it == players.end())
         return;
 
-    const CarPhysics &original = CarPhysicsConfig::getInstance().getCarPhysics(it->second.car.car_name);
-    float min_durability = original.collision_damage_multiplier - (DURABILITY_UPGRADE_REDUCTION * MAX_UPGRADES_PER_STAT);
-
-    if (it->second.car.durability <= min_durability)
+    if (it->second.upgrades.durability >= MAX_UPGRADES_PER_STAT)
         return;
 
     float old_durability = it->second.car.durability;
     it->second.car.durability -= DURABILITY_UPGRADE_REDUCTION;
-    std::cout << "[EventDispatcher] Player " << event.client_id << " durability upgraded: " 
+    it->second.upgrades.durability++;
+    std::cout << "[EventDispatcher] Player " << event.client_id << " durability upgraded to level " 
+              << static_cast<int>(it->second.upgrades.durability) << ": " 
               << old_durability << " -> " << it->second.car.durability << std::endl;
 }
 
@@ -299,13 +294,13 @@ void EventDispatcher::upgrade_handling(Event &event)
     if (it == players.end())
         return;
 
-    const CarPhysics &original = CarPhysicsConfig::getInstance().getCarPhysics(it->second.car.car_name);
-
-    if (!can_upgrade(it->second.car.handling, original.torque, HANDLING_UPGRADE_MULTIPLIER))
+    if (it->second.upgrades.handling >= MAX_UPGRADES_PER_STAT)
         return;
 
     float old_handling = it->second.car.handling;
     it->second.car.handling *= HANDLING_UPGRADE_MULTIPLIER;
-    std::cout << "[EventDispatcher] Player " << event.client_id << " handling upgraded: " 
+    it->second.upgrades.handling++;
+    std::cout << "[EventDispatcher] Player " << event.client_id << " handling upgraded to level " 
+              << static_cast<int>(it->second.upgrades.handling) << ": " 
               << old_handling << " -> " << it->second.car.handling << std::endl;
 }
