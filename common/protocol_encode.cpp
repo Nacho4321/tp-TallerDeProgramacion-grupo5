@@ -19,6 +19,11 @@ std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage &msg
     {
         opcode = CHANGE_CAR;
     }
+    else if (cmd.rfind(UPGRADE_CAR_STR, 0) == 0)
+    {
+        opcode = UPGRADE_CAR;
+        std::cout << "[Protocol(Client)] Encoding UPGRADE_CAR with upgrade_type=" << static_cast<int>(msg.upgrade_type) << std::endl;
+    }
     else
     {
         // Búsqueda directa en el mapa

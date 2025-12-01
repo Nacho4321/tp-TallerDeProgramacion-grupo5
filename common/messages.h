@@ -94,5 +94,7 @@ struct ClientMessage
     std::string game_name;
     // Tipo de auto solicitado en un cambio de auto (solo si cmd comienza con CHANGE_CAR_STR)
     std::string car_type;
+    // Mejora solicitada
+    CarUpgrade upgrade_type = CarUpgrade::ACCELERATION_BOOST;
 };
 #endif

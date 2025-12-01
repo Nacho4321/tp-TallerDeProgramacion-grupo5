@@ -402,7 +402,11 @@ void GameLoop::update_drive_for_player(PlayerData &player_data)
     if (!body)
         return;
 
-    const CarPhysics &car_physics = physics_config.getCarPhysics(player_data.car.car_name);
+    CarPhysics car_physics = physics_config.getCarPhysics(player_data.car.car_name);
+    // Sobreescribir con valores upgradeados del player
+    car_physics.max_speed = player_data.car.speed;
+    car_physics.max_acceleration = player_data.car.acceleration;
+    car_physics.torque = player_data.car.handling;
 
     bool want_up = (player_data.position.direction_y == up);
     bool want_down = (player_data.position.direction_y == down);
@@ -661,12 +665,13 @@ void GameLoop::apply_collision_damage(PlayerData &player_data, float impact_velo
         return;
     }
 
-    const CarPhysics &car_physics = physics_config.getCarPhysics(car_name);
+    // Usar durability del player (upgradeada) en lugar del YAML
+    float durability = player_data.car.durability;
 
     // Formula: damage = impact_velocity * multiplier * frontal_multiplier * 0.1 
     // frontal_multiplier: 1.0 para colisiones normales, 2.5 para choques frontales en contramano
     // (10 m/s) son aprox 10 damage (o 25 si es frontal)
-    float damage = impact_velocity * car_physics.collision_damage_multiplier * frontal_multiplier * 0.1f;
+    float damage = impact_velocity * durability * frontal_multiplier * 0.1f;
 
     // Solo aplico daño si es significativo
     // TODO: Por ahi meter el 0.5 al YAML o hacerlo una constante global
@@ -742,12 +747,13 @@ PlayerData GameLoop::create_default_player_data(int spawn_idx)
     std::cout << "[GameLoop] add_player: assigning spawn point " << spawn_idx
               << " at (" << spawn.x << "," << spawn.y << ")" << std::endl;
 
+    const CarPhysics &car_phys = physics_config.getCarPhysics(GREEN_CAR);
 
     Position pos = Position{false, spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
     PlayerData player_data;
     player_data.body = create_player_body(spawn.x, spawn.y, pos, GREEN_CAR);
     player_data.state = MOVE_UP_RELEASED_STR;
-    player_data.car = CarInfo{GREEN_CAR, DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP};
+    player_data.car = CarInfo{GREEN_CAR, car_phys.max_speed, car_phys.max_acceleration, car_phys.max_hp, car_phys.collision_damage_multiplier, car_phys.torque};
     player_data.position = pos;
     player_data.next_checkpoint = 0;
     player_data.laps_completed = 0;

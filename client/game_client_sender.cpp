@@ -57,6 +57,24 @@ void GameClientSender::run() {
                     // Optionally normalize to base command only for opcode mapping logic if needed
                 }
             }
+            // Parse upgrade_car <tipo>
+            if (client_msg.cmd.rfind(UPGRADE_CAR_STR, 0) == 0) {
+                size_t sp = client_msg.cmd.find(' ');
+                if (sp != std::string::npos && sp + 1 < client_msg.cmd.size()) {
+                    std::string upgrade_str = client_msg.cmd.substr(sp + 1);
+                    try {
+                        int upgrade_val = std::stoi(upgrade_str);
+                        client_msg.upgrade_type = static_cast<CarUpgrade>(upgrade_val);
+                        std::cout << "[Sender] Parsed UPGRADE_CAR: upgrade_str='" << upgrade_str 
+                                  << "' upgrade_val=" << upgrade_val << std::endl;
+                    } catch (...) {
+                        client_msg.upgrade_type = CarUpgrade::ACCELERATION_BOOST; // default
+                        std::cout << "[Sender] UPGRADE_CAR parse failed, using default ACCELERATION_BOOST" << std::endl;
+                    }
+                } else {
+                    std::cout << "[Sender] UPGRADE_CAR sin argumento, cmd='" << client_msg.cmd << "'" << std::endl;
+                }
+            }
             if (client_msg.cmd == GET_GAMES_STR) {
                 // no payload extra
             }

@@ -38,15 +38,14 @@ void EventDispatcher::init_handlers()
     { change_car(e, PURPLE_TRUCK); };
     listeners[std::string(CHANGE_CAR_STR) + " " + LIMOUSINE_CAR] = [this](Event &e)
     { change_car(e, LIMOUSINE_CAR); };
-
-    listeners[MAX_SPEED_UPGRADE] = [this](Event &e)
-    { upgrade_max_speed(e); };
-    listeners[MAX_ACC_UPGRADE] = [this](Event &e)
-    { upgrade_max_acceleration(e); };
-    listeners[DURABILITY_UPGRADE] = [this](Event &e)
-    { upgrade_durability(e); };
-    listeners[HANDLING_UPGRADE] = [this](Event &e)
-    { upgrade_handling(e); };
+    listeners[std::string(UPGRADE_CAR_STR) + " 0"] = [this](Event &e)
+    { upgrade_max_acceleration(e); };  // ACCELERATION_BOOST
+    listeners[std::string(UPGRADE_CAR_STR) + " 1"] = [this](Event &e)
+    { upgrade_max_speed(e); };  // SPEED_BOOST
+    listeners[std::string(UPGRADE_CAR_STR) + " 2"] = [this](Event &e)
+    { upgrade_handling(e); };  // HANDLING_IMPROVEMENT
+    listeners[std::string(UPGRADE_CAR_STR) + " 3"] = [this](Event &e)
+    { upgrade_durability(e); };  // DURABILITY_ENHANCEMENT
 }
 
 void EventDispatcher::move_up(Event &event)
@@ -134,7 +133,7 @@ void EventDispatcher::move_right_released(Event &event)
 }
 void EventDispatcher::change_car(Event &event, const std::string &car_type)
 {
-    if (current_state != GameState::STARTING)
+    if (current_state != GameState::LOBBY)
     {
         return;
     }
@@ -149,6 +148,7 @@ void EventDispatcher::change_car(Event &event, const std::string &car_type)
     it->second.car.acceleration = phys.max_acceleration; // px/s^2
     it->second.car.hp = phys.max_hp;                     // Set HP from physics config
     it->second.car.durability = phys.collision_damage_multiplier;
+    it->second.car.handling = phys.torque;               // Torque para giros
     // Re-crear el body para que el fixture (hitbox) coincida con el tamaño físico del nuevo auto.
     b2Body *oldBody = it->second.body;
     if (oldBody)
@@ -200,6 +200,8 @@ void EventDispatcher::change_car(Event &event, const std::string &car_type)
 }
 void EventDispatcher::handle_event(Event &event)
 {
+    std::cout << "[EventDispatcher] Received event: action='" << event.action 
+              << "' client_id=" << event.client_id << std::endl;
     auto it = listeners.find(event.action);
     if (it != listeners.end())
     {
@@ -207,7 +209,7 @@ void EventDispatcher::handle_event(Event &event)
     }
     else
     {
-        std::cout << "Evento desconocido: " << event.action << std::endl;
+        std::cout << "[EventDispatcher] Evento desconocido: '" << event.action << "'" << std::endl;
     }
 }
 
@@ -219,6 +221,8 @@ bool EventDispatcher::can_upgrade(float current_value, float original_value, flo
 
 void EventDispatcher::upgrade_max_speed(Event &event)
 {
+    std::cout << "[EventDispatcher] upgrade_max_speed called, client_id=" << event.client_id 
+              << " current_state=" << static_cast<int>(current_state) << std::endl;
     if (current_state != GameState::STARTING)
         return;
 
@@ -232,11 +236,16 @@ void EventDispatcher::upgrade_max_speed(Event &event)
     if (!can_upgrade(it->second.car.speed, original.max_speed, SPEED_UPGRADE_MULTIPLIER))
         return;
 
+    float old_speed = it->second.car.speed;
     it->second.car.speed *= SPEED_UPGRADE_MULTIPLIER;
+    std::cout << "[EventDispatcher] Player " << event.client_id << " speed upgraded: " 
+              << old_speed << " -> " << it->second.car.speed << std::endl;
 }
 
 void EventDispatcher::upgrade_max_acceleration(Event &event)
 {
+    std::cout << "[EventDispatcher] upgrade_max_acceleration called, client_id=" << event.client_id 
+              << " current_state=" << static_cast<int>(current_state) << std::endl;
     if (current_state != GameState::STARTING)
         return;
 
@@ -250,7 +259,10 @@ void EventDispatcher::upgrade_max_acceleration(Event &event)
     if (!can_upgrade(it->second.car.acceleration, original.max_acceleration, ACCELERATION_UPGRADE_MULTIPLIER))
         return;
 
+    float old_accel = it->second.car.acceleration;
     it->second.car.acceleration *= ACCELERATION_UPGRADE_MULTIPLIER;
+    std::cout << "[EventDispatcher] Player " << event.client_id << " acceleration upgraded: " 
+              << old_accel << " -> " << it->second.car.acceleration << std::endl;
 }
 
 void EventDispatcher::upgrade_durability(Event &event)
@@ -269,11 +281,16 @@ void EventDispatcher::upgrade_durability(Event &event)
     if (it->second.car.durability <= min_durability)
         return;
 
+    float old_durability = it->second.car.durability;
     it->second.car.durability -= DURABILITY_UPGRADE_REDUCTION;
+    std::cout << "[EventDispatcher] Player " << event.client_id << " durability upgraded: " 
+              << old_durability << " -> " << it->second.car.durability << std::endl;
 }
 
 void EventDispatcher::upgrade_handling(Event &event)
 {
+    std::cout << "[EventDispatcher] upgrade_handling called, client_id=" << event.client_id 
+              << " current_state=" << static_cast<int>(current_state) << std::endl;
     if (current_state != GameState::STARTING)
         return;
 
@@ -281,4 +298,14 @@ void EventDispatcher::upgrade_handling(Event &event)
     auto it = players.find(event.client_id);
     if (it == players.end())
         return;
+
+    const CarPhysics &original = CarPhysicsConfig::getInstance().getCarPhysics(it->second.car.car_name);
+
+    if (!can_upgrade(it->second.car.handling, original.torque, HANDLING_UPGRADE_MULTIPLIER))
+        return;
+
+    float old_handling = it->second.car.handling;
+    it->second.car.handling *= HANDLING_UPGRADE_MULTIPLIER;
+    std::cout << "[EventDispatcher] Player " << event.client_id << " handling upgraded: " 
+              << old_handling << " -> " << it->second.car.handling << std::endl;
 }

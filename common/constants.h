@@ -138,12 +138,9 @@ enum class CarUpgrade {
 #define LAYER_COLLISIONS_UNDER_STR "Collisions_under"
 #define LAYER_START_BRIDGE_STR "Start_Bridge"
 
-#define MAX_SPEED_UPGRADE "max_speed_upgrade"
-#define MAX_ACC_UPGRADE "max_acc_upgrade"
-#define DURABILITY_UPGRADE "durability_upgrade"
-#define HANDLING_UPGRADE "handling_upgrade"
 #define SPEED_UPGRADE_MULTIPLIER 1.15f
 #define ACCELERATION_UPGRADE_MULTIPLIER 1.15f
 #define DURABILITY_UPGRADE_REDUCTION 1.0f
+#define HANDLING_UPGRADE_MULTIPLIER 1.15f
 #define MAX_UPGRADES_PER_STAT 3
 #endif
