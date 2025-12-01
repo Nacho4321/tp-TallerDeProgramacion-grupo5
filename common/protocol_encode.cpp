@@ -62,6 +62,10 @@ std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage &msg
         for (char c : msg.car_type)
             buffer.push_back(static_cast<uint8_t>(c));
     }
+    else if (opcode == UPGRADE_CAR)
+    {
+        buffer.push_back(static_cast<uint8_t>(msg.upgrade_type));
+    }
     return buffer;
 }
 

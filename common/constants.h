@@ -25,7 +25,9 @@ const std::uint8_t START_GAME = 0x15;
 // Notificacion de que el juego comenzo
 const std::uint8_t GAME_STARTED = 0x16;
 // Notify clients that STARTING countdown began (no payload; client assumes duration)
+// Mejora
 const std::uint8_t STARTING_COUNTDOWN = 0x17;
+const std::uint8_t UPGRADE_CAR = 0x18;
 // Race timing results per round
 const std::uint8_t RACE_TIMES = 0x40;
 // Championship totals after 3 rounds
@@ -56,6 +58,7 @@ constexpr float NPC_SPEED_PX_S = 120.0f; // pixels/sec
 // Car change (runtime swap during game)
 constexpr uint8_t CHANGE_CAR = 0x30;             // opcode para cambio de auto
 const std::string CHANGE_CAR_STR = "change_car"; // comando base
+const std::string UPGRADE_CAR_STR = "upgrade_car"; // comando para mejora de auto
 
 const std::string MOVE_UP_PRESSED_STR = "move_up_pressed";         // NOLINT
 const std::string MOVE_UP_RELEASED_STR = "move_up_released";       // NOLINT
@@ -105,6 +108,13 @@ inline const char* const CAR_TYPES[] = {
     RED_SQUARED_CAR, 
     PURPLE_TRUCK,   
     LIMOUSINE_CAR   
+};
+
+enum class CarUpgrade {
+    ACCELERATION_BOOST = 0,
+    SPEED_BOOST = 1,
+    HANDLING_IMPROVEMENT = 2,
+    DURABILITY_ENHANCEMENT = 3
 };
 
 // Constantes para parseo del JSON del mapa

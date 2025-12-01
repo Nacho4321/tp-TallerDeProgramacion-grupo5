@@ -55,6 +55,12 @@ void Protocol::init_handlers() {
                   << " game_id=" << msg.game_id << " car_type=" << msg.car_type << std::endl;
         return msg;
     };
+    receive_handlers[UPGRADE_CAR] = [this]() {
+        auto msg = receiveUpgradeCar();
+        std::cout << "[Protocol(Server)] Decodificado UPGRADE_CAR player_id=" << msg.player_id
+                  << " game_id=" << msg.game_id << " upgrade_type=" << static_cast<int>(msg.upgrade_type) << std::endl;
+        return msg;
+    };
 }
 
 void Protocol::init_cmd_map() {
@@ -72,6 +78,7 @@ void Protocol::init_cmd_map() {
     cmd_to_opcode[GET_GAMES_STR] = GET_GAMES;
     cmd_to_opcode[START_GAME_STR] = START_GAME;
     cmd_to_opcode[CHANGE_CAR_STR] = CHANGE_CAR;
+    cmd_to_opcode[UPGRADE_CAR_STR] = UPGRADE_CAR;
 }
 
 ClientMessage Protocol::receiveClientMessage() {

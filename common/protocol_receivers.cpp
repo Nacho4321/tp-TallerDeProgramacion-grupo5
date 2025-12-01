@@ -156,6 +156,20 @@ ClientMessage Protocol::receiveChangeCar()
     return msg;
 }
 
+ClientMessage Protocol::receiveUpgradeCar()
+{
+    ClientMessage msg;
+    msg.cmd = "upgrade_car";
+    readClientIds(msg);
+    // Leer upgrade_type 
+    uint8_t upgrade_byte;
+    if (skt.recvall(&upgrade_byte, sizeof(upgrade_byte)) <= 0)
+        return msg;
+    msg.upgrade_type = static_cast<CarUpgrade>(upgrade_byte);
+    msg.cmd = std::string("upgrade_car") + " " + std::to_string(upgrade_byte);
+    return msg;
+}
+
 ServerMessage Protocol::receivePositionsUpdate()
 {
     ServerMessage msg;

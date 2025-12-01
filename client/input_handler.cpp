@@ -18,21 +18,15 @@ void InputHandler::init_key_maps()
     keydown_actions[SDLK_c] = CREATE_GAME_STR;
     keydown_actions[SDLK_i] = START_GAME_STR;
 
-    // Teclas de cambio de auto
+    // Teclas de mejora de auto (upgrade)
     keydown_special[SDLK_1] = []()
-    { return std::string(CHANGE_CAR_STR) + " " + GREEN_CAR; };
+    { return std::string(UPGRADE_CAR_STR) + " " + std::to_string(static_cast<int>(CarUpgrade::ACCELERATION_BOOST)); };
     keydown_special[SDLK_2] = []()
-    { return std::string(CHANGE_CAR_STR) + " " + RED_SQUARED_CAR; };
+    { return std::string(UPGRADE_CAR_STR) + " " + std::to_string(static_cast<int>(CarUpgrade::SPEED_BOOST)); };
     keydown_special[SDLK_3] = []()
-    { return std::string(CHANGE_CAR_STR) + " " + RED_SPORTS_CAR; };
+    { return std::string(UPGRADE_CAR_STR) + " " + std::to_string(static_cast<int>(CarUpgrade::HANDLING_IMPROVEMENT)); };
     keydown_special[SDLK_4] = []()
-    { return std::string(CHANGE_CAR_STR) + " " + LIGHT_BLUE_CAR; };
-    keydown_special[SDLK_5] = []()
-    { return std::string(CHANGE_CAR_STR) + " " + RED_JEEP_CAR; };
-    keydown_special[SDLK_6] = []()
-    { return std::string(CHANGE_CAR_STR) + " " + PURPLE_TRUCK; };
-    keydown_special[SDLK_7] = []()
-    { return std::string(CHANGE_CAR_STR) + " " + LIMOUSINE_CAR; };
+    { return std::string(UPGRADE_CAR_STR) + " " + std::to_string(static_cast<int>(CarUpgrade::DURABILITY_ENHANCEMENT)); };
 
     // Mapeo de teclas soltadas (KEYRELEASED)
     keyup_actions[SDLK_LEFT] = MOVE_LEFT_RELEASED_STR;

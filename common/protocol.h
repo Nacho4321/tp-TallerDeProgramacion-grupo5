@@ -91,6 +91,7 @@ private:
     ClientMessage receiveGetGames();
     ClientMessage receiveStartGame();
     ClientMessage receiveChangeCar();
+    ClientMessage receiveUpgradeCar();
 
     ServerMessage receivePositionsUpdate();
     ServerMessage receiveGamesList();
