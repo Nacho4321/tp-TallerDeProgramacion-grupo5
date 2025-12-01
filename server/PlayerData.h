@@ -9,6 +9,7 @@ struct CarInfo
     float speed;
     float acceleration;
     float hp;
+    float durability;
 };
 struct PlayerData
 {

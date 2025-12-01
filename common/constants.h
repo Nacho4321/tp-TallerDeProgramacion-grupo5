@@ -97,15 +97,14 @@ const int VICE_CITY_MAP_ID = 3;
 
 constexpr int CAR_TYPES_COUNT = 7;
 
-inline const char* const CAR_TYPES[] = {
-    GREEN_CAR,        
-    RED_JEEP_CAR,    
-    RED_SPORTS_CAR, 
-    LIGHT_BLUE_CAR, 
-    RED_SQUARED_CAR, 
-    PURPLE_TRUCK,   
-    LIMOUSINE_CAR   
-};
+inline const char *const CAR_TYPES[] = {
+    GREEN_CAR,
+    RED_JEEP_CAR,
+    RED_SPORTS_CAR,
+    LIGHT_BLUE_CAR,
+    RED_SQUARED_CAR,
+    PURPLE_TRUCK,
+    LIMOUSINE_CAR};
 
 // Constantes para parseo del JSON del mapa
 #define LAYERS_STR "layers"
@@ -129,4 +128,12 @@ inline const char* const CAR_TYPES[] = {
 #define LAYER_COLLISIONS_UNDER_STR "Collisions_under"
 #define LAYER_START_BRIDGE_STR "Start_Bridge"
 
+#define MAX_SPEED_UPGRADE "max_speed_upgrade"
+#define MAX_ACC_UPGRADE "max_acc_upgrade"
+#define DURABILITY_UPGRADE "durability_upgrade"
+#define HANDLING_UPGRADE "handling_upgrade"
+#define SPEED_UPGRADE_MULTIPLIER 1.15f
+#define ACCELERATION_UPGRADE_MULTIPLIER 1.15f
+#define DURABILITY_UPGRADE_REDUCTION 1.0f
+#define MAX_UPGRADES_PER_STAT 3
 #endif
