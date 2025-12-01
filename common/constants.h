@@ -102,10 +102,10 @@ constexpr int CAR_TYPES_COUNT = 7;
 
 inline const char *const CAR_TYPES[] = {
     GREEN_CAR,
-    RED_JEEP_CAR,
+    RED_SQUARED_CAR,
     RED_SPORTS_CAR,
     LIGHT_BLUE_CAR,
-    RED_SQUARED_CAR,
+    RED_JEEP_CAR,
     PURPLE_TRUCK,
     LIMOUSINE_CAR};
 
