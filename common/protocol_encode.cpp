@@ -123,6 +123,12 @@ std::vector<std::uint8_t> Protocol::encodeServerMessage(ServerMessage &out)
 
             // Enviar collision flag
             buffer.push_back(pos_update.collision_flag ? 1 : 0);
+
+            // Enviar niveles de upgrade (4 bytes)
+            buffer.push_back(pos_update.upgrade_speed);
+            buffer.push_back(pos_update.upgrade_acceleration);
+            buffer.push_back(pos_update.upgrade_handling);
+            buffer.push_back(pos_update.upgrade_durability);
         }
         return buffer;
     }

@@ -25,6 +25,12 @@ private:
     void move_right(Event &event);
     void move_right_released(Event &event);
     void change_car(Event &event, const std::string& car_type);
+    
+    // Upgrade handlers
+    void upgrade_speed(Event &event);
+    void upgrade_acceleration(Event &event);
+    void upgrade_handling(Event &event);
+    void upgrade_durability(Event &event);
 
 public:
     EventDispatcher(std::mutex &map_mutex, std::unordered_map<int, PlayerData> &map) : players_map_mutex(map_mutex), players(map)

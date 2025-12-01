@@ -36,6 +36,12 @@ struct PlayerPositionUpdate
     // HP system
     float hp = 100.0f;  //  HP actual 
     bool collision_flag = false;  // True si hubo colisión este frame (para animación de explosión)
+    
+    // Niveles de mejora (0-3 cada uno)
+    uint8_t upgrade_speed = 0;
+    uint8_t upgrade_acceleration = 0;
+    uint8_t upgrade_handling = 0;
+    uint8_t upgrade_durability = 0;
 };
 
 // Mensaje unificado del servidor: puede ser una actualización de posiciones
