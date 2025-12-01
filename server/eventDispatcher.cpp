@@ -38,11 +38,21 @@ void EventDispatcher::init_handlers()
     { change_car(e, PURPLE_TRUCK); };
     listeners[std::string(CHANGE_CAR_STR) + " " + LIMOUSINE_CAR] = [this](Event &e)
     { change_car(e, LIMOUSINE_CAR); };
+
+    listeners[MAX_SPEED_UPGRADE] = [this](Event &e)
+    { upgrade_max_speed(e); };
+    listeners[MAX_ACC_UPGRADE] = [this](Event &e)
+    { upgrade_max_acceleration(e); };
+    listeners[DURABILITY_UPGRADE] = [this](Event &e)
+    { upgrade_durability(e); };
+    listeners[HANDLING_UPGRADE] = [this](Event &e)
+    { upgrade_handling(e); };
 }
 
 void EventDispatcher::move_up(Event &event)
 {
-    if (current_state != GameState::PLAYING) return; // Disable movement in LOBBY/STARTING
+    if (current_state != GameState::PLAYING)
+        return; // Disable movement in LOBBY/STARTING
     std::lock_guard<std::mutex> lock(players_map_mutex);
     players[event.client_id].position.direction_y = up;
     players[event.client_id].state = event.action;
@@ -50,7 +60,8 @@ void EventDispatcher::move_up(Event &event)
 
 void EventDispatcher::move_up_released(Event &event)
 {
-    if (current_state != GameState::PLAYING) return; // Ignore in LOBBY/STARTING
+    if (current_state != GameState::PLAYING)
+        return; // Ignore in LOBBY/STARTING
     std::lock_guard<std::mutex> lock(players_map_mutex);
     if (players[event.client_id].state != MOVE_DOWN_PRESSED_STR)
     {
@@ -61,7 +72,8 @@ void EventDispatcher::move_up_released(Event &event)
 
 void EventDispatcher::move_down(Event &event)
 {
-    if (current_state != GameState::PLAYING) return;
+    if (current_state != GameState::PLAYING)
+        return;
     std::lock_guard<std::mutex> lock(players_map_mutex);
     players[event.client_id].position.direction_y = down;
     players[event.client_id].state = event.action;
@@ -69,7 +81,8 @@ void EventDispatcher::move_down(Event &event)
 
 void EventDispatcher::move_down_released(Event &event)
 {
-    if (current_state != GameState::PLAYING) return;
+    if (current_state != GameState::PLAYING)
+        return;
     std::lock_guard<std::mutex> lock(players_map_mutex);
     if (players[event.client_id].state != MOVE_UP_PRESSED_STR)
     {
@@ -80,7 +93,8 @@ void EventDispatcher::move_down_released(Event &event)
 
 void EventDispatcher::move_left(Event &event)
 {
-    if (current_state != GameState::PLAYING) return;
+    if (current_state != GameState::PLAYING)
+        return;
     std::lock_guard<std::mutex> lock(players_map_mutex);
     players[event.client_id].position.direction_x = left;
     players[event.client_id].state = event.action;
@@ -88,7 +102,8 @@ void EventDispatcher::move_left(Event &event)
 
 void EventDispatcher::move_left_released(Event &event)
 {
-    if (current_state != GameState::PLAYING) return;
+    if (current_state != GameState::PLAYING)
+        return;
     std::lock_guard<std::mutex> lock(players_map_mutex);
     if (players[event.client_id].state != MOVE_RIGHT_PRESSED_STR)
     {
@@ -99,7 +114,8 @@ void EventDispatcher::move_left_released(Event &event)
 
 void EventDispatcher::move_right(Event &event)
 {
-    if (current_state != GameState::PLAYING) return;
+    if (current_state != GameState::PLAYING)
+        return;
     std::lock_guard<std::mutex> lock(players_map_mutex);
     players[event.client_id].position.direction_x = right;
     players[event.client_id].state = event.action;
@@ -107,7 +123,8 @@ void EventDispatcher::move_right(Event &event)
 
 void EventDispatcher::move_right_released(Event &event)
 {
-    if (current_state != GameState::PLAYING) return;
+    if (current_state != GameState::PLAYING)
+        return;
     std::lock_guard<std::mutex> lock(players_map_mutex);
     if (players[event.client_id].state != MOVE_LEFT_PRESSED_STR)
     {
@@ -117,7 +134,8 @@ void EventDispatcher::move_right_released(Event &event)
 }
 void EventDispatcher::change_car(Event &event, const std::string &car_type)
 {
-    if (current_state != GameState::LOBBY) {
+    if (current_state != GameState::STARTING)
+    {
         return;
     }
     std::lock_guard<std::mutex> lock(players_map_mutex);
@@ -129,7 +147,8 @@ void EventDispatcher::change_car(Event &event, const std::string &car_type)
     // Map physics to simple CarInfo used by drive logic
     it->second.car.speed = phys.max_speed;               // already in px/s
     it->second.car.acceleration = phys.max_acceleration; // px/s^2
-    it->second.car.hp = phys.max_hp;  // Set HP from physics config
+    it->second.car.hp = phys.max_hp;                     // Set HP from physics config
+    it->second.car.durability = phys.collision_damage_multiplier;
     // Re-crear el body para que el fixture (hitbox) coincida con el tamaño físico del nuevo auto.
     b2Body *oldBody = it->second.body;
     if (oldBody)
@@ -190,4 +209,76 @@ void EventDispatcher::handle_event(Event &event)
     {
         std::cout << "Evento desconocido: " << event.action << std::endl;
     }
+}
+
+bool EventDispatcher::can_upgrade(float current_value, float original_value, float multiplier)
+{
+    float max_value = original_value * std::pow(multiplier, MAX_UPGRADES_PER_STAT);
+    return current_value < max_value;
+}
+
+void EventDispatcher::upgrade_max_speed(Event &event)
+{
+    if (current_state != GameState::STARTING)
+        return;
+
+    std::lock_guard<std::mutex> lock(players_map_mutex);
+    auto it = players.find(event.client_id);
+    if (it == players.end())
+        return;
+
+    const CarPhysics &original = CarPhysicsConfig::getInstance().getCarPhysics(it->second.car.car_name);
+
+    if (!can_upgrade(it->second.car.speed, original.max_speed, SPEED_UPGRADE_MULTIPLIER))
+        return;
+
+    it->second.car.speed *= SPEED_UPGRADE_MULTIPLIER;
+}
+
+void EventDispatcher::upgrade_max_acceleration(Event &event)
+{
+    if (current_state != GameState::STARTING)
+        return;
+
+    std::lock_guard<std::mutex> lock(players_map_mutex);
+    auto it = players.find(event.client_id);
+    if (it == players.end())
+        return;
+
+    const CarPhysics &original = CarPhysicsConfig::getInstance().getCarPhysics(it->second.car.car_name);
+
+    if (!can_upgrade(it->second.car.acceleration, original.max_acceleration, ACCELERATION_UPGRADE_MULTIPLIER))
+        return;
+
+    it->second.car.acceleration *= ACCELERATION_UPGRADE_MULTIPLIER;
+}
+
+void EventDispatcher::upgrade_durability(Event &event)
+{
+    if (current_state != GameState::STARTING)
+        return;
+
+    std::lock_guard<std::mutex> lock(players_map_mutex);
+    auto it = players.find(event.client_id);
+    if (it == players.end())
+        return;
+
+    const CarPhysics &original = CarPhysicsConfig::getInstance().getCarPhysics(it->second.car.car_name);
+    float min_durability = original.collision_damage_multiplier - (DURABILITY_UPGRADE_REDUCTION * MAX_UPGRADES_PER_STAT);
+
+    if (it->second.car.durability <= min_durability)
+        return;
+
+    it->second.car.durability -= DURABILITY_UPGRADE_REDUCTION;
+}
+
+void EventDispatcher::upgrade_handling(Event &event)
+{
+    if (current_state != GameState::STARTING)
+        return;
+
+    std::lock_guard<std::mutex> lock(players_map_mutex);
+    auto it = players.find(event.client_id);
+    if (it == players.end())
+        return;
 }
