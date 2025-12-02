@@ -110,16 +110,12 @@ void NPCManager::spawn_parked_npcs(const std::vector<MapLayout::ParkedCarData> &
 
         npcs.push_back(npc);
     }
-
-    std::cout << "[NPCManager] Spawned " << parked_count << " parked NPCs (out of "
-              << parked_data.size() << " available positions)." << std::endl;
 }
 
 void NPCManager::spawn_moving_npcs(const std::vector<MapLayout::ParkedCarData> &parked_data, int &next_negative_id)
 {
     if (street_waypoints.size() < 2)
     {
-        std::cout << "[NPCManager] Not enough waypoints to spawn moving NPCs." << std::endl;
         return;
     }
 
@@ -147,11 +143,6 @@ void NPCManager::spawn_moving_npcs(const std::vector<MapLayout::ParkedCarData> &
         NPCData npc = create_moving_npc(start_wp_idx, target_wp_idx, initial_angle, next_negative_id);
         npcs.push_back(npc);
     }
-
-    std::cout << "[NPCManager] Moving NPC spawn candidates: " << candidate_waypoints.size()
-              << " chosen: " << moving_npcs_count << std::endl;
-    std::cout << "[NPCManager] Spawned " << moving_npcs_count << " moving NPCs." << std::endl;
-    std::cout << "[NPCManager] Total NPCs: " << npcs.size() << std::endl;
 }
 
 std::vector<int> NPCManager::get_valid_waypoints_away_from_parked(const std::vector<MapLayout::ParkedCarData> &parked_data)

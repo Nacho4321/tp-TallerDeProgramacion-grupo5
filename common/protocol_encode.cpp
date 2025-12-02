@@ -3,14 +3,12 @@
 
 
 void Protocol::init_encode_handlers() {
-    // Server message encode handlers
     server_encode_handlers[UPDATE_POSITIONS] = [this](ServerMessage& out) { encodeUpdatePositions(out); };
     server_encode_handlers[GAME_JOINED] = [this](ServerMessage& out) { encodeGameJoined(out); };
     server_encode_handlers[GAMES_LIST] = [this](ServerMessage& out) { encodeGamesList(out); };
     server_encode_handlers[RACE_TIMES] = [this](ServerMessage& out) { encodeRaceTimes(out); };
     server_encode_handlers[TOTAL_TIMES] = [this](ServerMessage& out) { encodeTotalTimes(out); };
     
-    // Client message encode handlers 
     client_encode_handlers[CREATE_GAME] = [this](const ClientMessage& msg, uint8_t) { encodeCreateGame(msg); };
     client_encode_handlers[CHANGE_CAR] = [this](const ClientMessage& msg, uint8_t) { encodeChangeCar(msg); };
     client_encode_handlers[UPGRADE_CAR] = [this](const ClientMessage& msg, uint8_t) { encodeUpgrade(msg); };
@@ -23,7 +21,6 @@ std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage &msg
     buffer.clear();
     const std::string &cmd = msg.cmd;
 
-    // Buscar opcode en el mapa
     auto cmd_it = cmd_to_opcode.find(cmd);
     if (cmd_it == cmd_to_opcode.end()) {
         std::cerr << "[Protocol(Client)] Unknown command: " << cmd << std::endl;
@@ -31,14 +28,11 @@ std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage &msg
     }
     
     uint8_t opcode = cmd_it->second;
-    logClientEncode(opcode, msg);
 
-    // Header común: opcode + player_id + game_id
     buffer.push_back(opcode);
     insertUint32(static_cast<uint32_t>(msg.player_id));
     insertUint32(static_cast<uint32_t>(msg.game_id));
     
-    // Payload específico usando dispatch
     auto it = client_encode_handlers.find(opcode);
     if (it != client_encode_handlers.end()) {
         it->second(msg, opcode);
@@ -47,37 +41,6 @@ std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage &msg
     return buffer;
 }
 
-// Este hay q borrarlo despues
-void Protocol::logClientEncode(uint8_t opcode, const ClientMessage& msg) {
-    switch (opcode) {
-        case CREATE_GAME:
-            std::cout << "[Protocol(Client)] Encoding CREATE_GAME name='" << msg.game_name 
-                      << "' p=" << msg.player_id << " g=" << msg.game_id << std::endl;
-            break;
-        case JOIN_GAME:
-            std::cout << "[Protocol(Client)] Encoding JOIN_GAME p=" << msg.player_id 
-                      << " g=" << msg.game_id << std::endl;
-            break;
-        case GET_GAMES:
-            std::cout << "[Protocol(Client)] Encoding GET_GAMES" << std::endl;
-            break;
-        case START_GAME:
-            std::cout << "[Protocol(Client)] Encoding START_GAME" << std::endl;
-            break;
-        case UPGRADE_CAR:
-            std::cout << "[Protocol(Client)] Encoding UPGRADE_CAR type=" 
-                      << static_cast<int>(msg.upgrade_type) << std::endl;
-            break;
-        case CHEAT_CMD:
-            std::cout << "[Protocol(Client)] Encoding CHEAT_CMD type=" 
-                      << static_cast<int>(msg.cheat_type) << std::endl;
-            break;
-        default:
-            break;  // Sin logging para otros opcodes (movimiento, etc.)
-    }
-}
-
-// Helpers de encode, ClientMessage
 
 void Protocol::encodeCreateGame(const ClientMessage& msg) {
     insertString(msg.game_name);
@@ -112,8 +75,6 @@ std::vector<std::uint8_t> Protocol::encodeServerMessage(ServerMessage &out)
     return buffer;
 }
 
-// Helpers de encode, ServerMessage
-
 void Protocol::encodeUpdatePositions(ServerMessage& out) {
     buffer.push_back(UPDATE_POSITIONS);
     buffer.push_back(static_cast<std::uint8_t>(out.positions.size()));
@@ -122,7 +83,6 @@ void Protocol::encodeUpdatePositions(ServerMessage& out) {
         insertInt(pos_update.player_id);
         insertPosition(pos_update.new_pos);
 
-        // Checkpoints
         uint8_t next_count = static_cast<uint8_t>(pos_update.next_checkpoints.size());
         buffer.push_back(next_count);
 
@@ -130,20 +90,16 @@ void Protocol::encodeUpdatePositions(ServerMessage& out) {
             insertPosition(cp);
         }
 
-        // Car type
         insertString(pos_update.car_type);
 
-        // HP y flags
         insertFloat(pos_update.hp);
         buffer.push_back(pos_update.collision_flag ? 1 : 0);
 
-        // Upgrades
         buffer.push_back(pos_update.upgrade_speed);
         buffer.push_back(pos_update.upgrade_acceleration);
         buffer.push_back(pos_update.upgrade_handling);
         buffer.push_back(pos_update.upgrade_durability);
         
-        // Frenazo bool
         buffer.push_back(pos_update.is_stopping ? 1 : 0);
     }
 }

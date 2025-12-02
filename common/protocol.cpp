@@ -14,7 +14,6 @@ Protocol::Protocol(Socket&& socket) noexcept: skt(std::move(socket)), buffer() {
 }
 
 void Protocol::init_handlers() {
-    // Inicializar mapa de handlers para receiveClientMessage con lambdas
     receive_handlers[MOVE_UP_PRESSED] = [this]() { return receiveUpPressed(); };
     receive_handlers[MOVE_UP_RELEASED] = [this]() { return receiveUpRealesed(); };
     receive_handlers[MOVE_DOWN_PRESSED] = [this]() { return receiveDownPressed(); };
@@ -36,7 +35,6 @@ void Protocol::init_handlers() {
 }
 
 void Protocol::init_cmd_map() {
-    // Inicializar mapa de comandos string a opcode para encodeClientMessage
     cmd_to_opcode[MOVE_UP_PRESSED_STR] = MOVE_UP_PRESSED;
     cmd_to_opcode[MOVE_UP_RELEASED_STR] = MOVE_UP_RELEASED;
     cmd_to_opcode[MOVE_DOWN_PRESSED_STR] = MOVE_DOWN_PRESSED;
@@ -52,7 +50,7 @@ void Protocol::init_cmd_map() {
     cmd_to_opcode[START_GAME_STR] = START_GAME;
 
     cmd_to_opcode[CHANGE_CAR_STR] = CHANGE_CAR;
-    // Change car
+
     cmd_to_opcode[std::string(CHANGE_CAR_STR) + " " + GREEN_CAR] = CHANGE_CAR;
     cmd_to_opcode[std::string(CHANGE_CAR_STR) + " " + RED_SQUARED_CAR] = CHANGE_CAR;
     cmd_to_opcode[std::string(CHANGE_CAR_STR) + " " + RED_SPORTS_CAR] = CHANGE_CAR;
@@ -62,12 +60,12 @@ void Protocol::init_cmd_map() {
     cmd_to_opcode[std::string(CHANGE_CAR_STR) + " " + LIMOUSINE_CAR] = CHANGE_CAR;
     
     cmd_to_opcode[UPGRADE_CAR_STR] = UPGRADE_CAR;
-    // Upgrade car 
+
     cmd_to_opcode[std::string(UPGRADE_CAR_STR) + " 0"] = UPGRADE_CAR;
     cmd_to_opcode[std::string(UPGRADE_CAR_STR) + " 1"] = UPGRADE_CAR;
     cmd_to_opcode[std::string(UPGRADE_CAR_STR) + " 2"] = UPGRADE_CAR;
     cmd_to_opcode[std::string(UPGRADE_CAR_STR) + " 3"] = UPGRADE_CAR;
-    // Cheats
+
     cmd_to_opcode[CHEAT_GOD_MODE_STR] = CHEAT_CMD;
     cmd_to_opcode[CHEAT_DIE_STR] = CHEAT_CMD;
     cmd_to_opcode[CHEAT_SKIP_LAP_STR] = CHEAT_CMD;
@@ -103,10 +101,9 @@ ClientMessage Protocol::receiveClientMessage() {
     if (skt.recvall(&opcode, sizeof(opcode)) <= 0)
         return {};
 
-    // Buscar handler en el mapa
     auto it = receive_handlers.find(opcode);
     if (it != receive_handlers.end()) {
-        return it->second();  // Invocar handler
+        return it->second(); 
     }
     
     return {};  // Opcode desconocido

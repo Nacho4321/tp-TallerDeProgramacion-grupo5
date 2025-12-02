@@ -52,7 +52,6 @@ GameRenderer::GameRenderer(const char *windowTitle, int windowWidth, int windowH
 
         std::string lname = layer["name"].get<std::string>();
 
-        // Estas son las capas que DEBEN ir arriba del auto visualmente
         if (lname == "Collisions_Bridge" || lname == "Collisions_under")
         {
             for (auto &obj : layer["objects"])
@@ -336,7 +335,6 @@ void GameRenderer::renderCar(Car &car)
         carSprites.SetAlphaMod(255);
     }
 
-    // Render HP bar only for main car
     if (&car == mainCar.get()) {
         renderHPBar(car, carScreenX, carScreenY, sprite.w, sprite.h);
     }

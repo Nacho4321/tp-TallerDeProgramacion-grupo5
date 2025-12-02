@@ -5,7 +5,6 @@
 
 CarPhysicsConfig::CarPhysicsConfig() : config_path("config/car_physics.yaml")
 {
-    // Inicializar defaults con valores seguros
     defaults.center_offset_y = 0.0f;
 }
 
@@ -29,7 +28,7 @@ bool CarPhysicsConfig::loadFromFile(const std::string &path)
             loadCarPhysicsFromYAML(defaults, &default_config);
         }
 
-        // Load individual car configurations
+
         if (config["cars"])
         {
             const YAML::Node &cars = config["cars"];
@@ -43,12 +42,8 @@ bool CarPhysicsConfig::loadFromFile(const std::string &path)
                 loadCarPhysicsFromYAML(car_physics, &it->second);
 
                 car_configs[car_name] = car_physics;
-                std::cout << "[CarPhysicsConfig] Loaded config for car type: " << car_name << std::endl;
             }
         }
-
-        std::cout << "[CarPhysicsConfig] Successfully loaded " << car_configs.size()
-                  << " car configurations from " << path << std::endl;
         return true;
     }
     catch (const YAML::Exception &e)
@@ -65,7 +60,6 @@ bool CarPhysicsConfig::loadFromFile(const std::string &path)
 
 bool CarPhysicsConfig::reload()
 {
-    std::cout << "[CarPhysicsConfig] Reloading config from " << config_path << std::endl;
     car_configs.clear();
     return loadFromFile(config_path);
 }
@@ -103,7 +97,6 @@ void CarPhysicsConfig::loadCarPhysicsFromYAML(CarPhysics &physics, const void *n
 {
     const YAML::Node &node = *static_cast<const YAML::Node *>(node_ptr);
 
-    // Load turning properties
     if (node["turning"])
     {
         const YAML::Node &turning = node["turning"];
@@ -115,7 +108,6 @@ void CarPhysicsConfig::loadCarPhysicsFromYAML(CarPhysics &physics, const void *n
             physics.angular_damping = turning["angular_damping"].as<float>();
     }
 
-    // Load movement properties
     if (node["movement"])
     {
         const YAML::Node &movement = node["movement"];
@@ -129,7 +121,6 @@ void CarPhysicsConfig::loadCarPhysicsFromYAML(CarPhysics &physics, const void *n
             physics.speed_controller_gain = movement["speed_controller_gain"].as<float>();
     }
 
-    // Load friction properties
     if (node["friction"])
     {
         const YAML::Node &friction = node["friction"];
@@ -141,7 +132,6 @@ void CarPhysicsConfig::loadCarPhysicsFromYAML(CarPhysics &physics, const void *n
             physics.linear_damping = friction["linear_damping"].as<float>();
     }
 
-    // Load body properties
     if (node["body"])
     {
         const YAML::Node &body = node["body"];
@@ -159,7 +149,6 @@ void CarPhysicsConfig::loadCarPhysicsFromYAML(CarPhysics &physics, const void *n
             physics.center_offset_y = body["center_offset_y"].as<float>();
     }
 
-    // Load health properties
     if (node["health"]) {
         const YAML::Node& health = node["health"];
         if (health["max_hp"]) physics.max_hp = health["max_hp"].as<float>();

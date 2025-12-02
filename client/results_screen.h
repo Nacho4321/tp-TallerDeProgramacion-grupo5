@@ -12,7 +12,6 @@
 
 using namespace SDL2pp;
 
-// Configuration constants
 constexpr int RESULTS_DISPLAY_DURATION_MS = 9000;
 constexpr int OVERLAY_ALPHA = 180;
 
@@ -21,7 +20,7 @@ private:
     std::unique_ptr<Font> contentFont;
     std::unique_ptr<Font> headerFont;
     std::array<std::unique_ptr<Texture>, 8> positionImages;
-    std::unique_ptr<Texture> tallerTexture;  // Upgrade icons sprite sheet
+    std::unique_ptr<Texture> tallerTexture;
 
     bool visible;
     std::chrono::steady_clock::time_point startTime;
@@ -29,7 +28,6 @@ private:
     std::vector<ServerMessage::PlayerTotalTime> totalResults;
     int32_t mainPlayerId;
 
-    // Player upgrade levels for displaying icons
     uint8_t upgradeSpeed;
     uint8_t upgradeAcceleration;
     uint8_t upgradeHandling;

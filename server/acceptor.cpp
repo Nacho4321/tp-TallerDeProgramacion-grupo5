@@ -14,10 +14,9 @@ void Acceptor::run()
     {
         try
         {
-            reap(); // limpiar clientes muertos
+            reap();
 
-            std::cout << "[Acceptor] Esperando conexiones en el puerto..." << std::endl;
-            Socket peer = acceptor.accept(); // bloqueante, espera cliente
+            Socket peer = acceptor.accept();
 
             auto c = std::make_unique<ClientHandler>(std::move(peer), message_handler);
             c->start();
@@ -27,7 +26,7 @@ void Acceptor::run()
         catch (...)
         {
             if (!should_keep_running())
-                break; // socket cerrado por stop()
+                break;
         }
     }
     kill_all();

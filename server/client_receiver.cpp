@@ -8,7 +8,6 @@ void ClientReceiver::run()
 {
     try
     {
-        std::cout << "[ClientReceiver(Server)] Hilo receiver iniciado para cliente " << client_id << std::endl;
         while (should_keep_running())
         {
             ClientMessage client_msg = protocol.receiveClientMessage();
@@ -39,5 +38,4 @@ void ClientReceiver::run()
     {
         std::cerr << "[Receiver] Exception: " << e.what() << std::endl;
     }
-    std::cout << "[ClientReceiver(Server)] Terminando receiver de cliente " << client_id << std::endl;
 }

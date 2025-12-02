@@ -147,9 +147,6 @@ bool GameConnection::createGame(const std::string& gameName, uint32_t& outGameId
             gameId_ = outGameId;
             playerId_ = outPlayerId;
             mapId_ = outMapId;
-            std::cout << "[GameConnection] Partida creada: game_id=" << gameId_ 
-                      << " player_id=" << playerId_ 
-                      << " map_id=" << int(mapId_) << std::endl;
         }
         return success;
         
@@ -172,9 +169,6 @@ bool GameConnection::joinGame(uint32_t gameId, uint32_t& outPlayerId) {
             gameId_ = gameId;
             playerId_ = outPlayerId;
             mapId_ = outMapId;
-            std::cout << "[GameConnection] Unido a partida: game_id=" << gameId_ 
-                      << " player_id=" << playerId_ 
-                      << " map_id=" << int(mapId_) << std::endl;
         }
         return success;
         
