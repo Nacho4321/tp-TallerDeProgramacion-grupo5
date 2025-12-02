@@ -133,15 +133,6 @@ inline const char *const MAP_SPAWN_POINTS_PATHS[] = {
     "data/cities/san_andreas_spawn_points.json",
     "data/cities/vice_city_spawn_points.json"};
 
-#define COLLISION_FLOOR 0x0001     
-#define COLLISION_BRIDGE 0x0002    
-#define COLLISION_UNDER 0x0004    
-#define SENSOR_START_BRIDGE 0x0008 
-#define SENSOR_END_BRIDGE 0x0010   
-
-#define CAR_GROUND 0x0020 
-#define CAR_BRIDGE 0x0040 
-
 #define GREEN_CAR "green_car"
 #define RED_SQUARED_CAR "red_squared_car"
 #define RED_SPORTS_CAR "red_sports_car"
@@ -198,9 +189,5 @@ enum class CarUpgrade
 #define HANDLING_UPGRADE_MULTIPLIER 1.15f
 #define MAX_UPGRADES_PER_STAT 3
 #define PENALIZATION_TIME 2000
-
-// Campeonato: 3 rondas
-constexpr int TOTAL_ROUNDS = 3;
-static constexpr int ROUND_TIME_LIMIT_MS = 10 * 60 * 1000; // 10 minutos en ms
 
 #endif

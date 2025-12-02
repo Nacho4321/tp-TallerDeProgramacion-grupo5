@@ -7,7 +7,7 @@
 #include "../../PlayerData.h"
 #include "../../car_physics_config.h"
 #include "../../game_state.h"
-#include "../../../common/constants.h"
+#include "../gameloop_constants.h"
 
 class RaceManager
 {

@@ -1,5 +1,6 @@
 #include "game_event_handler.h"
 #include "../common/constants.h"
+#include "gameloop/gameloop_constants.h"
 #include <box2d/b2_world.h>
 #include <box2d/b2_body.h>
 #include <box2d/b2_polygon_shape.h>

@@ -6,7 +6,7 @@
 #include <box2d/b2_contact.h>
 #include "../../PlayerData.h"
 #include "../npc/npc_data.h"
-#include "../../../common/constants.h"
+#include "../gameloop_constants.h"
 
 
 // BridgeHandler - Maneja la lógica de transición de vehículos entre suelo y puente.

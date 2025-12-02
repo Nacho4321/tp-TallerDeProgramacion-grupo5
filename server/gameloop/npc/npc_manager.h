@@ -9,6 +9,7 @@
 #include "npc_data.h"
 #include "../../map_layout.h"
 #include "../../../common/messages.h"
+#include "../gameloop_constants.h"
 
 class NPCManager
 {
@@ -35,7 +36,6 @@ public:
 
 private:
     // Constantes
-    static constexpr float SCALE = 32.0f;
     static constexpr float NPC_DIRECTION_THRESHOLD = 0.05f;
     static constexpr float NPC_ARRIVAL_THRESHOLD_M = 0.5f;
     static constexpr float MIN_DISTANCE_FROM_PARKED_M = 1.0f;

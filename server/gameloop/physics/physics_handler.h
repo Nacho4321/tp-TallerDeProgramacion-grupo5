@@ -5,12 +5,12 @@
 #include <box2d/b2_math.h>
 #include "../../PlayerData.h"
 #include "../../car_physics_config.h"
+#include "../gameloop_constants.h"
 
 class PhysicsHandler
 {
 public:
     // Constantes de física
-    static constexpr float SCALE = 32.0f;
     static constexpr float RIGHT_VECTOR_X = 1.0f;
     static constexpr float RIGHT_VECTOR_Y = 0.0f;
     static constexpr float FORWARD_VECTOR_X = 0.0f;

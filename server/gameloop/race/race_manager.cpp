@@ -1,7 +1,6 @@
 #include "race_manager.h"
+#include "../gameloop_constants.h"
 #include <iostream>
-
-static constexpr float SCALE = 32.0f;
 
 void RaceManager::complete_player_race(
     PlayerData &player_data,

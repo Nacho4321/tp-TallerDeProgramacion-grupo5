@@ -11,11 +11,11 @@
 #include <array>
 #include "../../PlayerData.h"
 #include "../../map_layout.h"
+#include "../gameloop_constants.h"
 
 class CheckpointHandler
 {
 public:
-    static constexpr float SCALE = 32.0f;
     // Configura los checkpoints desde un archivo JSON
     static void setup_checkpoints_from_file(
         const std::string &json_path,

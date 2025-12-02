@@ -9,7 +9,7 @@
 #include <string>
 #include <functional>
 #include "../../car_physics_config.h"
-#include "../../../common/constants.h"
+#include "../gameloop_constants.h"
 
 // Callback para cuando hay un contacto
 using ContactCallback = std::function<void(b2Fixture *, b2Fixture *)>;
@@ -32,8 +32,6 @@ private:
     b2World world;
     ContactListener contact_listener;
     CarPhysicsConfig &physics_config;
-
-    static constexpr float SCALE = 32.0f;
 
 public:
     explicit WorldManager(CarPhysicsConfig &config);

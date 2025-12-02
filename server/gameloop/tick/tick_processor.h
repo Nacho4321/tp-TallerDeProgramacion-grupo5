@@ -14,6 +14,7 @@
 #include "../bridge/bridge_handler.h"
 #include "../race/race_manager.h"
 #include "../collision/collision_handler.h"
+#include "../gameloop_constants.h"
 
 class TickProcessor
 {
@@ -50,10 +51,6 @@ private:
     WorldManager &world_manager;
     BroadcastManager &broadcast_manager;
     std::vector<b2Vec2> &checkpoint_centers;
-
-    static constexpr float FPS = 1.0f / 60.0f;
-    static constexpr int VELOCITY_ITERS = 8;
-    static constexpr int COLLISION_ITERS = 3;
 };
 
 #endif

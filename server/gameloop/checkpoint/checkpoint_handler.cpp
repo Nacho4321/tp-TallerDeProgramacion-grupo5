@@ -1,4 +1,5 @@
 #include "checkpoint_handler.h"
+#include "../gameloop_constants.h"
 #include "../../../common/constants.h"
 #include <iostream>
 
@@ -25,7 +26,7 @@ void CheckpointHandler::setup_checkpoints_from_file(
 
         b2CircleShape shape;
         shape.m_p.Set(0.0f, 0.0f);
-        shape.m_radius = CHECKPOINT_RADIUS_PX / CheckpointHandler::SCALE;
+        shape.m_radius = CHECKPOINT_RADIUS_PX / SCALE;
 
         b2FixtureDef fd;
         fd.shape = &shape;

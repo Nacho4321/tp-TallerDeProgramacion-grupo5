@@ -1,5 +1,5 @@
 #include "collision_handler.h"
-#include "../../../common/constants.h"
+#include "../gameloop_constants.h"
 #include <iostream>
 
 int CollisionHandler::find_player_by_body(

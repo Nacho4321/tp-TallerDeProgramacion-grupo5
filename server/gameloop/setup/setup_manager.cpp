@@ -1,5 +1,6 @@
 #include "setup_manager.h"
 #include "../../npc_config.h"
+#include "../gameloop_constants.h"
 #include "../../../common/constants.h"
 
 SetupManager::SetupManager(
