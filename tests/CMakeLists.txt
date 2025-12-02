@@ -25,6 +25,7 @@ target_sources(taller_tests
     ${CMAKE_SOURCE_DIR}/server/game_event_handler.cpp
     ${CMAKE_SOURCE_DIR}/server/gameloop/npc/npc_manager.cpp
     ${CMAKE_SOURCE_DIR}/server/gameloop/bridge/bridge_handler.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop/checkpoint/checkpoint_handler.cpp
 
     PUBLIC
     # .h files

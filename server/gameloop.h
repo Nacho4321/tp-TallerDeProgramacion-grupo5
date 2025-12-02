@@ -17,6 +17,7 @@
 #include <chrono>
 #include "gameloop/npc/npc_manager.h"
 #include "gameloop/bridge/bridge_handler.h"
+#include "gameloop/checkpoint/checkpoint_handler.h"
 #define INITIAL_ID 1
 #include "game_state.h"
 
@@ -101,9 +102,6 @@ private:
     // Helpers usados por el contact listener
     int find_player_by_body(b2Body *body);
     void process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpointFix);
-    bool is_valid_checkpoint_collision(b2Fixture *player_fixture, b2Fixture *checkpoint_fixture,
-                                       int &out_player_id, int &out_checkpoint_index);
-    void handle_checkpoint_reached(PlayerData &player_data, int player_id, int checkpoint_index);
     void complete_player_race(PlayerData &player_data);
     void disqualify_player(PlayerData &player_data, int player_id);
 
@@ -113,7 +111,6 @@ private:
 
     // Setup and initialization helpers
     void setup_world();
-    void setup_checkpoints_from_file(const std::string &json_path);
     void setup_npc_config();
     void setup_map_layout();
 

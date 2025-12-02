@@ -24,38 +24,6 @@
 //
 //
 
-void GameLoop::setup_checkpoints_from_file(const std::string &json_path)
-{
-    std::vector<b2Vec2> checkpoints;
-    map_layout.extract_checkpoints(json_path, checkpoints);
-
-    if (checkpoints.empty())
-        return;
-
-    checkpoint_centers = checkpoints;
-    for (size_t i = 0; i < checkpoint_centers.size(); ++i)
-    {
-        b2BodyDef bd;
-        bd.type = b2_staticBody;
-        bd.position = checkpoint_centers[i];
-        b2Body *checkpoint_body = world.CreateBody(&bd);
-
-        b2CircleShape shape;
-        shape.m_p.Set(0.0f, 0.0f);
-        shape.m_radius = CHECKPOINT_RADIUS_PX / SCALE;
-
-        b2FixtureDef fd;
-        fd.shape = &shape;
-        fd.isSensor = true;
-
-        b2Fixture *fixture = checkpoint_body->CreateFixture(&fd);
-        checkpoint_fixtures[fixture] = static_cast<int>(i);
-    }
-
-    std::cout << "[GameLoop] Created " << checkpoint_centers.size()
-              << " checkpoint sensors (from " << json_path << ")." << std::endl;
-}
-
 void GameLoop::setup_npc_config()
 {
     auto &npc_cfg = NPCConfig::getInstance();
@@ -74,7 +42,7 @@ void GameLoop::setup_world()
     map_layout.extract_map_npc_data(MAP_JSON_PATHS[safe_map_id], street_waypoints, parked_data);
     if (!parked_data.empty() || !street_waypoints.empty())
     {
-        npc_manager.init(parked_data, street_waypoints);
+        npc_manager.init(parked_data, street_waypoints, spawn_points);
     }
 }
 
@@ -86,21 +54,13 @@ void GameLoop::setup_map_layout()
 
 void GameLoop::load_current_round_checkpoints()
 {
-    // Limpiar checkpoints previos y fixtures
-    for (auto &pair : checkpoint_fixtures)
-    {
-        b2Body *body = pair.first->GetBody();
-        if (body)
-        {
-            world.DestroyBody(body);
-        }
-    }
-    checkpoint_fixtures.clear();
-    checkpoint_centers.clear();
-
-    std::string json_path = checkpoint_sets[current_round];
-    setup_checkpoints_from_file(json_path);
-    std::cout << "[GameLoop] Round " << current_round + 1 << " loaded checkpoints from: " << json_path << std::endl;
+    CheckpointHandler::load_round_checkpoints(
+        current_round,
+        checkpoint_sets,
+        world,
+        map_layout,
+        checkpoint_centers,
+        checkpoint_fixtures);
 }
 
 //
@@ -990,25 +950,6 @@ void GameLoop::update_drive_for_player(PlayerData &player_data)
     apply_steering_torque(body, want_left, want_right, car_physics.torque);
 }
 
-bool GameLoop::is_valid_checkpoint_collision(b2Fixture *player_fixture, b2Fixture *checkpoint_fixture,
-                                             int &out_player_id, int &out_checkpoint_index)
-{
-    if (!player_fixture || !checkpoint_fixture)
-        return false;
-
-    b2Body *player_body = player_fixture->GetBody();
-    out_player_id = find_player_by_body(player_body);
-    if (out_player_id < 0)
-        return false;
-
-    auto it = checkpoint_fixtures.find(checkpoint_fixture);
-    if (it == checkpoint_fixtures.end())
-        return false;
-
-    out_checkpoint_index = it->second;
-    return true;
-}
-
 void GameLoop::disqualify_player(PlayerData &player_data, int player_id)
 {
     // Marcar como muerto y descalificado
@@ -1038,38 +979,23 @@ void GameLoop::disqualify_player(PlayerData &player_data, int player_id)
     check_race_completion();
 }
 
-void GameLoop::handle_checkpoint_reached(PlayerData &player_data, int player_id, int checkpoint_index)
-{
-    if (player_data.race_finished)
-        return;
-
-    if (player_data.next_checkpoint != checkpoint_index)
-        return;
-
-    int total = static_cast<int>(checkpoint_centers.size());
-    int new_next = player_data.next_checkpoint + 1;
-
-    if (total > 0 && new_next >= total)
-    {
-        complete_player_race(player_data);
-    }
-    else
-    {
-        player_data.next_checkpoint = new_next;
-
-        std::cout << "[GameLoop] Player " << player_id << " passed checkpoint "
-                  << checkpoint_index << " next=" << player_data.next_checkpoint << std::endl;
-    }
-}
-
 void GameLoop::process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpointFix)
 {
     int player_id, checkpoint_index;
-    if (!is_valid_checkpoint_collision(maybePlayerFix, maybeCheckpointFix, player_id, checkpoint_index))
+    if (!CheckpointHandler::is_valid_checkpoint_collision(
+            maybePlayerFix, maybeCheckpointFix, players, checkpoint_fixtures,
+            player_id, checkpoint_index))
         return;
 
     PlayerData &player_data = players[player_id];
-    handle_checkpoint_reached(player_data, player_id, checkpoint_index);
+    int total = static_cast<int>(checkpoint_centers.size());
+    bool completed_lap = CheckpointHandler::handle_checkpoint_reached(
+        player_data, player_id, checkpoint_index, total);
+    
+    if (completed_lap)
+    {
+        complete_player_race(player_data);
+    }
 }
 
 void GameLoop::handle_begin_contact(b2Fixture *fixture_a, b2Fixture *fixture_b)
