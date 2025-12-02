@@ -224,106 +224,94 @@ void EventDispatcher::handle_event(Event &event)
 
 void EventDispatcher::upgrade_max_speed(Event &event)
 {
-    std::cout << "[EventDispatcher] upgrade_max_speed called, client_id=" << event.client_id
-              << " current_state=" << static_cast<int>(current_state) << std::endl;
     if (current_state != GameState::STARTING)
+    {
         return;
+    }
 
     std::lock_guard<std::mutex> lock(players_map_mutex);
     auto it = players.find(event.client_id);
     int rounds = it->second.rounds_completed;
-    if (it == players.end() || rounds == 0)
+    if (it == players.end() || rounds == 0 || it->second.upgrades.speed >= MAX_UPGRADES_PER_STAT)
+    {
         return;
+    }
 
-    if (it->second.upgrades.speed >= MAX_UPGRADES_PER_STAT)
-        return;
-
-    float old_speed = it->second.car.speed;
     it->second.car.speed *= SPEED_UPGRADE_MULTIPLIER;
     it->second.upgrades.speed++;
-    uint64_t penalization = uint64_t(PENALIZATION_TIME) + uint64_t(it->second.round_times_ms.at(rounds));
-    it->second.round_times_ms.at(rounds) = uint32_t(penalization);
-    std::cout << "[EventDispatcher] Player " << event.client_id << " speed upgraded to level "
-              << static_cast<int>(it->second.upgrades.speed) << ": "
-              << old_speed << " -> " << it->second.car.speed << std::endl;
+    uint32_t old_time = it->second.round_times_ms[rounds];
+
+    uint64_t penalization = uint64_t(PENALIZATION_TIME) + uint64_t(old_time);
+
+    it->second.round_times_ms[rounds] = uint32_t(penalization);
+
+    it->second.total_time_ms = it->second.total_time_ms - old_time + uint32_t(penalization);
 }
 
 void EventDispatcher::upgrade_max_acceleration(Event &event)
 {
-    std::cout << "[EventDispatcher] upgrade_max_acceleration called, client_id=" << event.client_id
-              << " current_state=" << static_cast<int>(current_state) << std::endl;
     if (current_state != GameState::STARTING)
         return;
 
     std::lock_guard<std::mutex> lock(players_map_mutex);
     auto it = players.find(event.client_id);
     int rounds = it->second.rounds_completed;
-    if (it == players.end() || rounds == 0)
+    if (it == players.end() || rounds == 0 || it->second.upgrades.acceleration >= MAX_UPGRADES_PER_STAT)
+    {
         return;
-
-    if (it->second.upgrades.acceleration >= MAX_UPGRADES_PER_STAT)
-        return;
-
-    float old_accel = it->second.car.acceleration;
+    }
     it->second.car.acceleration *= ACCELERATION_UPGRADE_MULTIPLIER;
     it->second.upgrades.acceleration++;
-    uint64_t penalization = uint64_t(PENALIZATION_TIME) + uint64_t(it->second.round_times_ms.at(rounds));
-    it->second.round_times_ms.at(rounds) = uint32_t(penalization);
-    std::cout << "[EventDispatcher] Player " << event.client_id << " acceleration upgraded to level "
-              << static_cast<int>(it->second.upgrades.acceleration) << ": "
-              << old_accel << " -> " << it->second.car.acceleration << std::endl;
+    uint32_t old_time = it->second.round_times_ms[rounds];
+    uint64_t penalization = uint64_t(PENALIZATION_TIME) + uint64_t(old_time);
+    it->second.round_times_ms[rounds] = uint32_t(penalization);
+
+    it->second.total_time_ms = it->second.total_time_ms - old_time + uint32_t(penalization);
 }
 
 void EventDispatcher::upgrade_durability(Event &event)
 {
-    std::cout << "[EventDispatcher] upgrade_durability called, client_id=" << event.client_id
-              << " current_state=" << static_cast<int>(current_state) << std::endl;
     if (current_state != GameState::STARTING)
         return;
 
     std::lock_guard<std::mutex> lock(players_map_mutex);
     auto it = players.find(event.client_id);
     int rounds = it->second.rounds_completed;
-    if (it == players.end() || rounds == 0)
+    if (it == players.end() || rounds == 0 || it->second.upgrades.durability >= MAX_UPGRADES_PER_STAT)
+    {
         return;
+    }
 
-    if (it->second.upgrades.durability >= MAX_UPGRADES_PER_STAT)
-        return;
-
-    float old_durability = it->second.car.durability;
     it->second.car.durability -= DURABILITY_UPGRADE_REDUCTION;
     it->second.upgrades.durability++;
-    uint64_t penalization = uint64_t(PENALIZATION_TIME) + uint64_t(it->second.round_times_ms.at(rounds));
-    it->second.round_times_ms.at(rounds) = uint32_t(penalization);
-    std::cout << "[EventDispatcher] Player " << event.client_id << " durability upgraded to level "
-              << static_cast<int>(it->second.upgrades.durability) << ": "
-              << old_durability << " -> " << it->second.car.durability << std::endl;
+
+    uint32_t old_time = it->second.round_times_ms[rounds];
+    uint64_t penalization = uint64_t(PENALIZATION_TIME) + uint64_t(old_time);
+    it->second.round_times_ms[rounds] = uint32_t(penalization);
+    it->second.total_time_ms = it->second.total_time_ms - old_time + uint32_t(penalization);
 }
 
 void EventDispatcher::upgrade_handling(Event &event)
 {
-    std::cout << "[EventDispatcher] upgrade_handling called, client_id=" << event.client_id
-              << " current_state=" << static_cast<int>(current_state) << std::endl;
+
     if (current_state != GameState::STARTING)
         return;
 
     std::lock_guard<std::mutex> lock(players_map_mutex);
     auto it = players.find(event.client_id);
     int rounds = it->second.rounds_completed;
-    if (it == players.end() || rounds == 0)
+    if (it == players.end() || rounds == 0 || it->second.upgrades.handling >= MAX_UPGRADES_PER_STAT)
+    {
         return;
-
-    if (it->second.upgrades.handling >= MAX_UPGRADES_PER_STAT)
-        return;
-
-    float old_handling = it->second.car.handling;
+    }
     it->second.car.handling *= HANDLING_UPGRADE_MULTIPLIER;
     it->second.upgrades.handling++;
-    uint64_t penalization = uint64_t(PENALIZATION_TIME) + uint64_t(it->second.round_times_ms.at(rounds));
-    it->second.round_times_ms.at(rounds) = uint32_t(penalization);
-    std::cout << "[EventDispatcher] Player " << event.client_id << " handling upgraded to level "
-              << static_cast<int>(it->second.upgrades.handling) << ": "
-              << old_handling << " -> " << it->second.car.handling << std::endl;
+
+    uint32_t old_time = it->second.round_times_ms[rounds];
+    uint64_t penalization = uint64_t(PENALIZATION_TIME) + uint64_t(old_time);
+    it->second.round_times_ms[rounds] = uint32_t(penalization);
+
+    it->second.total_time_ms = it->second.total_time_ms - old_time + uint32_t(penalization);
 }
 
 // ============== CHEATS ==============

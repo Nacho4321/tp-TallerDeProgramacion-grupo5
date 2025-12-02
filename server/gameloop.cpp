@@ -274,14 +274,15 @@ GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id_param)
 
     // Inicializar rutas según el mapa seleccionado
     uint8_t safe_map_id = (map_id < MAP_COUNT) ? map_id : 0;
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 3; ++i)
+    {
         checkpoint_sets[i] = MAP_CHECKPOINT_PATHS[safe_map_id][i];
     }
-    
+
     // Cargar spawn points del mapa correspondiente
     map_layout.extract_spawn_points(MAP_SPAWN_POINTS_PATHS[safe_map_id], spawn_points);
-    
-    std::cout << "[GameLoop] Initialized with map_id=" << int(map_id) 
+
+    std::cout << "[GameLoop] Initialized with map_id=" << int(map_id)
               << " (" << MAP_NAMES[safe_map_id] << ")" << std::endl;
 
     // seteo el contact listener owner y lo registro con el world
@@ -488,20 +489,22 @@ void GameLoop::complete_player_race(PlayerData &player_data)
     player_data.race_finished = true;
     player_data.disqualified = false;
 
-    // Guardar el tiempo de la ronda actual (sin penalización previa)
+    // Guardar el tiempo de la ronda actual
     int round_idx = player_data.rounds_completed;
+    uint32_t existing_penalization = 0;
+
     if (round_idx >= 0 && round_idx < TOTAL_ROUNDS)
     {
-        player_data.round_times_ms[round_idx] = static_cast<uint32_t>(elapsed_ms);
-        std::cout << "[GameLoop] Round " << round_idx << " completed: "
-                  << elapsed_ms << "ms" << std::endl;
+        // Si ya hay penalizaciones acumuladas en esta ronda, preservarlas
+        existing_penalization = player_data.round_times_ms[round_idx];
+        uint32_t new_total_time = static_cast<uint32_t>(elapsed_ms) + existing_penalization;
+
+        player_data.round_times_ms[round_idx] = new_total_time;
     }
 
     // Incrementar ronda completada y acumular tiempo total
     player_data.rounds_completed = std::min(player_data.rounds_completed + 1, TOTAL_ROUNDS);
-    player_data.total_time_ms += static_cast<uint32_t>(elapsed_ms);
-
-    // Activar inmortalidad al terminar la ronda (para que no muera mientras espera)
+    player_data.total_time_ms += static_cast<uint32_t>(elapsed_ms) + existing_penalization;
     player_data.god_mode = true;
     check_race_completion();
 }
@@ -1093,9 +1096,11 @@ void GameLoop::broadcast_race_end_message()
             PlayerData &pd = entry.second;
             uint32_t time_ms = 10u * 60u * 1000u;
             bool dq = pd.disqualified || pd.is_dead;
-            if (!pd.round_times_ms.empty())
+
+            int completed_round_idx = pd.rounds_completed - 1;
+            if (completed_round_idx >= 0 && completed_round_idx < TOTAL_ROUNDS)
             {
-                time_ms = pd.round_times_ms.back();
+                time_ms = pd.round_times_ms[completed_round_idx];
             }
             msg.race_times.push_back({static_cast<uint32_t>(pid), time_ms, dq, round_index});
         }
