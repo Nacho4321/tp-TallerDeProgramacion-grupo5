@@ -9,10 +9,12 @@
 Protocol::Protocol(Socket&& socket) noexcept: skt(std::move(socket)), buffer() {
     init_handlers();
     init_cmd_map();
+    init_encode_handlers();
+    init_server_receive_handlers();
 }
 
 void Protocol::init_handlers() {
-    // Inicializar mapa de handlers para receiveClientMessage
+    // Inicializar mapa de handlers para receiveClientMessage con lambdas
     receive_handlers[MOVE_UP_PRESSED] = [this]() { return receiveUpPressed(); };
     receive_handlers[MOVE_UP_RELEASED] = [this]() { return receiveUpRealesed(); };
     receive_handlers[MOVE_DOWN_PRESSED] = [this]() { return receiveDownPressed(); };
@@ -21,53 +23,16 @@ void Protocol::init_handlers() {
     receive_handlers[MOVE_LEFT_RELEASED] = [this]() { return receiveLeftReleased(); };
     receive_handlers[MOVE_RIGHT_PRESSED] = [this]() { return receiveRightPressed(); };
     receive_handlers[MOVE_RIGHT_RELEASED] = [this]() { return receiveRightReleased(); };
-    
-    receive_handlers[CREATE_GAME] = [this]() {
-        auto msg = receiveCreateGame();
-        std::cout << "[Protocol(Server)] Decodificado CREATE_GAME player_id=" << msg.player_id
-                  << " game_id=" << msg.game_id << std::endl;
-        return msg;
-    };
-    
-    receive_handlers[JOIN_GAME] = [this]() {
-        auto msg = receiveJoinGame();
-        std::cout << "[Protocol(Server)] Decodificado JOIN_GAME player_id=" << msg.player_id
-                  << " game_id=" << msg.game_id << std::endl;
-        return msg;
-    };
-    
-    receive_handlers[GET_GAMES] = [this]() {
-        auto msg = receiveGetGames();
-        std::cout << "[Protocol(Server)] Decodificado GET_GAMES player_id=" << msg.player_id
-                  << " game_id=" << msg.game_id << std::endl;
-        return msg;
-    };
-    
-    receive_handlers[START_GAME] = [this]() {
-        auto msg = receiveStartGame();
-        std::cout << "[Protocol(Server)] Decodificado START_GAME player_id=" << msg.player_id
-                  << " game_id=" << msg.game_id << std::endl;
-        return msg;
-    };
-    
-    receive_handlers[CHANGE_CAR] = [this]() {
-        auto msg = receiveChangeCar();
-        std::cout << "[Protocol(Server)] Decodificado CHANGE_CAR player_id=" << msg.player_id
-                  << " game_id=" << msg.game_id << " car_type=" << msg.car_type << std::endl;
-        return msg;
-    };
-    receive_handlers[UPGRADE_CAR] = [this]() {
-        auto msg = receiveUpgradeCar();
-        std::cout << "[Protocol(Server)] Decodificado UPGRADE_CAR player_id=" << msg.player_id
-                  << " game_id=" << msg.game_id << " upgrade_type=" << static_cast<int>(msg.upgrade_type) << std::endl;
-        return msg;
-    };
-    receive_handlers[CHEAT_CMD] = [this]() {
-        auto msg = receiveCheat();
-        std::cout << "[Protocol(Server)] Decodificado CHEAT player_id=" << msg.player_id
-                  << " game_id=" << msg.game_id << " cheat_type=" << static_cast<int>(msg.cheat_type) << std::endl;
-        return msg;
-    };
+
+    receive_handlers[CREATE_GAME] = [this]() { return receiveCreateGame();};
+    receive_handlers[JOIN_GAME] = [this]() { return receiveJoinGame(); };
+    receive_handlers[GET_GAMES] = [this]() { return receiveGetGames(); };
+    receive_handlers[START_GAME] = [this]() { return receiveStartGame(); };
+
+    receive_handlers[CHANGE_CAR] = [this]() { return receiveChangeCar(); };
+    receive_handlers[UPGRADE_CAR] = [this]() { return receiveUpgradeCar(); };
+
+    receive_handlers[CHEAT_CMD] = [this]() { return receiveCheat(); };
 }
 
 void Protocol::init_cmd_map() {
@@ -80,17 +45,48 @@ void Protocol::init_cmd_map() {
     cmd_to_opcode[MOVE_LEFT_RELEASED_STR] = MOVE_LEFT_RELEASED;
     cmd_to_opcode[MOVE_RIGHT_PRESSED_STR] = MOVE_RIGHT_PRESSED;
     cmd_to_opcode[MOVE_RIGHT_RELEASED_STR] = MOVE_RIGHT_RELEASED;
+
     cmd_to_opcode[CREATE_GAME_STR] = CREATE_GAME;
     cmd_to_opcode[JOIN_GAME_STR] = JOIN_GAME;
     cmd_to_opcode[GET_GAMES_STR] = GET_GAMES;
     cmd_to_opcode[START_GAME_STR] = START_GAME;
+
     cmd_to_opcode[CHANGE_CAR_STR] = CHANGE_CAR;
     cmd_to_opcode[UPGRADE_CAR_STR] = UPGRADE_CAR;
+    // Upgrade car 
+    cmd_to_opcode[std::string(UPGRADE_CAR_STR) + " 0"] = UPGRADE_CAR;
+    cmd_to_opcode[std::string(UPGRADE_CAR_STR) + " 1"] = UPGRADE_CAR;
+    cmd_to_opcode[std::string(UPGRADE_CAR_STR) + " 2"] = UPGRADE_CAR;
+    cmd_to_opcode[std::string(UPGRADE_CAR_STR) + " 3"] = UPGRADE_CAR;
     // Cheats
     cmd_to_opcode[CHEAT_GOD_MODE_STR] = CHEAT_CMD;
     cmd_to_opcode[CHEAT_DIE_STR] = CHEAT_CMD;
     cmd_to_opcode[CHEAT_SKIP_LAP_STR] = CHEAT_CMD;
     cmd_to_opcode[CHEAT_FULL_UPGRADE_STR] = CHEAT_CMD;
+}
+
+void Protocol::init_server_receive_handlers() {
+    server_receive_handlers[UPDATE_POSITIONS] = [this](ServerMessage& out, GameJoinedResponse&) {
+        out = receivePositionsUpdate();
+    };
+    server_receive_handlers[GAME_JOINED] = [this](ServerMessage&, GameJoinedResponse& joined) {
+        joined = receiveGameJoinedResponse();
+    };
+    server_receive_handlers[GAMES_LIST] = [this](ServerMessage& out, GameJoinedResponse&) {
+        out = receiveGamesList();
+    };
+    server_receive_handlers[GAME_STARTED] = [](ServerMessage& out, GameJoinedResponse&) {
+        out.opcode = GAME_STARTED;
+    };
+    server_receive_handlers[STARTING_COUNTDOWN] = [this](ServerMessage& out, GameJoinedResponse&) {
+        out = receiveStartingCountdown();
+    };
+    server_receive_handlers[RACE_TIMES] = [this](ServerMessage& out, GameJoinedResponse&) {
+        out = receiveRaceTimes();
+    };
+    server_receive_handlers[TOTAL_TIMES] = [this](ServerMessage& out, GameJoinedResponse&) {
+        out = receiveTotalTimes();
+    };
 }
 
 ClientMessage Protocol::receiveClientMessage() {
@@ -120,95 +116,21 @@ bool Protocol::receiveAnyServerPacket(ServerMessage& outServer,
         }
         return false;
     }
-    if (outOpcode == UPDATE_POSITIONS) {
-        outServer = receivePositionsUpdate();
+    
+    auto it = server_receive_handlers.find(outOpcode);
+    if (it != server_receive_handlers.end()) {
+        it->second(outServer, outJoined);
         return true;
     }
-    if (outOpcode == GAME_JOINED) {
-        outJoined = receiveGameJoinedResponse();
-        return true;
-    }
-    if (outOpcode == GAMES_LIST) {
-        outServer = receiveGamesList();
-        return true;
-    }
-    if (outOpcode == GAME_STARTED) {
-        outServer.opcode = GAME_STARTED;
-        return true;
-    }
-    if (outOpcode == STARTING_COUNTDOWN) {
-        outServer = receiveStartingCountdown();
-        return true;
-    }
-    if (outOpcode == RACE_TIMES) {
-        outServer = receiveRaceTimes();
-        return true;
-    }
-    if (outOpcode == TOTAL_TIMES) {
-        outServer = receiveTotalTimes();
-        return true;
-    }
-    std::cout << "[Protocol] receiveAnyServerPacket: opcode desconocido " << int(outOpcode) << std::endl;
-    return true;
+    
+    std::cerr << "[Protocol] receiveAnyServerPacket: opcode desconocido " << int(outOpcode) << std::endl;
+    return false;
 }
 
 void Protocol::sendMessage(ServerMessage& out) {
-    switch (out.opcode) {
-
-    case CREATE_GAME:
-        std::cout << "Sending CREATE_GAME\n";
-        break;
-
-    case JOIN_GAME:
-        std::cout << "Sending JOIN_GAME\n";
-        break;
-
-    case GAME_JOINED:
-        std::cout << "Sending GAME_JOINED: game_id=" << out.game_id
-                  << " player_id=" << out.player_id
-                  << " success=" << out.success << "\n";
-        break;
-
-    case GET_GAMES:
-        std::cout << "Sending GET_GAMES\n";
-        break;
-
-    case GAMES_LIST:
-        std::cout << "Sending GAMES_LIST (" << out.games.size() << " games)\n";
-        break;
-
-    case START_GAME:
-        std::cout << "Sending START_GAME\n";
-        break;
-
-    case GAME_STARTED:
-        std::cout << "Sending GAME_STARTED\n";
-        break;
-
-    case STARTING_COUNTDOWN:
-        std::cout << "Sending STARTING_COUNTDOWN\n";
-        break;
-
-    case RACE_TIMES:
-        std::cout << "Sending RACE_TIMES (" << out.race_times.size() << " results)\n";
-        break;
-
-    case TOTAL_TIMES:
-        std::cout << "Sending TOTAL_TIMES (" << out.total_times.size() << " totals)\n";
-        break;
-    case UPDATE_POSITIONS:
-        break;
-    default:
-        std::cout << "Sending UNKNOWN OPCODE: 0x"
-                  << std::hex << (int)out.opcode << std::dec << "\n";
-        break;
-    }
-
-    // Encode and send
     auto msg = encodeServerMessage(out);
     skt.sendall(msg.data(), msg.size());
 }
-
 
 void Protocol::sendMessage(ClientMessage& out) {
     auto msg = encodeClientMessage(out);
