@@ -1,6 +1,7 @@
 #include "audio_manager.h"
 #include <iostream>
 #include <cmath>
+#include "install_paths.h"
 
 int BACKGROUND_MUSIC_VOLUME = 40;
 
@@ -41,31 +42,31 @@ void AudioManager::loadSoundEffects() {
     if (!mixer) return;
 
     try {
-        explosionSound = std::make_unique<SDL2pp::Chunk>("data/sounds/explosion.wav");
+        explosionSound = std::make_unique<SDL2pp::Chunk>(std::string(DATA_DIR) + "/sounds/explosion.wav");
     } catch (const SDL2pp::Exception& e) {
         std::cerr << "Warning: Failed to load explosion.wav: " << e.what() << std::endl;
     }
 
     try {
-        collisionSound = std::make_unique<SDL2pp::Chunk>("data/sounds/collision.wav");
+        collisionSound = std::make_unique<SDL2pp::Chunk>(std::string(DATA_DIR) + "/sounds/collision.wav");
     } catch (const SDL2pp::Exception& e) {
         std::cerr << "Warning: Failed to load collision.wav: " << e.what() << std::endl;
     }
 
     try {
-        engineSound = std::make_unique<SDL2pp::Chunk>("data/sounds/engine_loop.wav");
+        engineSound = std::make_unique<SDL2pp::Chunk>(std::string(DATA_DIR) + "/sounds/engine_loop.wav");
     } catch (const SDL2pp::Exception& e) {
         std::cerr << "Warning: Failed to load engine_loop.wav: " << e.what() << std::endl;
     }
 
     try {
-        winSound = std::make_unique<SDL2pp::Chunk>("data/sounds/win.ogg");
+        winSound = std::make_unique<SDL2pp::Chunk>(std::string(DATA_DIR) + "/sounds/win.ogg");
     } catch (const SDL2pp::Exception& e) {
         std::cerr << "Warning: Failed to load win.ogg: " << e.what() << std::endl;
     }
 
     try {
-        breakingSound = std::make_unique<SDL2pp::Chunk>("data/sounds/carbreaking.wav");
+        breakingSound = std::make_unique<SDL2pp::Chunk>(std::string(DATA_DIR) + "/sounds/carbreaking.wav");
     } catch (const SDL2pp::Exception& e) {
         std::cerr << "Warning: Failed to load carbreaking.wav: " << e.what() << std::endl;
     }

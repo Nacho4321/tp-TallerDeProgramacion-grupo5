@@ -66,7 +66,8 @@ install_game() {
         -DTALLER_CLIENT_UI=ON \
         -DTALLER_SERVER=ON \
         -DTALLER_EDITOR=ON \
-        -DTALLER_TESTS=OFF
+        -DTALLER_TESTS=OFF \
+        -DTALLER_USE_INSTALLED_PATHS=ON
 
     make -j"$(nproc)"
 

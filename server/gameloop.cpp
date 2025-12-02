@@ -119,7 +119,8 @@ void GameLoop::advance_round_or_reset_to_lobby()
 GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id_param)
     : world_manager(CarPhysicsConfig::getInstance()), players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), state_manager(), next_id(INITIAL_ID), map_id(map_id_param), map_layout(world_manager.get_world()), npc_manager(world_manager.get_world()), physics_config(CarPhysicsConfig::getInstance()), player_manager(players_map_mutex, players, players_messanger, player_order, world_manager, physics_config), broadcast_manager(players_map_mutex, players, players_messanger), tick_processor(players_map_mutex, players, state_manager, player_manager, npc_manager, world_manager, broadcast_manager, checkpoint_centers), contact_handler(players_map_mutex, players, checkpoint_fixtures, checkpoint_centers, state_manager.get_pending_race_reset(), [this]() { return state_manager.get_state(); }), setup_manager(map_id, map_layout, world_manager, npc_manager, checkpoint_sets, spawn_points, checkpoint_fixtures, checkpoint_centers)
 {
-    if (!physics_config.loadFromFile("config/car_physics.yaml"))
+    std::cout << "[GameLoop] Using CONFIG_DIR: " << CONFIG_DIR << std::endl;
+    if (!physics_config.loadFromFile(std::string(CONFIG_DIR) + "/car_physics.yaml"))
     {
         std::cerr << "[GameLoop] WARNING: Failed to load car physics config, using defaults" << std::endl;
     }
@@ -128,11 +129,11 @@ GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id_param)
     uint8_t safe_map_id = (map_id < MAP_COUNT) ? map_id : 0;
     for (int i = 0; i < 3; ++i)
     {
-        checkpoint_sets[i] = MAP_CHECKPOINT_PATHS[safe_map_id][i];
+        checkpoint_sets[i] = getMapCheckpointPath(safe_map_id, i);
     }
 
     // Cargar spawn points del mapa correspondiente
-    map_layout.extract_spawn_points(MAP_SPAWN_POINTS_PATHS[safe_map_id], spawn_points);
+    map_layout.extract_spawn_points(getMapSpawnPointsPath(safe_map_id), spawn_points);
 
     std::cout << "[GameLoop] Initialized with map_id=" << int(map_id)
               << " (" << MAP_NAMES[safe_map_id] << ")" << std::endl;

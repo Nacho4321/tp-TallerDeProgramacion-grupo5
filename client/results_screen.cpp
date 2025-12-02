@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <SDL_ttf.h>
+#include "install_paths.h"
 
 ResultsScreen::ResultsScreen(Renderer& renderer, int width, int height)
     : visible(false),
@@ -15,8 +16,8 @@ ResultsScreen::ResultsScreen(Renderer& renderer, int width, int height)
     }
 
     try {
-        contentFont = std::make_unique<Font>("data/fonts/race-font.otf", 20);
-        headerFont = std::make_unique<Font>("data/fonts/race-font.otf", 32);
+        contentFont = std::make_unique<Font>(std::string(DATA_DIR) + "/fonts/race-font.otf", 20);
+        headerFont = std::make_unique<Font>(std::string(DATA_DIR) + "/fonts/race-font.otf", 32);
     } catch (const std::exception& e) {
         std::cerr << "[ResultsScreen] Warning: Could not load fonts: " << e.what() << std::endl;
     }
@@ -28,7 +29,7 @@ ResultsScreen::ResultsScreen(Renderer& renderer, int width, int height)
 
     for (size_t i = 0; i < positionFileNames.size(); ++i) {
         try {
-            std::string path = "data/positions/" + positionFileNames[i];
+            std::string path = std::string(DATA_DIR) + "/positions/" + positionFileNames[i];
             positionImages[i] = std::make_unique<Texture>(renderer, Surface(path));
         } catch (const std::exception& e) {
             std::cerr << "[ResultsScreen] Warning: Could not load position image " << positionFileNames[i]
@@ -37,7 +38,7 @@ ResultsScreen::ResultsScreen(Renderer& renderer, int width, int height)
     }
 
     try {
-        Surface tallerSurface("data/cars/taller.png");
+        Surface tallerSurface(std::string(DATA_DIR) + "/cars/taller.png");
         tallerSurface.SetColorKey(true, SDL_MapRGB(tallerSurface.Get()->format, 0x55, 0x55, 0x55));
         tallerTexture = std::make_unique<Texture>(renderer, std::move(tallerSurface));
     } catch (const std::exception& e) {

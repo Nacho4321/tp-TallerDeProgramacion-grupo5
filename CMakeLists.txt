@@ -19,11 +19,28 @@ project(taller_tp
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 option(TALLER_TESTS "Enable / disable tests." ON)
+option(TALLER_USE_INSTALLED_PATHS "Use installed paths (/var, /etc) instead of local (data/, config/)" OFF)
 option(TALLER_CLIENT "Enable / disable client program." ON)
 option(TALLER_CLIENT_UI "Enable / disable Qt UI client program." ON)
 option(TALLER_SERVER "Enable / disable server program." ON)
 option(TALLER_EDITOR "Enable / disable editor program." ON)
 option(TALLER_MAKE_WARNINGS_AS_ERRORS "Enable / disable warnings as errors." ON)
+
+# Configure paths based on TALLER_USE_INSTALLED_PATHS
+if(TALLER_USE_INSTALLED_PATHS)
+    set(DATA_DIR "/var/need_for_speed")
+    set(CONFIG_DIR "/etc/need_for_speed")
+else()
+    set(DATA_DIR "data")
+    set(CONFIG_DIR "config")
+endif()
+
+# Generate install_paths.h with configured paths
+configure_file(
+    ${CMAKE_SOURCE_DIR}/common/install_paths.h.in
+    ${CMAKE_BINARY_DIR}/install_paths.h
+    @ONLY
+)
 
 message(CMAKE_CXX_COMPILER_ID="${CMAKE_CXX_COMPILER_ID}")
 
@@ -77,7 +94,7 @@ set_project_warnings(taller_common ${TALLER_MAKE_WARNINGS_AS_ERRORS} FALSE)
 # Say where the headers will be found required by library target
 # Make this PUBLIC so any dependant linking lib will inherit this
 # location (so our dependants will not have to explicitly request this)
-target_include_directories(taller_common PUBLIC .)
+target_include_directories(taller_common PUBLIC . ${CMAKE_BINARY_DIR})
 
 # Link Box2D to taller_common (así todos lo heredan)
 target_link_libraries(taller_common PUBLIC box2d)

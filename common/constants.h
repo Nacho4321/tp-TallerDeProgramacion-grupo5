@@ -3,6 +3,9 @@
 
 #include <cstdint>
 #include <string>
+#include "install_paths.h"
+#include <string>
+
 
 const std::uint8_t MOVE_UP_PRESSED = 0x01;
 const std::uint8_t MOVE_UP_RELEASED = 0x02;
@@ -107,31 +110,94 @@ inline const char *const MAP_NAMES[] = {
     "San Andreas",
     "Vice City"};
 
-inline const char *const MAP_JSON_PATHS[] = {
-    "data/cities/liberty_city.json",
-    "data/cities/san_andreas.json",
-    "data/cities/vice_city.json"};
+inline std::string getMapJsonPath(int mapId) {
+    const char* paths[] = {
+        "cities/liberty_city.json",
+        "cities/san_andreas.json",
+        "cities/vice_city.json"
+    };
+    if (mapId < 0 || mapId >= MAP_COUNT) mapId = 0;
+    return std::string(DATA_DIR) + "/" + paths[mapId];
+}
 
-inline const char *const MAP_BACKGROUND_PATHS[] = {
-    "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png",
-    "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - San Andreas.png",
-    "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Vice City.png"};
+inline std::string getMapBackgroundPath(int mapId) {
+    const char* paths[] = {
+        "cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png",
+        "cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - San Andreas.png",
+        "cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Vice City.png"
+    };
+    if (mapId < 0 || mapId >= MAP_COUNT) mapId = 0;
+    return std::string(DATA_DIR) + "/" + paths[mapId];
+}
 
-inline const char *const MAP_CHECKPOINT_PATHS[][3] = {
-    {"data/cities/base_liberty_city_checkpoints_race_1.json",
-     "data/cities/base_liberty_city_checkpoints_race_2.json",
-     "data/cities/base_liberty_city_checkpoints_race_3.json"},
-    {"data/cities/base_san_andreas_checkpoints_race_1.json",
-     "data/cities/base_san_andreas_checkpoints_race_2.json",
-     "data/cities/base_san_andreas_checkpoints_race_3.json"},
-    {"data/cities/base_vice_city_checkpoints_race_1.json",
-     "data/cities/base_vice_city_checkpoints_race_2.json",
-     "data/cities/base_vice_city_checkpoints_race_3.json"}};
+inline std::string getMapCheckpointPath(int mapId, int raceId) {
+    const char* paths[][3] = {
+        {
+            "cities/base_liberty_city_checkpoints_race_1.json",
+            "cities/base_liberty_city_checkpoints_race_2.json",
+            "cities/base_liberty_city_checkpoints_race_3.json"
+        },
+        {
+            "cities/base_san_andreas_checkpoints_race_1.json",
+            "cities/base_san_andreas_checkpoints_race_2.json",
+            "cities/base_san_andreas_checkpoints_race_3.json"
+        },
+        {
+            "cities/base_vice_city_checkpoints_race_1.json",
+            "cities/base_vice_city_checkpoints_race_2.json",
+            "cities/base_vice_city_checkpoints_race_3.json"
+        }
+    };
+    if (mapId < 0 || mapId >= MAP_COUNT) mapId = 0;
+    if (raceId < 0 || raceId >= 3) raceId = 0;
+    return std::string(DATA_DIR) + "/" + paths[mapId][raceId];
+}
 
-inline const char *const MAP_SPAWN_POINTS_PATHS[] = {
-    "data/cities/liberty_city_spawn_points.json",
-    "data/cities/san_andreas_spawn_points.json",
-    "data/cities/vice_city_spawn_points.json"};
+inline std::string getMapSpawnPointsPath(int mapId) {
+    const char* paths[] = {
+        "cities/liberty_city_spawn_points.json",
+        "cities/san_andreas_spawn_points.json",
+        "cities/vice_city_spawn_points.json"
+    };
+    if (mapId < 0 || mapId >= MAP_COUNT) mapId = 0;
+    return std::string(DATA_DIR) + "/" + paths[mapId];
+}
+
+inline const std::string MAP_JSON_PATHS[] = {
+    getMapJsonPath(0),
+    getMapJsonPath(1),
+    getMapJsonPath(2)
+};
+
+inline const std::string MAP_BACKGROUND_PATHS[] = {
+    getMapBackgroundPath(0),
+    getMapBackgroundPath(1),
+    getMapBackgroundPath(2)
+};
+
+inline const std::string MAP_CHECKPOINT_PATHS[MAP_COUNT][3] = {
+    {
+        getMapCheckpointPath(0, 0),
+        getMapCheckpointPath(0, 1),
+        getMapCheckpointPath(0, 2)
+    },
+    {
+        getMapCheckpointPath(1, 0),
+        getMapCheckpointPath(1, 1),
+        getMapCheckpointPath(1, 2)
+    },
+    {
+        getMapCheckpointPath(2, 0),
+        getMapCheckpointPath(2, 1),
+        getMapCheckpointPath(2, 2)
+    }
+};
+
+inline const std::string MAP_SPAWN_POINTS_PATHS[] = {
+    getMapSpawnPointsPath(0),
+    getMapSpawnPointsPath(1),
+    getMapSpawnPointsPath(2)
+};
 
 #define GREEN_CAR "green_car"
 #define RED_SQUARED_CAR "red_squared_car"

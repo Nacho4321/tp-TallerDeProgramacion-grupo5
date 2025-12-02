@@ -1,4 +1,5 @@
 #include "checkpoint_editor_window.h"
+#include "install_paths.h"
 #include <QGraphicsSceneMouseEvent>
 #include <QMouseEvent>
 #include <QWheelEvent>
@@ -63,10 +64,10 @@ void CheckpointEditorWindow::loadConfiguration() {
     EditorConfig& config = EditorConfig::getInstance();
     
     if (!config.loadFromFile("")) {
-        QMessageBox::warning(this, "Configuración", 
+        QMessageBox::warning(this, "Configuración",
             "No se pudo cargar la configuración del editor.\n"
             "Se usarán valores por defecto.");
-        mapImagePath = "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png";
+        mapImagePath = std::string(DATA_DIR) + "/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png";
     } else {
         mapImagePath = config.getMapImagePath();
     }
