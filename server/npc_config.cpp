@@ -1,5 +1,6 @@
 #include "npc_config.h"
 #include "../common/constants.h"
+#include "install_paths.h"
 #include <yaml-cpp/yaml.h>
 #include <iostream>
 #define NPC_NAME "npc"
@@ -7,7 +8,7 @@
 #define MAX_PARKED_NPCS_STR "max_parked"
 #define SPEED_PX_S_STR "speed_px_s"
 
-NPCConfig::NPCConfig() : max_moving(MAX_MOVING_NPCS), max_parked(MAX_PARKED_NPCS), speed_px_s(NPC_SPEED_PX_S), config_path("config/npc.yaml") {}
+NPCConfig::NPCConfig() : max_moving(MAX_MOVING_NPCS), max_parked(MAX_PARKED_NPCS), speed_px_s(NPC_SPEED_PX_S), config_path(std::string(CONFIG_DIR) + "/npc.yaml") {}
 
 NPCConfig &NPCConfig::getInstance()
 {

@@ -1,7 +1,7 @@
 editor:
-  map_image: "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png"
+  map_image: "cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png"
   checkpoints_files:
-    race_1: "data/cities/base_liberty_city_checkpoints_race_1.json"
-    race_2: "data/cities/base_liberty_city_checkpoints_race_2.json"
-    race_3: "data/cities/base_liberty_city_checkpoints_race_3.json"
-  spawn_points_file: "data/cities/liberty_city_spawn_points.json"
+    race_1: "cities/base_liberty_city_checkpoints_race_1.json"
+    race_2: "cities/base_liberty_city_checkpoints_race_2.json"
+    race_3: "cities/base_liberty_city_checkpoints_race_3.json"
+  spawn_points_file: "cities/liberty_city_spawn_points.json"

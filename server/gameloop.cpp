@@ -372,6 +372,7 @@ void GameLoop::advance_round_or_reset_to_lobby()
 GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id_param)
     : players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), game_state(GameState::LOBBY), next_id(INITIAL_ID), map_id(map_id_param), map_layout(world), npc_manager(world), physics_config(CarPhysicsConfig::getInstance())
 {
+    std::cout << "[GameLoop] Using CONFIG_DIR: " << CONFIG_DIR << std::endl;
     if (!physics_config.loadFromFile(std::string(CONFIG_DIR) + "/car_physics.yaml"))
     {
         std::cerr << "[GameLoop] WARNING: Failed to load car physics config, using defaults" << std::endl;
@@ -381,11 +382,11 @@ GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id_param)
     uint8_t safe_map_id = (map_id < MAP_COUNT) ? map_id : 0;
     for (int i = 0; i < 3; ++i)
     {
-        checkpoint_sets[i] = MAP_CHECKPOINT_PATHS[safe_map_id][i];
+        checkpoint_sets[i] = getMapCheckpointPath(safe_map_id, i);
     }
 
     // Cargar spawn points del mapa correspondiente
-    map_layout.extract_spawn_points(MAP_SPAWN_POINTS_PATHS[safe_map_id], spawn_points);
+    map_layout.extract_spawn_points(getMapSpawnPointsPath(safe_map_id), spawn_points);
 
     std::cout << "[GameLoop] Initialized with map_id=" << int(map_id)
               << " (" << MAP_NAMES[safe_map_id] << ")" << std::endl;

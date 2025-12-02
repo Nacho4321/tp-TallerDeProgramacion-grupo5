@@ -30,6 +30,7 @@ Client::Client(const char *address, const char *port, StartMode mode, int join_g
       auto_join_game_id(join_game_id),
       auto_create_game_name(game_name)
 {
+    std::cout << "[Client] Using DATA_DIR: " << DATA_DIR << std::endl;
     initLegacyConnection(address, port);
     handler.setAudioManager(game_renderer.getAudioManager());
 }
@@ -48,6 +49,7 @@ Client::Client(std::unique_ptr<GameConnection> connection)
       auto_join_game_id(-1),
       auto_create_game_name("")
 {
+    std::cout << "[Client] Using DATA_DIR: " << DATA_DIR << std::endl;
     active_handler_ = connection_->getHandler();
 
     my_game_id = connection_->getGameId();

@@ -1,9 +1,10 @@
 #include "car_physics_config.h"
+#include "install_paths.h"
 #include <yaml-cpp/yaml.h>
 #include <iostream>
 #include <vector>
 
-CarPhysicsConfig::CarPhysicsConfig() : config_path("config/car_physics.yaml")
+CarPhysicsConfig::CarPhysicsConfig() : config_path(std::string(CONFIG_DIR) + "/car_physics.yaml")
 {
     defaults.center_offset_y = 0.0f;
 }
