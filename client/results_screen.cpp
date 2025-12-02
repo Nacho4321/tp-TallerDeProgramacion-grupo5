@@ -1,4 +1,5 @@
 #include "results_screen.h"
+#include "carsprites.h"
 #include <iostream>
 #include <algorithm>
 #include <cstdio>
@@ -34,22 +35,46 @@ ResultsScreen::ResultsScreen(Renderer& renderer, int width, int height)
                       << ": " << e.what() << std::endl;
         }
     }
+
+    try {
+        Surface tallerSurface("data/cars/taller.png");
+        tallerSurface.SetColorKey(true, SDL_MapRGB(tallerSurface.Get()->format, 0x55, 0x55, 0x55));
+        tallerTexture = std::make_unique<Texture>(renderer, std::move(tallerSurface));
+    } catch (const std::exception& e) {
+        std::cerr << "[ResultsScreen] Warning: Could not load taller sprite sheet: " << e.what() << std::endl;
+    }
 }
 
 void ResultsScreen::show(const std::vector<ServerMessage::PlayerRaceTime>& raceTimes,
                          const std::vector<ServerMessage::PlayerTotalTime>& totalTimes,
-                         int32_t mainPlayerId)
+                         int32_t mainPlayerId,
+                         uint8_t upgrade_speed,
+                         uint8_t upgrade_acceleration,
+                         uint8_t upgrade_handling,
+                         uint8_t upgrade_durability)
 {
     visible = true;
     startTime = std::chrono::steady_clock::now();
     raceResults = raceTimes;
     totalResults = totalTimes;
     this->mainPlayerId = mainPlayerId;
+    this->updateUpgrades(upgrade_speed, upgrade_acceleration, upgrade_handling, upgrade_durability);
 }
 
 void ResultsScreen::hide()
 {
     visible = false;
+}
+
+void ResultsScreen::updateUpgrades(uint8_t upgrade_speed,
+                                    uint8_t upgrade_acceleration,
+                                    uint8_t upgrade_handling,
+                                    uint8_t upgrade_durability)
+{
+    this->upgradeSpeed = upgrade_speed;
+    this->upgradeAcceleration = upgrade_acceleration;
+    this->upgradeHandling = upgrade_handling;
+    this->upgradeDurability = upgrade_durability;
 }
 
 bool ResultsScreen::shouldAutoDismiss() const
@@ -201,6 +226,57 @@ void ResultsScreen::renderContent(Renderer& renderer)
     }
 }
 
+void ResultsScreen::renderUpgradeIcons(Renderer& renderer)
+{
+    if (!tallerTexture) return;
+
+    try {
+        static constexpr int ICON_SIZE     = 60;
+        static constexpr int RIGHT_MARGIN  = 20;
+        static constexpr int ICON_SPACING  = 10;
+        static constexpr int MAX_DOTS      = 3;
+        static constexpr int DOT_SIZE      = 12;
+        static constexpr int DOT_OFFSET_X  = 5;
+        static constexpr int DOT_OFFSET_Y  = 12;
+        static constexpr int DOT_SPACING   = 18;
+
+        const int startX = screenWidth - RIGHT_MARGIN - ICON_SIZE;
+        int currentY = 100;  
+
+        const std::array upgrades{
+            std::pair{0, upgradeAcceleration},
+            std::pair{1, upgradeSpeed},
+            std::pair{2, upgradeHandling},
+            std::pair{3, upgradeDurability}
+        };
+
+        for (auto [spriteIndex, level] : upgrades) {
+
+            renderer.Copy(
+                *tallerTexture,
+                TALLER_SPRITES[spriteIndex],
+                Rect(startX, currentY, ICON_SIZE, ICON_SIZE)
+            );
+
+            renderer.SetDrawColor(0, 255, 0, 255);
+            const uint8_t dotCount = std::min<uint8_t>(level, MAX_DOTS);
+
+            for (uint8_t i = 0; i < dotCount; ++i) {
+                const int dotX = startX + DOT_OFFSET_X + (i * DOT_SPACING);
+                const int dotY = currentY + ICON_SIZE - DOT_OFFSET_Y;
+
+                renderer.FillRect(Rect(dotX, dotY, DOT_SIZE, DOT_SIZE));
+            }
+
+            currentY += ICON_SIZE + ICON_SPACING;
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "[ResultsScreen] Error rendering upgrade icons: " << e.what() << std::endl;
+    }
+}
+
+
 void ResultsScreen::render(Renderer& renderer)
 {
     if (!visible) {
@@ -209,6 +285,7 @@ void ResultsScreen::render(Renderer& renderer)
 
     renderBackground(renderer);
     renderContent(renderer);
+    renderUpgradeIcons(renderer);
 }
 
 void ResultsScreen::renderCountDown(Renderer& renderer)

@@ -212,9 +212,6 @@ void Protocol::sendMessage(ServerMessage& out) {
 
 void Protocol::sendMessage(ClientMessage& out) {
     auto msg = encodeClientMessage(out);
-    std::cout << "[Protocol(Client)] sendMessage cmd='" << out.cmd << "' bytes=" << msg.size()
-              << " opcode_first=" << (msg.empty()? -1 : int(msg[0]))
-              << " player_id=" << out.player_id << " game_id=" << out.game_id << std::endl;
     skt.sendall(msg.data(), msg.size());
 }
 

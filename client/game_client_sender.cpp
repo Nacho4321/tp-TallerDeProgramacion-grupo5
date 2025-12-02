@@ -105,10 +105,6 @@ void GameClientSender::run() {
             if (client_msg.cmd == GET_GAMES_STR) {
                 // no payload extra
             }
-            // DEBUG
-            std::cout << "[Sender] Enviando cmd='" << client_msg.cmd
-                      << "' player_id=" << client_msg.player_id
-                      << " game_id=" << client_msg.game_id << std::endl;
             protocol.sendMessage(client_msg);
         }
     } catch (const std::exception& e) {

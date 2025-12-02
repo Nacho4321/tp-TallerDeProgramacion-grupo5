@@ -21,6 +21,7 @@ private:
     std::unique_ptr<Font> contentFont;
     std::unique_ptr<Font> headerFont;
     std::array<std::unique_ptr<Texture>, 8> positionImages;
+    std::unique_ptr<Texture> tallerTexture;  // Upgrade icons sprite sheet
 
     bool visible;
     std::chrono::steady_clock::time_point startTime;
@@ -28,11 +29,18 @@ private:
     std::vector<ServerMessage::PlayerTotalTime> totalResults;
     int32_t mainPlayerId;
 
+    // Player upgrade levels for displaying icons
+    uint8_t upgradeSpeed;
+    uint8_t upgradeAcceleration;
+    uint8_t upgradeHandling;
+    uint8_t upgradeDurability;
+
     int screenWidth;
     int screenHeight;
 
     void renderBackground(Renderer& renderer);
     void renderContent(Renderer& renderer);
+    void renderUpgradeIcons(Renderer& renderer);
 
     std::string formatTime(uint32_t ms);
 
@@ -59,10 +67,19 @@ public:
 
     void show(const std::vector<ServerMessage::PlayerRaceTime>& raceTimes,
               const std::vector<ServerMessage::PlayerTotalTime>& totalTimes,
-              int32_t mainPlayerId);
+              int32_t mainPlayerId,
+              uint8_t upgrade_speed,
+              uint8_t upgrade_acceleration,
+              uint8_t upgrade_handling,
+              uint8_t upgrade_durability);
     void hide();
     bool isVisible() const { return visible; }
     bool shouldAutoDismiss() const;
+
+    void updateUpgrades(uint8_t upgrade_speed,
+                        uint8_t upgrade_acceleration,
+                        uint8_t upgrade_handling,
+                        uint8_t upgrade_durability);
 
     void startCountdown(int seconds);
     void updateCountdown();
