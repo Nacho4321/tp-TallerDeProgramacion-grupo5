@@ -15,6 +15,9 @@ target_sources(taller_client
     game_renderer.cpp
     audio_manager.cpp
     results_screen.cpp
+    game_state_tracker.cpp
+    player_state_tracker.cpp
+    position_update_handler.cpp
     PUBLIC
     # .h files
     game_client_receiver.h
@@ -32,4 +35,7 @@ target_sources(taller_client
     minimap.h
     audio_manager.h
     results_screen.h
+    game_state_tracker.h
+    player_state_tracker.h
+    position_update_handler.h
 )

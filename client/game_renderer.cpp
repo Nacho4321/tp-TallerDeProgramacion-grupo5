@@ -436,6 +436,28 @@ void GameRenderer::startCountDown()
     resultsScreen->startCountdown(10);
 }
 
+void GameRenderer::triggerPlayerDeath()
+{
+    if (mainCar)
+    {
+        mainCar->startExplosion();
+        CarPosition deathPos = mainCar->getPosition();
+        if (audioManager)
+        {
+            audioManager->playExplosionSound(deathPos.x, deathPos.y, deathPos.x, deathPos.y);
+            audioManager->stopCarEngine(-1);
+        }
+    }
+}
+
+void GameRenderer::completePlayerDeathTransition()
+{
+    if (mainCar)
+    {
+        mainCar->stopExplosion();
+    }
+}
+
 void GameRenderer::winSound()
 {
     if (audioManager)

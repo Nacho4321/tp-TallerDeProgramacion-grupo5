@@ -51,13 +51,13 @@ install_game() {
     SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
     cd "$SCRIPT_DIR"
     
-    rm -f CMakeCache.txt
-    rm -rf CMakeFiles
-    rm -f cmake_install.cmake
-    rm -rf _deps
-    rm -f ../CMakeCache.txt
-    rm -rf ../CMakeFiles/
-    rm -rf build
+    $SUDO rm -f CMakeCache.txt
+    $SUDO rm -rf CMakeFiles
+    $SUDO rm -f cmake_install.cmake
+    $SUDO rm -rf _deps
+    $SUDO rm -f ../CMakeCache.txt
+    $SUDO rm -rf ../CMakeFiles/
+    $SUDO rm -rf build
     mkdir build
     cd build
 

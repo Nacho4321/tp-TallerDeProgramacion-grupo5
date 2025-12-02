@@ -47,6 +47,9 @@ target_sources(taller_client_ui PRIVATE
     ../client/game_renderer.cpp
     ../client/audio_manager.cpp
     ../client/results_screen.cpp
+    ../client/game_state_tracker.cpp
+    ../client/player_state_tracker.cpp
+    ../client/position_update_handler.cpp
 )
 
 target_include_directories(taller_client_ui PRIVATE 
