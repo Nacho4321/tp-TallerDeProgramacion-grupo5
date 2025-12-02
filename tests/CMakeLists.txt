@@ -10,7 +10,7 @@ target_sources(taller_tests
     ${CMAKE_SOURCE_DIR}/server/client_handler.cpp
     ${CMAKE_SOURCE_DIR}/server/client_sender.cpp
     ${CMAKE_SOURCE_DIR}/server/client_receiver.cpp
-    ${CMAKE_SOURCE_DIR}/server/message_handler.cpp
+    ${CMAKE_SOURCE_DIR}/server/lobby_handler.cpp
     ${CMAKE_SOURCE_DIR}/server/game_monitor.cpp
     ${CMAKE_SOURCE_DIR}/client/game_client_receiver.cpp
     ${CMAKE_SOURCE_DIR}/client/game_client_sender.cpp
@@ -22,8 +22,20 @@ target_sources(taller_tests
     ${CMAKE_SOURCE_DIR}/server/npc_config.cpp
     ${CMAKE_SOURCE_DIR}/server/eventloop.cpp
     ${CMAKE_SOURCE_DIR}/server/car_physics_config.cpp
-    ${CMAKE_SOURCE_DIR}/server/eventDispatcher.cpp
+    ${CMAKE_SOURCE_DIR}/server/game_event_handler.cpp
     ${CMAKE_SOURCE_DIR}/server/gameloop/npc/npc_manager.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop/bridge/bridge_handler.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop/checkpoint/checkpoint_handler.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop/physics/physics_handler.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop/collision/collision_handler.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop/race/race_manager.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop/world/world_manager.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop/player/player_manager.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop/state/game_state_manager.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop/broadcast/broadcast_manager.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop/tick/tick_processor.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop/contact/contact_handler.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop/setup/setup_manager.cpp
 
     PUBLIC
     # .h files

@@ -8,15 +8,27 @@ target_sources(taller_server
     main.cpp
     server.cpp
     game_monitor.cpp
-    message_handler.cpp
+    lobby_handler.cpp
     gameloop.cpp
     eventloop.cpp
-    eventDispatcher.cpp
+    game_event_handler.cpp
     car_physics_config.cpp
     npc_config.cpp
     event.cpp
     map_layout.cpp
     gameloop/npc/npc_manager.cpp
+    gameloop/bridge/bridge_handler.cpp
+    gameloop/checkpoint/checkpoint_handler.cpp
+    gameloop/physics/physics_handler.cpp
+    gameloop/collision/collision_handler.cpp
+    gameloop/race/race_manager.cpp
+    gameloop/world/world_manager.cpp
+    gameloop/player/player_manager.cpp
+    gameloop/state/game_state_manager.cpp
+    gameloop/broadcast/broadcast_manager.cpp
+    gameloop/tick/tick_processor.cpp
+    gameloop/contact/contact_handler.cpp
+    gameloop/setup/setup_manager.cpp
     PUBLIC
     # .h files
     acceptor.h
@@ -25,15 +37,27 @@ target_sources(taller_server
     client_receiver.h
     server.h
     game_monitor.h
-    message_handler.h
+    lobby_handler.h
     gameloop.h
     eventloop.h
     event.h
-    eventDispatcher.h
+    game_event_handler.h
     car_physics_config.h
     npc_config.h
     PlayerData.h
     map_layout.h
     gameloop/npc/npc_manager.h
     gameloop/npc/npc_data.h
+    gameloop/bridge/bridge_handler.h
+    gameloop/checkpoint/checkpoint_handler.h
+    gameloop/physics/physics_handler.h
+    gameloop/collision/collision_handler.h
+    gameloop/race/race_manager.h
+    gameloop/world/world_manager.h
+    gameloop/player/player_manager.h
+    gameloop/state/game_state_manager.h
+    gameloop/broadcast/broadcast_manager.h
+    gameloop/tick/tick_processor.h
+    gameloop/contact/contact_handler.h
+    gameloop/setup/setup_manager.h
     )

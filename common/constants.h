@@ -93,7 +93,8 @@ const std::string GET_GAMES_STR = "get_games";
 const std::string START_GAME_STR = "start_game";   
 const std::string LEAVE_GAME_STR = "leave_game";   
 
-enum class MapId : uint8_t {
+enum class MapId : uint8_t
+{
     LibertyCity = 0,
     SanAndreas = 1,
     ViceCity = 2
@@ -101,56 +102,36 @@ enum class MapId : uint8_t {
 
 constexpr int MAP_COUNT = 3;
 
-inline const char* const MAP_NAMES[] = {
+inline const char *const MAP_NAMES[] = {
     "Liberty City",
     "San Andreas",
-    "Vice City"
-};
+    "Vice City"};
 
-inline const char* const MAP_JSON_PATHS[] = {
+inline const char *const MAP_JSON_PATHS[] = {
     "data/cities/liberty_city.json",
     "data/cities/san_andreas.json",
-    "data/cities/vice_city.json"
-};
+    "data/cities/vice_city.json"};
 
-inline const char* const MAP_BACKGROUND_PATHS[] = {
+inline const char *const MAP_BACKGROUND_PATHS[] = {
     "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png",
     "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - San Andreas.png",
-    "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Vice City.png"
-};
+    "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Vice City.png"};
 
-inline const char* const MAP_CHECKPOINT_PATHS[][3] = {
-    { 
-        "data/cities/base_liberty_city_checkpoints_race_1.json",
-        "data/cities/base_liberty_city_checkpoints_race_2.json",
-        "data/cities/base_liberty_city_checkpoints_race_3.json"
-    },
-    { 
-        "data/cities/base_san_andreas_checkpoints_race_1.json",
-        "data/cities/base_san_andreas_checkpoints_race_2.json",
-        "data/cities/base_san_andreas_checkpoints_race_3.json"
-    },
-    { 
-        "data/cities/base_vice_city_checkpoints_race_1.json",
-        "data/cities/base_vice_city_checkpoints_race_2.json",
-        "data/cities/base_vice_city_checkpoints_race_3.json"
-    }
-};
+inline const char *const MAP_CHECKPOINT_PATHS[][3] = {
+    {"data/cities/base_liberty_city_checkpoints_race_1.json",
+     "data/cities/base_liberty_city_checkpoints_race_2.json",
+     "data/cities/base_liberty_city_checkpoints_race_3.json"},
+    {"data/cities/base_san_andreas_checkpoints_race_1.json",
+     "data/cities/base_san_andreas_checkpoints_race_2.json",
+     "data/cities/base_san_andreas_checkpoints_race_3.json"},
+    {"data/cities/base_vice_city_checkpoints_race_1.json",
+     "data/cities/base_vice_city_checkpoints_race_2.json",
+     "data/cities/base_vice_city_checkpoints_race_3.json"}};
 
-inline const char* const MAP_SPAWN_POINTS_PATHS[] = {
+inline const char *const MAP_SPAWN_POINTS_PATHS[] = {
     "data/cities/liberty_city_spawn_points.json",
     "data/cities/san_andreas_spawn_points.json",
-    "data/cities/vice_city_spawn_points.json"
-};
-
-#define COLLISION_FLOOR 0x0001     
-#define COLLISION_BRIDGE 0x0002    
-#define COLLISION_UNDER 0x0004    
-#define SENSOR_START_BRIDGE 0x0008 
-#define SENSOR_END_BRIDGE 0x0010   
-
-#define CAR_GROUND 0x0020 
-#define CAR_BRIDGE 0x0040 
+    "data/cities/vice_city_spawn_points.json"};
 
 #define GREEN_CAR "green_car"
 #define RED_SQUARED_CAR "red_squared_car"
@@ -208,8 +189,5 @@ enum class CarUpgrade
 #define HANDLING_UPGRADE_MULTIPLIER 1.15f
 #define MAX_UPGRADES_PER_STAT 3
 #define PENALIZATION_TIME 2000
-
-// Campeonato: 3 rondas
-constexpr int TOTAL_ROUNDS = 3;
 
 #endif

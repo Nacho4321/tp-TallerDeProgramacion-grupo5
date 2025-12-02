@@ -6,13 +6,13 @@
 #include <string>
 #include "game_monitor.h"
 #include "acceptor.h"
-#include "message_handler.h"
+#include "lobby_handler.h"
 
 class Server
 {
 private:
     GameMonitor games_monitor;
-    MessageHandler message_handler;
+    LobbyHandler message_handler;
     Acceptor acceptor;
     void process_input(const std::string &input, bool &connected);
 

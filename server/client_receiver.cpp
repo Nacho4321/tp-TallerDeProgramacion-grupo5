@@ -1,7 +1,7 @@
 #include "client_receiver.h"
-#include "message_handler.h"
+#include "lobby_handler.h"
 
-ClientReceiver::ClientReceiver(Protocol &proto, int id, MessageHandler &msg_admin, std::shared_ptr<Queue<ServerMessage>> out) 
+ClientReceiver::ClientReceiver(Protocol &proto, int id, LobbyHandler &msg_admin, std::shared_ptr<Queue<ServerMessage>> out) 
     : protocol(proto), client_id(id), message_handler(msg_admin), outbox(out) {}
 
 void ClientReceiver::run()

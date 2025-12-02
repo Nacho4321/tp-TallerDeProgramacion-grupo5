@@ -21,6 +21,7 @@ public:
     explicit GameMonitor();
     int add_game(int client_id, std::shared_ptr<Queue<ServerMessage>> player_outbox, const std::string &name = "", uint8_t map_id = 0); // Devuelve el game_id asignado
     void join_player(int player_id, int game_id, std::shared_ptr<Queue<ServerMessage>> player_outbox);
+    void remove_player(int client_id);  // Remueve al jugador de cualquier partida donde esté
     std::vector<ServerMessage::GameSummary> list_games();
     GameLoop *get_game(int game_id);
     std::shared_ptr<Queue<Event>> get_game_queue(int game_id);

@@ -9,6 +9,7 @@
 #include "npc_data.h"
 #include "../../map_layout.h"
 #include "../../../common/messages.h"
+#include "../gameloop_constants.h"
 
 class NPCManager
 {
@@ -17,7 +18,8 @@ public:
 
     // Inicialización
     void init(const std::vector<MapLayout::ParkedCarData> &parked_data,
-              const std::vector<MapLayout::WaypointData> &waypoints);
+              const std::vector<MapLayout::WaypointData> &waypoints,
+              const std::vector<MapLayout::SpawnPointData> &spawn_points);
 
     // Update del game loop
     void update();
@@ -34,19 +36,21 @@ public:
 
 private:
     // Constantes
-    static constexpr float SCALE = 32.0f;
     static constexpr float NPC_DIRECTION_THRESHOLD = 0.05f;
     static constexpr float NPC_ARRIVAL_THRESHOLD_M = 0.5f;
     static constexpr float MIN_DISTANCE_FROM_PARKED_M = 1.0f;
+    static constexpr float MIN_DISTANCE_FROM_SPAWN_M = 5.0f;
 
     b2World &world;
     std::vector<NPCData> npcs;
     std::vector<MapLayout::WaypointData> street_waypoints;
+    std::vector<MapLayout::SpawnPointData> player_spawn_points;
 
     // Spawn helpers
     void spawn_parked_npcs(const std::vector<MapLayout::ParkedCarData> &parked_data, int &next_negative_id);
     void spawn_moving_npcs(const std::vector<MapLayout::ParkedCarData> &parked_data, int &next_negative_id);
     std::vector<int> get_valid_waypoints_away_from_parked(const std::vector<MapLayout::ParkedCarData> &parked_data);
+    bool should_select_spawn_position(const b2Vec2 &waypoint_pos) const;
     int select_closest_waypoint_connection(int start_waypoint_idx);
     float calculate_initial_npc_angle(const b2Vec2 &spawn_pos, const b2Vec2 &target_pos) const;
     NPCData create_moving_npc(int start_idx, int target_idx, float initial_angle, int &next_negative_id);
@@ -66,4 +70,4 @@ private:
     float normalize_angle(double angle) const;
 };
 
-#endif // NPC_MANAGER_H
+#endif 

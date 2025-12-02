@@ -1,11 +1,12 @@
-#include "eventDispatcher.h"
+#include "game_event_handler.h"
 #include "../common/constants.h"
+#include "gameloop/gameloop_constants.h"
 #include <box2d/b2_world.h>
 #include <box2d/b2_body.h>
 #include <box2d/b2_polygon_shape.h>
 #include <box2d/b2_fixture.h>
 
-void EventDispatcher::init_handlers()
+void GameEventHandler::init_handlers()
 {
     listeners[MOVE_UP_PRESSED_STR] = [this](Event &e)
     { move_up(e); };
@@ -55,7 +56,7 @@ void EventDispatcher::init_handlers()
     { cheat_full_upgrade(e); };
 }
 
-void EventDispatcher::move_up(Event &event)
+void GameEventHandler::move_up(Event &event)
 {
     if (current_state != GameState::PLAYING)
     {
@@ -66,7 +67,7 @@ void EventDispatcher::move_up(Event &event)
     players[event.client_id].state = event.action;
 }
 
-void EventDispatcher::move_up_released(Event &event)
+void GameEventHandler::move_up_released(Event &event)
 {
     if (current_state != GameState::PLAYING)
     {
@@ -80,7 +81,7 @@ void EventDispatcher::move_up_released(Event &event)
     }
 }
 
-void EventDispatcher::move_down(Event &event)
+void GameEventHandler::move_down(Event &event)
 {
     if (current_state != GameState::PLAYING)
     {
@@ -91,7 +92,7 @@ void EventDispatcher::move_down(Event &event)
     players[event.client_id].state = event.action;
 }
 
-void EventDispatcher::move_down_released(Event &event)
+void GameEventHandler::move_down_released(Event &event)
 {
     if (current_state != GameState::PLAYING)
     {
@@ -105,7 +106,7 @@ void EventDispatcher::move_down_released(Event &event)
     }
 }
 
-void EventDispatcher::move_left(Event &event)
+void GameEventHandler::move_left(Event &event)
 {
     if (current_state != GameState::PLAYING)
     {
@@ -116,7 +117,7 @@ void EventDispatcher::move_left(Event &event)
     players[event.client_id].state = event.action;
 }
 
-void EventDispatcher::move_left_released(Event &event)
+void GameEventHandler::move_left_released(Event &event)
 {
     if (current_state != GameState::PLAYING)
     {
@@ -130,7 +131,7 @@ void EventDispatcher::move_left_released(Event &event)
     }
 }
 
-void EventDispatcher::move_right(Event &event)
+void GameEventHandler::move_right(Event &event)
 {
     if (current_state != GameState::PLAYING)
     {
@@ -141,7 +142,7 @@ void EventDispatcher::move_right(Event &event)
     players[event.client_id].state = event.action;
 }
 
-void EventDispatcher::move_right_released(Event &event)
+void GameEventHandler::move_right_released(Event &event)
 {
     if (current_state != GameState::PLAYING)
     {
@@ -154,7 +155,7 @@ void EventDispatcher::move_right_released(Event &event)
         players[event.client_id].state = event.action;
     }
 }
-void EventDispatcher::select_car(Event &event, const std::string &car_type)
+void GameEventHandler::select_car(Event &event, const std::string &car_type)
 {
     if (current_state != GameState::LOBBY)
     {
@@ -223,7 +224,7 @@ void EventDispatcher::select_car(Event &event, const std::string &car_type)
         it->second.body = newBody;
     }
 }
-void EventDispatcher::handle_event(Event &event)
+void GameEventHandler::handle_event(Event &event)
 {
     auto it = listeners.find(event.action);
     if (it != listeners.end())
@@ -232,7 +233,7 @@ void EventDispatcher::handle_event(Event &event)
     }
 }
 
-void EventDispatcher::upgrade_max_speed(Event &event)
+void GameEventHandler::upgrade_max_speed(Event &event)
 {
     if (current_state != GameState::STARTING)
     {
@@ -258,7 +259,7 @@ void EventDispatcher::upgrade_max_speed(Event &event)
     it->second.total_time_ms = it->second.total_time_ms - old_time + uint32_t(penalization);
 }
 
-void EventDispatcher::upgrade_max_acceleration(Event &event)
+void GameEventHandler::upgrade_max_acceleration(Event &event)
 {
     if (current_state != GameState::STARTING)
     {
@@ -281,7 +282,7 @@ void EventDispatcher::upgrade_max_acceleration(Event &event)
     it->second.total_time_ms = it->second.total_time_ms - old_time + uint32_t(penalization);
 }
 
-void EventDispatcher::upgrade_durability(Event &event)
+void GameEventHandler::upgrade_durability(Event &event)
 {
     if (current_state != GameState::STARTING)
         return;
@@ -303,7 +304,7 @@ void EventDispatcher::upgrade_durability(Event &event)
     it->second.total_time_ms = it->second.total_time_ms - old_time + uint32_t(penalization);
 }
 
-void EventDispatcher::upgrade_handling(Event &event)
+void GameEventHandler::upgrade_handling(Event &event)
 {
 
     if (current_state != GameState::STARTING)
@@ -328,7 +329,7 @@ void EventDispatcher::upgrade_handling(Event &event)
     it->second.total_time_ms = it->second.total_time_ms - old_time + uint32_t(penalization);
 }
 
-void EventDispatcher::cheat_god_mode(Event &event)
+void GameEventHandler::cheat_god_mode(Event &event)
 {
     std::lock_guard<std::mutex> lock(players_map_mutex);
     auto it = players.find(event.client_id);
@@ -340,7 +341,7 @@ void EventDispatcher::cheat_god_mode(Event &event)
     it->second.god_mode = !it->second.god_mode;
 }
 
-void EventDispatcher::cheat_die(Event &event)
+void GameEventHandler::cheat_die(Event &event)
 {
     std::lock_guard<std::mutex> lock(players_map_mutex);
     auto it = players.find(event.client_id);
@@ -353,7 +354,7 @@ void EventDispatcher::cheat_die(Event &event)
     it->second.god_mode = false;
 }
 
-void EventDispatcher::cheat_skip_round(Event &event)
+void GameEventHandler::cheat_skip_round(Event &event)
 {
     std::lock_guard<std::mutex> lock(players_map_mutex);
     auto it = players.find(event.client_id);
@@ -364,7 +365,7 @@ void EventDispatcher::cheat_skip_round(Event &event)
     it->second.pending_race_complete = true;
 }
 
-void EventDispatcher::cheat_full_upgrade(Event &event)
+void GameEventHandler::cheat_full_upgrade(Event &event)
 {
     std::lock_guard<std::mutex> lock(players_map_mutex);
     auto it = players.find(event.client_id);
