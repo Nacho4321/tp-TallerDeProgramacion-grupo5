@@ -10,6 +10,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFrame>
+#include <QRadioButton>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <algorithm>
@@ -23,18 +24,27 @@ CheckpointEditorWindow::CheckpointEditorWindow(QWidget* parent)
       backgroundItem(nullptr),
       routeLine(nullptr),
       sidePanel(nullptr),
+      checkpointModeRadio(nullptr),
+      spawnpointModeRadio(nullptr),
+      currentMode(EditorMode::Checkpoints),
       raceSelector(nullptr),
+      currentFileLabel(nullptr),
+      checkpointsGroup(nullptr),
       checkpointList(nullptr),
       moveUpButton(nullptr),
       moveDownButton(nullptr),
       deleteButton(nullptr),
+      infoLabel(nullptr),
+      spawnpointsGroup(nullptr),
+      rotateLeftButton(nullptr),
+      rotateRightButton(nullptr),
+      spawnInfoLabel(nullptr),
       zoomInButton(nullptr),
       zoomOutButton(nullptr),
       resetZoomButton(nullptr),
       saveButton(nullptr),
       loadButton(nullptr),
-      infoLabel(nullptr),
-      currentFileLabel(nullptr),
+      spawnFormation(nullptr),
       currentRace(RaceId::Race1),
       hasUnsavedChanges(false),
       isDragging(false),
@@ -44,6 +54,7 @@ CheckpointEditorWindow::CheckpointEditorWindow(QWidget* parent)
     setupUI();
     loadMapImage();
     loadCheckpoints();
+    loadSpawnPoints();
 }
 
 CheckpointEditorWindow::~CheckpointEditorWindow() {}
@@ -92,6 +103,15 @@ void CheckpointEditorWindow::setupSidePanel() {
     QVBoxLayout* mainLayout = new QVBoxLayout(panelWidget);
     mainLayout->setSpacing(10);
 
+    QGroupBox* modeGroup = new QGroupBox("Edit Mode", panelWidget);
+    QVBoxLayout* modeLayout = new QVBoxLayout(modeGroup);
+    checkpointModeRadio = new QRadioButton("Checkpoints", modeGroup);
+    spawnpointModeRadio = new QRadioButton("Spawnpoints", modeGroup);
+    checkpointModeRadio->setChecked(true);
+    modeLayout->addWidget(checkpointModeRadio);
+    modeLayout->addWidget(spawnpointModeRadio);
+    mainLayout->addWidget(modeGroup);
+
     QGroupBox* raceGroup = new QGroupBox("Race Selection", panelWidget);
     QVBoxLayout* raceLayout = new QVBoxLayout(raceGroup);
     
@@ -108,7 +128,7 @@ void CheckpointEditorWindow::setupSidePanel() {
     
     mainLayout->addWidget(raceGroup);
 
-    QGroupBox* checkpointsGroup = new QGroupBox("Checkpoints", panelWidget);
+    checkpointsGroup = new QGroupBox("Checkpoints", panelWidget);
     QVBoxLayout* checkpointsLayout = new QVBoxLayout(checkpointsGroup);
     
     infoLabel = new QLabel("Click on the map to add checkpoints", checkpointsGroup);
@@ -116,12 +136,12 @@ void CheckpointEditorWindow::setupSidePanel() {
     checkpointsLayout->addWidget(infoLabel);
     
     checkpointList = new QListWidget(checkpointsGroup);
-    checkpointList->setMinimumHeight(200);
+    checkpointList->setMinimumHeight(150);
     checkpointsLayout->addWidget(checkpointList);
     
     QHBoxLayout* reorderLayout = new QHBoxLayout();
-    moveUpButton = new QPushButton("Move Up ▲ ", checkpointsGroup);
-    moveDownButton = new QPushButton("Move Down ▼", checkpointsGroup);
+    moveUpButton = new QPushButton("Move Up", checkpointsGroup);
+    moveDownButton = new QPushButton("Move Down", checkpointsGroup);
     reorderLayout->addWidget(moveUpButton);
     reorderLayout->addWidget(moveDownButton);
     checkpointsLayout->addLayout(reorderLayout);
@@ -130,6 +150,23 @@ void CheckpointEditorWindow::setupSidePanel() {
     checkpointsLayout->addWidget(deleteButton);
     
     mainLayout->addWidget(checkpointsGroup);
+
+    spawnpointsGroup = new QGroupBox("Spawnpoints", panelWidget);
+    QVBoxLayout* spawnLayout = new QVBoxLayout(spawnpointsGroup);
+    
+    spawnInfoLabel = new QLabel("Drag to move, buttons to rotate", spawnpointsGroup);
+    spawnInfoLabel->setWordWrap(true);
+    spawnLayout->addWidget(spawnInfoLabel);
+    
+    QHBoxLayout* rotateLayout = new QHBoxLayout();
+    rotateLeftButton = new QPushButton("Rotate Left", spawnpointsGroup);
+    rotateRightButton = new QPushButton("Rotate Right", spawnpointsGroup);
+    rotateLayout->addWidget(rotateLeftButton);
+    rotateLayout->addWidget(rotateRightButton);
+    spawnLayout->addLayout(rotateLayout);
+    
+    spawnpointsGroup->setVisible(false);
+    mainLayout->addWidget(spawnpointsGroup);
 
     QGroupBox* zoomGroup = new QGroupBox("Zoom", panelWidget);
     QVBoxLayout* zoomLayout = new QVBoxLayout(zoomGroup);
@@ -141,7 +178,7 @@ void CheckpointEditorWindow::setupSidePanel() {
     zoomButtonsLayout->addWidget(zoomOutButton);
     zoomLayout->addLayout(zoomButtonsLayout);
     
-    resetZoomButton = new QPushButton("⟲ Reset Zoom", zoomGroup);
+    resetZoomButton = new QPushButton("Reset Zoom", zoomGroup);
     zoomLayout->addWidget(resetZoomButton);
     
     mainLayout->addWidget(zoomGroup);
@@ -165,8 +202,7 @@ void CheckpointEditorWindow::setupSidePanel() {
         "• <b>Left Click:</b> Add checkpoint<br>"
         "• <b>Right Click + Drag:</b> Move map<br>"
         "• <b>Green (S):</b> Start<br>"
-        "• <b>Red (F):</b> Finish<br>"
-        "• <b>Yellow:</b> Intermediate checkpoints",
+        "• <b>Red (F):</b> Finish",
         helpGroup
     );
     helpLabel->setWordWrap(true);
@@ -180,6 +216,7 @@ void CheckpointEditorWindow::setupSidePanel() {
     sidePanel->setWidget(panelWidget);
     addDockWidget(Qt::RightDockWidgetArea, sidePanel);
 
+    connect(checkpointModeRadio, &QRadioButton::toggled, this, &CheckpointEditorWindow::onModeChanged);
     connect(raceSelector, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &CheckpointEditorWindow::onRaceSelectionChanged);
     connect(saveButton, &QPushButton::clicked, this, &CheckpointEditorWindow::onSaveClicked);
@@ -190,6 +227,8 @@ void CheckpointEditorWindow::setupSidePanel() {
     connect(zoomInButton, &QPushButton::clicked, this, &CheckpointEditorWindow::zoomIn);
     connect(zoomOutButton, &QPushButton::clicked, this, &CheckpointEditorWindow::zoomOut);
     connect(resetZoomButton, &QPushButton::clicked, this, &CheckpointEditorWindow::resetZoom);
+    connect(rotateLeftButton, &QPushButton::clicked, this, &CheckpointEditorWindow::onRotateLeftClicked);
+    connect(rotateRightButton, &QPushButton::clicked, this, &CheckpointEditorWindow::onRotateRightClicked);
     
     updateInfoLabels();
 }
@@ -566,15 +605,25 @@ void CheckpointEditorWindow::onRaceSelectionChanged(int index) {
 }
 
 void CheckpointEditorWindow::onMapClicked(QPointF scenePos) {
-    addCheckpointAt(scenePos.x(), scenePos.y());
+    if (currentMode == EditorMode::Checkpoints) {
+        addCheckpointAt(scenePos.x(), scenePos.y());
+    }
 }
 
 void CheckpointEditorWindow::onSaveClicked() {
-    saveCheckpoints();
+    if (currentMode == EditorMode::Checkpoints) {
+        saveCheckpoints();
+    } else {
+        saveSpawnPoints();
+    }
 }
 
 void CheckpointEditorWindow::onLoadClicked() {
-    loadCheckpoints();
+    if (currentMode == EditorMode::Checkpoints) {
+        loadCheckpoints();
+    } else {
+        loadSpawnPoints();
+    }
 }
 
 void CheckpointEditorWindow::onDeleteClicked() {
@@ -583,9 +632,11 @@ void CheckpointEditorWindow::onDeleteClicked() {
 
 void CheckpointEditorWindow::onMoveUpClicked() {
     int currentRow = checkpointList->currentRow();
-    
-    if (currentRow <= 0) return;
-    
+
+    if (currentRow <= 0) {
+        return;
+    }
+
     swapCheckpoints(currentRow, currentRow - 1);
     checkpointList->setCurrentRow(currentRow - 1);
 }
@@ -599,4 +650,138 @@ void CheckpointEditorWindow::onMoveDownClicked() {
     
     swapCheckpoints(currentRow, currentRow + 1);
     checkpointList->setCurrentRow(currentRow + 1);
+}
+
+void CheckpointEditorWindow::setEditorMode(EditorMode mode) {
+    currentMode = mode;
+    
+    bool isCheckpointMode = (mode == EditorMode::Checkpoints);
+    checkpointsGroup->setVisible(isCheckpointMode);
+    spawnpointsGroup->setVisible(!isCheckpointMode);
+    
+    if (spawnFormation) {
+        spawnFormation->setFlag(QGraphicsItem::ItemIsMovable, !isCheckpointMode);
+    }
+}
+
+void CheckpointEditorWindow::onModeChanged() {
+    if (checkpointModeRadio->isChecked()) {
+        setEditorMode(EditorMode::Checkpoints);
+    } else {
+        setEditorMode(EditorMode::Spawnpoints);
+    }
+}
+
+std::string CheckpointEditorWindow::getSpawnPointsPath() const {
+    return EditorConfig::getInstance().getSpawnPointsFilePath();
+}
+
+void CheckpointEditorWindow::loadSpawnPoints() {
+    std::string filePath = getSpawnPointsPath();
+    
+    try {
+        std::ifstream file(filePath);
+        if (!file.is_open()) {
+            createDefaultSpawnFormation(1000, 700);
+            return;
+        }
+        
+        json j;
+        file >> j;
+        file.close();
+        
+        if (!j.contains("spawn_points") || !j["spawn_points"].is_array()) {
+            createDefaultSpawnFormation(1000, 700);
+            return;
+        }
+        
+        std::vector<SpawnPointData> points;
+        for (const auto& sp : j["spawn_points"]) {
+            SpawnPointData data;
+            data.id = sp["id"];
+            data.x = sp["x"];
+            data.y = sp["y"];
+            data.angle = sp.value("angle", 0.0f);
+            data.description = sp.value("description", "Spawn " + std::to_string(data.id));
+            points.push_back(data);
+        }
+        
+        if (spawnFormation) {
+            mapScene->removeItem(spawnFormation);
+            delete spawnFormation;
+        }
+        
+        spawnFormation = new SpawnFormationItem();
+        spawnFormation->loadFromSpawnPoints(points);
+        spawnFormation->setFlag(QGraphicsItem::ItemIsMovable, currentMode == EditorMode::Spawnpoints);
+        mapScene->addItem(spawnFormation);
+        
+    } catch (const std::exception& e) {
+        qDebug() << "Error loading spawn points:" << e.what();
+        createDefaultSpawnFormation(1000, 700);
+    }
+}
+
+void CheckpointEditorWindow::saveSpawnPoints() {
+    if (!spawnFormation) {
+        QMessageBox::warning(this, "Error", "No spawn formation to save.");
+        return;
+    }
+    
+    std::string filePath = getSpawnPointsPath();
+    
+    try {
+        json j;
+        j["spawn_points"] = json::array();
+        
+        auto points = spawnFormation->getSpawnPoints();
+        for (const auto& sp : points) {
+            json point;
+            point["id"] = sp.id;
+            point["x"] = sp.x;
+            point["y"] = sp.y;
+            point["angle"] = sp.angle;
+            point["description"] = sp.description;
+            j["spawn_points"].push_back(point);
+        }
+        
+        std::ofstream file(filePath);
+        if (!file.is_open()) {
+            throw std::runtime_error("Could not open file for writing");
+        }
+        
+        file << j.dump(2);
+        file.close();
+        
+        QMessageBox::information(this, "Saved", 
+            QString("Spawn points saved to:\n%1").arg(QString::fromStdString(filePath)));
+        
+    } catch (const std::exception& e) {
+        QMessageBox::critical(this, "Error", 
+            QString("Error saving spawn points:\n%1").arg(e.what()));
+    }
+}
+
+void CheckpointEditorWindow::createDefaultSpawnFormation(float x, float y) {
+    if (spawnFormation) {
+        mapScene->removeItem(spawnFormation);
+        delete spawnFormation;
+    }
+    
+    spawnFormation = new SpawnFormationItem();
+    spawnFormation->setPos(x, y);
+    spawnFormation->setFlag(QGraphicsItem::ItemIsMovable, currentMode == EditorMode::Spawnpoints);
+    mapScene->addItem(spawnFormation);
+}
+
+void CheckpointEditorWindow::onRotateLeftClicked() {
+    if (spawnFormation) {
+        spawnFormation->rotateLeft();
+    }
+}
+
+void CheckpointEditorWindow::onRotateRightClicked() {
+    if (spawnFormation) {
+        spawnFormation->rotateRight();
+    }
 }

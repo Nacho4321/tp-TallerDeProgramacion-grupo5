@@ -52,6 +52,15 @@ void Protocol::init_cmd_map() {
     cmd_to_opcode[START_GAME_STR] = START_GAME;
 
     cmd_to_opcode[CHANGE_CAR_STR] = CHANGE_CAR;
+    // Change car
+    cmd_to_opcode[std::string(CHANGE_CAR_STR) + " " + GREEN_CAR] = CHANGE_CAR;
+    cmd_to_opcode[std::string(CHANGE_CAR_STR) + " " + RED_SQUARED_CAR] = CHANGE_CAR;
+    cmd_to_opcode[std::string(CHANGE_CAR_STR) + " " + RED_SPORTS_CAR] = CHANGE_CAR;
+    cmd_to_opcode[std::string(CHANGE_CAR_STR) + " " + LIGHT_BLUE_CAR] = CHANGE_CAR;
+    cmd_to_opcode[std::string(CHANGE_CAR_STR) + " " + RED_JEEP_CAR] = CHANGE_CAR;
+    cmd_to_opcode[std::string(CHANGE_CAR_STR) + " " + PURPLE_TRUCK] = CHANGE_CAR;
+    cmd_to_opcode[std::string(CHANGE_CAR_STR) + " " + LIMOUSINE_CAR] = CHANGE_CAR;
+    
     cmd_to_opcode[UPGRADE_CAR_STR] = UPGRADE_CAR;
     // Upgrade car 
     cmd_to_opcode[std::string(UPGRADE_CAR_STR) + " 0"] = UPGRADE_CAR;

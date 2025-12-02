@@ -1,60 +1,60 @@
 {
   "spawn_points": [
     {
+      "angle": 0.0,
+      "description": "Spawn 0",
       "id": 0,
-      "x": 890,
-      "y": 700,
-      "angle": 0.0,
-      "description": "Spawn 0 - Top left"
+      "x": 1092.5,
+      "y": 1004.5
     },
     {
+      "angle": 0.0,
+      "description": "Spawn 1",
       "id": 1,
-      "x": 910,
-      "y": 660,
-      "angle": 0.0,
-      "description": "Spawn 1 - Top center"
+      "x": 1117.5,
+      "y": 1004.5
     },
     {
+      "angle": 0.0,
+      "description": "Spawn 2",
       "id": 2,
-      "x": 890,
-      "y": 625,
-      "angle": 0.0,
-      "description": "Spawn 2 - Top right"
+      "x": 1092.5,
+      "y": 1044.5
     },
     {
+      "angle": 0.0,
+      "description": "Spawn 3",
       "id": 3,
-      "x": 910,
-      "y": 585,
-      "angle": 0.0,
-      "description": "Spawn 3 - Middle left"
+      "x": 1117.5,
+      "y": 1044.5
     },
     {
+      "angle": 0.0,
+      "description": "Spawn 4",
       "id": 4,
-      "x": 890,
-      "y": 550,
-      "angle": 0.0,
-      "description": "Spawn 4 - Middle center"
+      "x": 1092.5,
+      "y": 1084.5
     },
     {
+      "angle": 0.0,
+      "description": "Spawn 5",
       "id": 5,
-      "x": 910,
-      "y": 510,
-      "angle": 0.0,
-      "description": "Spawn 5 - Middle right"
+      "x": 1117.5,
+      "y": 1084.5
     },
     {
+      "angle": 0.0,
+      "description": "Spawn 6",
       "id": 6,
-      "x": 890,
-      "y": 475,
-      "angle": 0.0,
-      "description": "Spawn 6 - Bottom left"
+      "x": 1092.5,
+      "y": 1124.5
     },
     {
-      "id": 7,
-      "x": 910,
-      "y": 435,
       "angle": 0.0,
-      "description": "Spawn 7 - Bottom center"
+      "description": "Spawn 7",
+      "id": 7,
+      "x": 1117.5,
+      "y": 1124.5
     }
   ]
 }
