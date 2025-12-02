@@ -23,11 +23,21 @@ El proyecto requiere las siguientes dependencias:
 
 ### Instalación
 
+./installer.sh
 
 ---
 
 ## Ejecución
 
+Ejecutar el server
+```bash
+taller_server 8080
+```
+
+Ejecutar el cliente
+```bash
+taller_client_ui
+```
 
 ---
 
@@ -61,6 +71,7 @@ El proyecto requiere las siguientes dependencias:
 ### Sistema de Juego
 
 - **Carreras de 3 rondas:** Cada partida consiste en 3 rondas completas al circuito
+- **Rondas** Cada ronda consiste en agarrar todos los checkpoints en orden lo mas rapido posible
 - **Entre rondas:** Hay un período de **10 segundos** entre cada ronda donde los jugadores pueden mejorar su auto
 - **Sistema de mejoras:** Las mejoras del auto tienen un costo en forma de **penalización de tiempo**
 - **Ganador:** Gana el jugador con el **menor tiempo total** acumulado (tiempo de carrera + penalizaciones)
@@ -95,5 +106,14 @@ El proyecto requiere las siguientes dependencias:
 |-------|--------|
 | `W` | Subir volumen |
 | `S` | Bajar volumen |
+
+### Cheats
+
+| Tecla | Acción |
+|-------|--------|
+| `P` | God Mode (Inmortal) |
+| `O` | Skip lap |
+| `L` | Muerte Instantanea |
+| `K` | Todas las mejoras |
 
 ---
