@@ -214,8 +214,10 @@ void MapLayout::get_npc_waypoints(const std::string &json_path_wp, std::vector<W
                                 id = std::stoi(name.substr(pos + 1));
                             }
                         }
-
-                        temp.push_back({id, wp});
+                        if (id >= 0)
+                        {
+                            temp.push_back({id, wp});
+                        }
                     }
                 }
             }
