@@ -8,11 +8,9 @@ EventLoop::EventLoop(std::mutex &map_mutex, std::unordered_map<int, PlayerData> 
 {
 }
 
-// Procesa todos los eventos disponibles en la cola sin bloquear
 void EventLoop::process_available_events(GameState state)
 {
     Event ev;
-    // Procesar todos los eventos disponibles usando try_pop
     while (event_queue->try_pop(ev))
     {
         try
