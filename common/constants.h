@@ -76,7 +76,6 @@ enum class CheatType : uint8_t
     FULL_UPGRADE = 3
 };
 
-
 const std::string MOVE_UP_PRESSED_STR = "move_up_pressed";         // NOLINT
 const std::string MOVE_UP_RELEASED_STR = "move_up_released";       // NOLINT
 const std::string MOVE_DOWN_PRESSED_STR = "move_down_pressed";     // NOLINT
@@ -93,7 +92,8 @@ const std::string GET_GAMES_STR = "get_games";     // NOLINT
 const std::string START_GAME_STR = "start_game";   // NOLINT
 const std::string LEAVE_GAME_STR = "leave_game";   // NOLINT
 
-enum class MapId : uint8_t {
+enum class MapId : uint8_t
+{
     LibertyCity = 0,
     SanAndreas = 1,
     ViceCity = 2
@@ -101,47 +101,36 @@ enum class MapId : uint8_t {
 
 constexpr int MAP_COUNT = 3;
 
-inline const char* const MAP_NAMES[] = {
+inline const char *const MAP_NAMES[] = {
     "Liberty City",
     "San Andreas",
-    "Vice City"
-};
+    "Vice City"};
 
-inline const char* const MAP_JSON_PATHS[] = {
+inline const char *const MAP_JSON_PATHS[] = {
     "data/cities/liberty_city.json",
     "data/cities/san_andreas.json",
-    "data/cities/vice_city.json"
-};
+    "data/cities/vice_city.json"};
 
-inline const char* const MAP_BACKGROUND_PATHS[] = {
+inline const char *const MAP_BACKGROUND_PATHS[] = {
     "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png",
     "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - San Andreas.png",
-    "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Vice City.png"
-};
+    "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Vice City.png"};
 
-inline const char* const MAP_CHECKPOINT_PATHS[][3] = {
-    { 
-        "data/cities/base_liberty_city_checkpoints_race_1.json",
-        "data/cities/base_liberty_city_checkpoints_race_2.json",
-        "data/cities/base_liberty_city_checkpoints_race_3.json"
-    },
-    { 
-        "data/cities/base_san_andreas_checkpoints_race_1.json",
-        "data/cities/base_san_andreas_checkpoints_race_2.json",
-        "data/cities/base_san_andreas_checkpoints_race_3.json"
-    },
-    { 
-        "data/cities/base_vice_city_checkpoints_race_1.json",
-        "data/cities/base_vice_city_checkpoints_race_2.json",
-        "data/cities/base_vice_city_checkpoints_race_3.json"
-    }
-};
+inline const char *const MAP_CHECKPOINT_PATHS[][3] = {
+    {"data/cities/base_liberty_city_checkpoints_race_1.json",
+     "data/cities/base_liberty_city_checkpoints_race_2.json",
+     "data/cities/base_liberty_city_checkpoints_race_3.json"},
+    {"data/cities/base_san_andreas_checkpoints_race_1.json",
+     "data/cities/base_san_andreas_checkpoints_race_2.json",
+     "data/cities/base_san_andreas_checkpoints_race_3.json"},
+    {"data/cities/base_vice_city_checkpoints_race_1.json",
+     "data/cities/base_vice_city_checkpoints_race_2.json",
+     "data/cities/base_vice_city_checkpoints_race_3.json"}};
 
-inline const char* const MAP_SPAWN_POINTS_PATHS[] = {
+inline const char *const MAP_SPAWN_POINTS_PATHS[] = {
     "data/cities/liberty_city_spawn_points.json",
     "data/cities/san_andreas_spawn_points.json",
-    "data/cities/vice_city_spawn_points.json"
-};
+    "data/cities/vice_city_spawn_points.json"};
 
 #define COLLISION_FLOOR 0x0001     // 1
 #define COLLISION_BRIDGE 0x0002    // 2
@@ -210,5 +199,6 @@ enum class CarUpgrade
 #define PENALIZATION_TIME 2000
 // Campeonato: 3 rondas
 constexpr int TOTAL_ROUNDS = 3;
+static constexpr int ROUND_TIME_LIMIT_MS = 10 * 60 * 1000; // 10 minutos en ms
 
 #endif

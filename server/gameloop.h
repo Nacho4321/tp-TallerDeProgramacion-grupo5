@@ -46,6 +46,10 @@ private:
     bool starting_active{false};
     int next_id;
 
+    // Contador de tiempo de ronda (10 minutos de timeout)
+    std::chrono::steady_clock::time_point round_start_time{};
+    bool round_timeout_checked{false};
+
     // Spawn points para hasta 8 jugadores (en píxeles)
     struct SpawnPoint
     {
@@ -161,6 +165,7 @@ private:
 
     // perform_race_reset helpers
     bool should_reset_race() const;
+    void check_round_timeout();
     void broadcast_race_end_message();
     void reset_all_players_to_lobby();
     void transition_to_lobby_state();
