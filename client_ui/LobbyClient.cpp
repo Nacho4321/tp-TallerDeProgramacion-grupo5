@@ -3,7 +3,7 @@
 #include <iostream>
 
 LobbyClient::LobbyClient() 
-    : connection_(nullptr) {}
+    : connection_(nullptr), host(""), port("") {}
 
 LobbyClient::~LobbyClient() {
     disconnect();
@@ -17,7 +17,8 @@ bool LobbyClient::connect(const std::string& host, const std::string& port) {
             connection_.reset();
             return false;
         }
-        
+        this->host = host;
+        this->port = port;
         connection_->start();
         return true;
         
@@ -99,12 +100,12 @@ bool LobbyClient::isConnected() const {
 
 
 std::string LobbyClient::getAddress() const {
-    return connection_ ? connection_->getAddress(): "";
+    return this->host;
 }
 
 
 std::string LobbyClient::getPort() const {
-    return connection_ ? connection_->getPort() : "";
+    return this->port;
 }
 
 
