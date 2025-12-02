@@ -180,14 +180,6 @@ void GameLoop::process_lobby_state()
     {
         entry.second.collision_this_frame = false;
     }
-
-    std::vector<PlayerPositionUpdate> broadcast;
-    update_player_positions(broadcast);
-
-    ServerMessage msg;
-    msg.opcode = UPDATE_POSITIONS;
-    msg.positions = broadcast;
-    broadcast_positions(msg);
 }
 
 void GameLoop::process_starting_state()
