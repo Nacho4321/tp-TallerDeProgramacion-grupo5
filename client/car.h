@@ -37,6 +37,9 @@ private:
     float maxHP = 100.0f;
 
 public:
+
+    bool previousIsStopping = false;
+
     Car(int carTypeId = 0);
 
     Car(const CarPosition &pos, int carTypeId = 0);

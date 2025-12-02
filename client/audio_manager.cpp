@@ -63,6 +63,12 @@ void AudioManager::loadSoundEffects() {
     } catch (const SDL2pp::Exception& e) {
         std::cerr << "Warning: Failed to load win.ogg: " << e.what() << std::endl;
     }
+
+    try {
+        breakingSound = std::make_unique<SDL2pp::Chunk>("data/sounds/carbreaking.wav");
+    } catch (const SDL2pp::Exception& e) {
+        std::cerr << "Warning: Failed to load carbreaking.wav: " << e.what() << std::endl;
+    }
 }
 
 int AudioManager::calculateVolume(float soundX, float soundY,
@@ -151,17 +157,37 @@ void AudioManager::playCollisionSound(float worldX, float worldY,
 
     int volume = calculateVolume(worldX, worldY, listenerX, listenerY,
                                   MAX_HEARING_DISTANCE_COLLISION);
-    if (volume == 0) return;  
+    if (volume == 0) return;
 
     try {
         int channel = allocateChannel();
         if (channel >= 0) {
             int scaledVolume = (volume * 4 * masterVolume) / 128;
             collisionSound->SetVolume(scaledVolume);
-            mixer->PlayChannel(channel, *collisionSound, 0); 
+            mixer->PlayChannel(channel, *collisionSound, 0);
         }
     } catch (const SDL2pp::Exception& e) {
         std::cerr << "Warning: Failed to play collision sound: " << e.what() << std::endl;
+    }
+}
+
+void AudioManager::playBreakingSound(float worldX, float worldY,
+                                       float listenerX, float listenerY) {
+    if (!mixer || !breakingSound) return;
+
+    int volume = calculateVolume(worldX, worldY, listenerX, listenerY,
+                                  MAX_HEARING_DISTANCE_COLLISION);
+    if (volume == 0) return;
+
+    try {
+        int channel = allocateChannel();
+        if (channel >= 0) {
+            int scaledVolume = (volume * 4 * masterVolume) / 128;
+            breakingSound->SetVolume(scaledVolume);
+            mixer->PlayChannel(channel, *breakingSound, 0);
+        }
+    } catch (const SDL2pp::Exception& e) {
+        std::cerr << "Warning: Failed to play breaking sound: " << e.what() << std::endl;
     }
 }
 

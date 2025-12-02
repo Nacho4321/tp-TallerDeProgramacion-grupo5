@@ -274,7 +274,7 @@ void Client::start()
                     idx_main = 0;
                     player_found = true;
                     game_renderer.mainCar->stopExplosion();
-                    my_player_id = SPECTATOR_MODE;  // Switch to spectator mode
+                    my_player_id = SPECTATOR_MODE;  
                 }
             }
 
@@ -282,6 +282,7 @@ void Client::start()
             int mainTypeId = 0;
             std::vector<Position> next_cps;
             bool mainCarCollisionFlag = false;
+            bool mainCarIsStopping = false;
             float mainCarHP = 100.0f;
 
             if (player_found)
@@ -298,6 +299,7 @@ void Client::start()
                 mainTypeId = (it != car_type_map.end()) ? it->second : 0;
                 next_cps = main_pos.next_checkpoints;
                 mainCarCollisionFlag = main_pos.collision_flag;
+                mainCarIsStopping = main_pos.is_stopping;
                 mainCarHP = main_pos.hp;
             }
             else if (game_renderer.mainCar)
@@ -307,6 +309,7 @@ void Client::start()
 
             std::map<int, std::pair<CarPosition, int>> otherCars;
             std::map<int, bool> otherCarsCollisionFlags;
+            std::map<int, bool> otherCarsIsStoppingFlags;
 
             for (size_t i = 0; i < latest_message.positions.size(); ++i)
             {
@@ -326,9 +329,10 @@ void Client::start()
                 int other_type_id = (other_it != car_type_map.end()) ? other_it->second : 0;
                 otherCars[pos.player_id] = std::make_pair(cp, other_type_id);
                 otherCarsCollisionFlags[pos.player_id] = pos.collision_flag;
+                otherCarsIsStoppingFlags[pos.player_id] = pos.is_stopping;
             }
 
-            game_renderer.render(mainCarPosition, mainTypeId, otherCars, next_cps, mainCarCollisionFlag, mainCarHP, otherCarsCollisionFlags);
+            game_renderer.render(mainCarPosition, mainTypeId, otherCars, next_cps, mainCarCollisionFlag, mainCarIsStopping, mainCarHP, otherCarsCollisionFlags, otherCarsIsStoppingFlags);
         }
 
         SDL_Delay(16);

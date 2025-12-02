@@ -73,7 +73,7 @@ GameRenderer::GameRenderer(const char *windowTitle, int windowWidth, int windowH
     }
 }
 
-void GameRenderer::updateMainCar(const CarPosition &position, bool collisionFlag, float hp)
+void GameRenderer::updateMainCar(const CarPosition &position, bool collisionFlag, bool isStopping, float hp)
 {
     audioManager->updateCarEngineVolume(-1, 0, 0, 0, 0);
     mainCar->setPosition(position);
@@ -87,14 +87,25 @@ void GameRenderer::updateMainCar(const CarPosition &position, bool collisionFlag
             audioManager->playCollisionSound(position.x, position.y, position.x, position.y);
         }
     }
+
+
+    if (isStopping && !mainCar->previousIsStopping && mainCar)
+    {
+        if (!resultsScreen->isVisible()) {
+            audioManager->playBreakingSound(position.x, position.y, position.x, position.y);
+        }
+    }
+
+    mainCar->previousIsStopping = isStopping;
 }
 
 void GameRenderer::updateOtherCars(const std::map<int, std::pair<CarPosition, int>> &positions,
-                                   const std::map<int, bool> &collisionFlags)
+                                   const std::map<int, bool> &collisionFlags,
+                                   const std::map<int, bool> &isStoppingFlags)
 {
     CarPosition mainPos = mainCar->getPosition();
 
-    updateOrCreateCars(positions, collisionFlags, mainPos);
+    updateOrCreateCars(positions, collisionFlags, isStoppingFlags, mainPos);
     cleanupRemovedCars(positions, mainPos);
 }
 
@@ -125,6 +136,7 @@ std::set<int> GameRenderer::computeNearestCars(
 void GameRenderer::updateOrCreateCars(
     const std::map<int, std::pair<CarPosition, int>> &positions,
     const std::map<int, bool> &collisionFlags,
+    const std::map<int, bool> &isStoppingFlags,
     const CarPosition &mainPos)
 {
     for (const auto &[id, data] : positions)
@@ -151,25 +163,23 @@ void GameRenderer::updateOrCreateCars(
                     audioManager->playCollisionSound(pos.x, pos.y, mainPos.x, mainPos.y);
                 }
             }
+
+            auto isStoppingIt = isStoppingFlags.find(id);
+            if (isStoppingIt != isStoppingFlags.end())
+            {
+                if (isStoppingIt->second && !it->second.previousIsStopping)
+                {
+                    if (audioManager && !resultsScreen->isVisible())
+                    {
+                        audioManager->playBreakingSound(pos.x, pos.y, mainPos.x, mainPos.y);
+                    }
+                }
+                it->second.previousIsStopping = isStoppingIt->second;
+            }
         }
         else
         {
-            // NEW CAR
             otherCars.emplace(id, Car(pos, typeId));
-
-            auto collisionIt = collisionFlags.find(id);
-            if (collisionIt != collisionFlags.end() && collisionIt->second)
-            {
-                if (id >= 0)
-                {
-                    otherCars[id].startFlash();
-                }
-
-                if (audioManager && !resultsScreen->isVisible())
-                {
-                    audioManager->playCollisionSound(pos.x, pos.y, mainPos.x, mainPos.y);
-                }
-            }
         }
 
         previousCarPositions[id] = pos;
@@ -217,11 +227,12 @@ void GameRenderer::cleanupRemovedCars(
 }
 
 void GameRenderer::render(const CarPosition &mainCarPos, int mainCarTypeId, const std::map<int, std::pair<CarPosition, int>> &otherCarPositions,
-                          const std::vector<Position> &next_checkpoints, bool mainCarCollisionFlag, float mainCarHP, const std::map<int, bool> &otherCarsCollisionFlags)
+                          const std::vector<Position> &next_checkpoints, bool mainCarCollisionFlag, bool mainCarIsStopping, float mainCarHP, 
+                          const std::map<int, bool> &otherCarsCollisionFlags, const std::map<int, bool> &otherCarsIsStoppingFlags)
 {
-    updateMainCar(mainCarPos, mainCarCollisionFlag, mainCarHP);
+    updateMainCar(mainCarPos, mainCarCollisionFlag, mainCarIsStopping, mainCarHP);
     setMainCarType(mainCarTypeId);
-    updateOtherCars(otherCarPositions, otherCarsCollisionFlags);
+    updateOtherCars(otherCarPositions, otherCarsCollisionFlags, otherCarsIsStoppingFlags);
     updateCheckpoints(next_checkpoints);
 
     camera.setScreenSize(logicalWidth, logicalHeight);

@@ -301,7 +301,7 @@ ServerMessage Protocol::receivePositionsUpdate()
             return msg;
         update.collision_flag = (collision_byte != 0);
 
-        // Leer niveles de upgrade (4 bytes)
+        // Leer niveles de mejora
         uint8_t upgrade_bytes[4];
         if (skt.recvall(upgrade_bytes, sizeof(upgrade_bytes)) <= 0)
             return msg;
@@ -315,15 +315,6 @@ ServerMessage Protocol::receivePositionsUpdate()
         if (skt.recvall(&stopping_byte, sizeof(stopping_byte)) <= 0)
             return msg;
         update.is_stopping = (stopping_byte != 0);
-        
-        // Leer niveles de mejora 
-        uint8_t upgrade_bytes[4];
-        if (skt.recvall(upgrade_bytes, sizeof(upgrade_bytes)) <= 0)
-            return msg;
-        update.upgrade_speed = upgrade_bytes[0];
-        update.upgrade_acceleration = upgrade_bytes[1];
-        update.upgrade_handling = upgrade_bytes[2];
-        update.upgrade_durability = upgrade_bytes[3];
         
         msg.positions.push_back(update);
     }
