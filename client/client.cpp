@@ -110,6 +110,8 @@ void Client::start()
         }
     }
 
+    bool game_ended = false;
+
     while (connected)
     {
         std::string input = handler.receive();
@@ -182,19 +184,25 @@ void Client::start()
             }
         }
 
-    ServerMessage message;
-    ServerMessage latest_message;
-    bool got_message = false;
-    uint8_t latest_opcode = 0;
-    bool saw_starting_countdown = false;
-    bool saw_race_times = false;
-    bool saw_total_times = false;
-    ServerMessage last_race_times_msg;
-    ServerMessage last_total_times_msg;
+        ServerMessage message;
+        ServerMessage latest_message;
+        bool got_message = false;
+        uint8_t latest_opcode = 0;
+        bool saw_starting_countdown = false;
+        bool saw_race_times = false;
+        bool saw_total_times = false;
+        ServerMessage last_race_times_msg;
+        ServerMessage last_total_times_msg;
 
         while (active_handler_->try_receive(message))
         {
-            // Track the last message for rendering, but also note if any STARTING_COUNTDOWN arrived
+            if (message.opcode == GAME_STARTED){
+                if (game_ended && (message.opcode == GAME_STARTED)){
+                    connected = false;
+                    return;
+                }
+            }
+
             if (message.opcode == STARTING_COUNTDOWN)
             {
                 saw_starting_countdown = true;
@@ -208,6 +216,7 @@ void Client::start()
             {
                 saw_total_times = true;
                 last_total_times_msg = message;
+                game_ended = true;
             }
 
             latest_message = message;

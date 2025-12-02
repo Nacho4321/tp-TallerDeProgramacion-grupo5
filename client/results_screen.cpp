@@ -115,8 +115,8 @@ void ResultsScreen::renderContent(Renderer& renderer)
         return;
     }
 
-    constexpr int LEFT_COLUMN_X = 150;
-    constexpr int RIGHT_COLUMN_X = 500;
+    constexpr int LEFT_COLUMN_X = 50;
+    constexpr int RIGHT_COLUMN_X = 430;
     constexpr int START_Y = 150;
     constexpr int ROW_SPACING = 45;
     constexpr int POSITION_IMAGE_WIDTH = 100;
@@ -140,6 +140,7 @@ void ResultsScreen::renderContent(Renderer& renderer)
             Surface roundSurface = contentFont->RenderText_Blended(roundText, white);
             Texture roundTexture(renderer, roundSurface);
             int roundX = (screenWidth - roundTexture.GetWidth()) / 2;
+            roundX -= 100;
             renderer.Copy(roundTexture, NullOpt, Rect(roundX, 120, roundTexture.GetWidth(), roundTexture.GetHeight()));
         }
 

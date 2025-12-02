@@ -50,7 +50,6 @@ void GameLoop::setup_checkpoints_from_file(const std::string &json_path)
               << " checkpoint sensors (from " << json_path << ")." << std::endl;
 }
 
-
 void GameLoop::setup_npc_config()
 {
     auto &npc_cfg = NPCConfig::getInstance();
@@ -94,7 +93,7 @@ void GameLoop::load_current_round_checkpoints()
 
     std::string json_path = checkpoint_sets[current_round];
     setup_checkpoints_from_file(json_path);
-    std::cout << "[GameLoop] Round " << current_round+1 << " loaded checkpoints from: " << json_path << std::endl;
+    std::cout << "[GameLoop] Round " << current_round + 1 << " loaded checkpoints from: " << json_path << std::endl;
 }
 
 void GameLoop::process_playing_state(float &acum)
@@ -133,17 +132,17 @@ void GameLoop::process_playing_state(float &acum)
             // Procesar cheat de completar ronda pendiente
             if (player_data.pending_race_complete && !player_data.race_finished)
             {
-                complete_player_race(player_data, id);
+                complete_player_race(player_data);
                 player_data.pending_race_complete = false;
             }
-            
+
             // Procesar cheat de descalificación pendiente
             if (player_data.pending_disqualification && !player_data.is_dead)
             {
                 disqualify_player(player_data, id);
                 player_data.pending_disqualification = false;
             }
-            
+
             if (player_data.mark_body_for_removal && player_data.body)
             {
                 if (world.IsLocked())
@@ -267,14 +266,15 @@ GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id_param)
 
     // Inicializar rutas según el mapa seleccionado
     uint8_t safe_map_id = (map_id < MAP_COUNT) ? map_id : 0;
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 3; ++i)
+    {
         checkpoint_sets[i] = MAP_CHECKPOINT_PATHS[safe_map_id][i];
     }
-    
+
     // Cargar spawn points del mapa correspondiente
     map_layout.extract_spawn_points(MAP_SPAWN_POINTS_PATHS[safe_map_id], spawn_points);
-    
-    std::cout << "[GameLoop] Initialized with map_id=" << int(map_id) 
+
+    std::cout << "[GameLoop] Initialized with map_id=" << int(map_id)
               << " (" << MAP_NAMES[safe_map_id] << ")" << std::endl;
 
     // seteo el contact listener owner y lo registro con el world
@@ -431,14 +431,15 @@ void GameLoop::update_drive_for_player(PlayerData &player_data)
     bool want_left = (player_data.position.direction_x == left);
     bool want_right = (player_data.position.direction_x == right);
 
-
     // Detectar frenazo
     player_data.is_stopping = false;
-    if (want_down) {
+    if (want_down)
+    {
         b2Vec2 forwardNormal = body->GetWorldVector(b2Vec2(FORWARD_VECTOR_X, FORWARD_VECTOR_Y));
         float current_speed = b2Dot(body->GetLinearVelocity(), forwardNormal);
-        float threshold = 1.0f; // habria q ver el threshold 
-        if (current_speed > threshold) {
+        float threshold = 1.0f; // habria q ver el threshold
+        if (current_speed > threshold)
+        {
             player_data.is_stopping = true;
             std::cout << "[FRENAZO] Player " << " frenazo Velocidad: " << current_speed << std::endl;
         }
@@ -472,7 +473,7 @@ bool GameLoop::is_valid_checkpoint_collision(b2Fixture *player_fixture, b2Fixtur
     return true;
 }
 
-void GameLoop::complete_player_race(PlayerData &player_data, int player_id)
+void GameLoop::complete_player_race(PlayerData &player_data)
 {
     auto lap_end_time = std::chrono::steady_clock::now();
     auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(lap_end_time - player_data.lap_start_time).count();
@@ -480,28 +481,23 @@ void GameLoop::complete_player_race(PlayerData &player_data, int player_id)
     player_data.race_finished = true;
     player_data.disqualified = false;
 
-    // Registrar tiempo de la ronda actual (limitar a 3 rondas)
-    if (static_cast<int>(player_data.round_times_ms.size()) < TOTAL_ROUNDS) {
-        player_data.round_times_ms.push_back(static_cast<uint32_t>(elapsed_ms));
-    } else {
-        player_data.round_times_ms[player_data.rounds_completed % TOTAL_ROUNDS] = static_cast<uint32_t>(elapsed_ms);
+    // Guardar el tiempo de la ronda actual
+    int round_idx = player_data.rounds_completed;
+    uint32_t existing_penalization = 0;
+
+    if (round_idx >= 0 && round_idx < TOTAL_ROUNDS)
+    {
+        // Si ya hay penalizaciones acumuladas en esta ronda, preservarlas
+        existing_penalization = player_data.round_times_ms[round_idx];
+        uint32_t new_total_time = static_cast<uint32_t>(elapsed_ms) + existing_penalization;
+
+        player_data.round_times_ms[round_idx] = new_total_time;
     }
+
+    // Incrementar ronda completada y acumular tiempo total
     player_data.rounds_completed = std::min(player_data.rounds_completed + 1, TOTAL_ROUNDS);
-    player_data.total_time_ms += static_cast<uint32_t>(elapsed_ms);
-    
-    // Activar inmortalidad al terminar la ronda (para que no muera mientras espera)
+    player_data.total_time_ms += static_cast<uint32_t>(elapsed_ms) + existing_penalization;
     player_data.god_mode = true;
-
-    int minutes = static_cast<int>(elapsed_ms / 60000);
-    float seconds = static_cast<float>((elapsed_ms % 60000)) / 1000.0f;
-
-    std::cout << "\n========================================" << std::endl;
-    std::cout << "   PLAYER " << player_id << " FINISHED THE RACE!" << std::endl;
-    std::cout << "   Time: " << minutes << ":" << std::fixed << std::setprecision(3) << seconds << std::endl;
-    std::cout << "   Waiting for other players... (GOD MODE ON)" << std::endl;
-    std::cout << "========================================\n"
-              << std::endl;
-
     check_race_completion();
 }
 
@@ -512,24 +508,25 @@ void GameLoop::disqualify_player(PlayerData &player_data, int player_id)
     player_data.is_dead = true;
     player_data.race_finished = true;
     player_data.disqualified = true;
-    player_data.god_mode = false;  // Desactivar god mode
-    
+    player_data.god_mode = false; // Desactivar god mode
+
     // Asignar tiempo de descalificación: 10 minutos
     uint32_t dq_ms = 10u * 60u * 1000u;
-    if (static_cast<int>(player_data.round_times_ms.size()) < TOTAL_ROUNDS) {
-        player_data.round_times_ms.push_back(dq_ms);
-    } else {
-        player_data.round_times_ms[player_data.rounds_completed % TOTAL_ROUNDS] = dq_ms;
+    int round_idx = player_data.rounds_completed;
+    if (round_idx >= 0 && round_idx < TOTAL_ROUNDS)
+    {
+        player_data.round_times_ms[round_idx] = dq_ms;
+        std::cout << "[Death] Player " << player_id << " DISQUALIFIED at round " << round_idx
+                  << " (10min penalty)" << std::endl;
     }
+
     player_data.rounds_completed = std::min(player_data.rounds_completed + 1, TOTAL_ROUNDS);
     player_data.total_time_ms += dq_ms;
-    
+
     // Marcar el body para destrucción
     player_data.mark_body_for_removal = true;
     player_data.collision_this_frame = true;
-    
-    std::cout << "[Death] Player " << player_id << " DISQUALIFIED! (HP=0, 10min penalty)" << std::endl;
-    
+
     check_race_completion();
 }
 
@@ -546,13 +543,13 @@ void GameLoop::handle_checkpoint_reached(PlayerData &player_data, int player_id,
 
     if (total > 0 && new_next >= total)
     {
-        complete_player_race(player_data, player_id);
+        complete_player_race(player_data);
     }
     else
     {
         player_data.next_checkpoint = new_next;
-        
-        std::cout << "[GameLoop] Player " << player_id << " passed checkpoint " 
+
+        std::cout << "[GameLoop] Player " << player_id << " passed checkpoint "
                   << checkpoint_index << " next=" << player_data.next_checkpoint << std::endl;
     }
 }
@@ -570,11 +567,11 @@ void GameLoop::process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpoin
 void GameLoop::handle_begin_contact(b2Fixture *fixture_a, b2Fixture *fixture_b)
 {
     std::lock_guard<std::mutex> lk(players_map_mutex);
-    
+
     // Checkeo checkpoint
     process_pair(fixture_a, fixture_b);
     process_pair(fixture_b, fixture_a);
-    
+
     // Checkeo colisiones entre autos
     handle_car_collision(fixture_a, fixture_b);
 }
@@ -590,12 +587,12 @@ void GameLoop::handle_car_collision(b2Fixture *fixture_a, b2Fixture *fixture_b)
     uint16 cat_a = fixture_a->GetFilterData().categoryBits;
     uint16 cat_b = fixture_b->GetFilterData().categoryBits;
 
-    // Skipeo si alguno es sensor 
+    // Skipeo si alguno es sensor
     bool a_is_sensor = fixture_a->IsSensor();
     bool b_is_sensor = fixture_b->IsSensor();
-    
+
     if (a_is_sensor || b_is_sensor)
-        return; 
+        return;
 
     bool a_is_player = (cat_a == CAR_GROUND || cat_a == CAR_BRIDGE);
     bool b_is_player = (cat_b == CAR_GROUND || cat_b == CAR_BRIDGE);
@@ -603,20 +600,31 @@ void GameLoop::handle_car_collision(b2Fixture *fixture_a, b2Fixture *fixture_b)
     // TODO: borrar este log cuando funcione todo bien
     std::string collision_type_a = "";
     std::string collision_type_b = "";
-    
-    if (a_is_player && b_is_player) {
+
+    if (a_is_player && b_is_player)
+    {
         collision_type_a = "PLAYER vs PLAYER";
         collision_type_b = "PLAYER vs PLAYER";
-    } else if (a_is_player) {
-        if (cat_b == 0x0001) {
+    }
+    else if (a_is_player)
+    {
+        if (cat_b == 0x0001)
+        {
             collision_type_a = "PLAYER vs WALL";
-        } else {
+        }
+        else
+        {
             collision_type_a = "PLAYER vs NPC/OBSTACLE";
         }
-    } else if (b_is_player) {
-        if (cat_a == 0x0001) {
+    }
+    else if (b_is_player)
+    {
+        if (cat_a == 0x0001)
+        {
             collision_type_b = "PLAYER vs WALL";
-        } else {
+        }
+        else
+        {
             collision_type_b = "PLAYER vs NPC/OBSTACLE";
         }
     }
@@ -637,26 +645,28 @@ void GameLoop::handle_car_collision(b2Fixture *fixture_a, b2Fixture *fixture_b)
 
                 // Detectar choque frontal: si las velocidades son opuestas (ángulo cercano a 180°)
                 float frontal_multiplier = 1.0f;
-                if (vel_a.Length() > 1.0f && vel_b.Length() > 1.0f) {
+                if (vel_a.Length() > 1.0f && vel_b.Length() > 1.0f)
+                {
                     // Normalizar y calcular producto punto
                     b2Vec2 dir_a = vel_a;
                     dir_a.Normalize();
                     b2Vec2 dir_b = vel_b;
                     dir_b.Normalize();
                     float dot = b2Dot(dir_a, dir_b);
-                    
+
                     // Si dot < -0.5, significa que los vectores apuntan en direcciones opuestas
                     // (ángulo > 120°). Cuanto más negativo, más frontal es el choque.
-                    if (dot < -0.5f) {
-                        // Mapear de [-1.0, -0.5] a [2.5, 1.5] 
+                    if (dot < -0.5f)
+                    {
+                        // Mapear de [-1.0, -0.5] a [2.5, 1.5]
                         // dot = -1.0 (180°) -> multiplier = 2.5x
                         // dot = -0.5 (120°) -> multiplier = 1.5x
                         frontal_multiplier = 1.5f + (-dot - 0.5f) * 2.0f;
                     }
                 }
 
-                std::cout << "[Collision] " << collision_type_a 
-                          << " | Player " << player_a_id 
+                std::cout << "[Collision] " << collision_type_a
+                          << " | Player " << player_a_id
                           << " | Impact: " << impact_velocity << " m/s" << std::endl;
 
                 apply_collision_damage(it_a->second, player_a_id, impact_velocity, it_a->second.car.car_name, frontal_multiplier);
@@ -675,27 +685,30 @@ void GameLoop::handle_car_collision(b2Fixture *fixture_a, b2Fixture *fixture_b)
             {
                 b2Vec2 vel_a = body_a->GetLinearVelocity();
                 b2Vec2 vel_b = body_b->GetLinearVelocity();
-                b2Vec2 relative_vel = vel_b - vel_a;  // Invertido para B
+                b2Vec2 relative_vel = vel_b - vel_a; // Invertido para B
                 float impact_velocity = relative_vel.Length();
 
                 // Detectar choque frontal para el jugador B
                 float frontal_multiplier = 1.0f;
-                if (vel_a.Length() > 1.0f && vel_b.Length() > 1.0f) {
+                if (vel_a.Length() > 1.0f && vel_b.Length() > 1.0f)
+                {
                     // Agarro los 2 vectores de velocidad, los normalizo y calculo el producto punto
                     b2Vec2 dir_a = vel_a;
                     dir_a.Normalize();
                     b2Vec2 dir_b = vel_b;
                     dir_b.Normalize();
                     float dot = b2Dot(dir_a, dir_b);
-                    
-                    if (dot < -0.5f) {
+
+                    if (dot < -0.5f)
+                    {
                         frontal_multiplier = 1.5f + (-dot - 0.5f) * 2.0f;
                     }
                 }
 
-                if (!a_is_player || !b_is_player) {
-                    std::cout << "[Collision] " << collision_type_b 
-                              << " | Player " << player_b_id 
+                if (!a_is_player || !b_is_player)
+                {
+                    std::cout << "[Collision] " << collision_type_b
+                              << " | Player " << player_b_id
                               << " | Impact: " << impact_velocity << " m/s" << std::endl;
                 }
 
@@ -716,7 +729,7 @@ void GameLoop::apply_collision_damage(PlayerData &player_data, int player_id, fl
     // Usar durability del player (upgradeada) en lugar del YAML
     float durability = player_data.car.durability;
 
-    // Formula: damage = impact_velocity * multiplier * frontal_multiplier * 0.1 
+    // Formula: damage = impact_velocity * multiplier * frontal_multiplier * 0.1
     // frontal_multiplier: 1.0 para colisiones normales, 2.5 para choques frontales en contramano
     // (10 m/s) son aprox 10 damage (o 25 si es frontal)
     float damage = impact_velocity * durability * frontal_multiplier * 0.1f;
@@ -725,7 +738,7 @@ void GameLoop::apply_collision_damage(PlayerData &player_data, int player_id, fl
     // TODO: Por ahi meter el 0.5 al YAML o hacerlo una constante global
     if (damage < 0.5f)
     {
-        std::cout << "[Collision] Impact too weak (" << impact_velocity 
+        std::cout << "[Collision] Impact too weak (" << impact_velocity
                   << " m/s), damage=" << damage << " < 0.5, skipping" << std::endl;
         return;
     }
@@ -741,14 +754,17 @@ void GameLoop::apply_collision_damage(PlayerData &player_data, int player_id, fl
 
     player_data.collision_this_frame = true;
 
-    if (frontal_multiplier > 1.5f) {
-        std::cout << "[Collision] **FRONTAL HEAD-ON CRASH** Player car '" << car_name 
-                  << "' took " << damage << " damage (impact: " << impact_velocity 
-                  << " m/s, frontal multiplier: " << frontal_multiplier 
+    if (frontal_multiplier > 1.5f)
+    {
+        std::cout << "[Collision] **FRONTAL HEAD-ON CRASH** Player car '" << car_name
+                  << "' took " << damage << " damage (impact: " << impact_velocity
+                  << " m/s, frontal multiplier: " << frontal_multiplier
                   << "). HP remaining: " << player_data.car.hp << std::endl;
-    } else {
-        std::cout << "[Collision] Player car '" << car_name 
-                  << "' took " << damage << " damage (impact: " << impact_velocity 
+    }
+    else
+    {
+        std::cout << "[Collision] Player car '" << car_name
+                  << "' took " << damage << " damage (impact: " << impact_velocity
                   << " m/s). HP remaining: " << player_data.car.hp << std::endl;
     }
 
@@ -894,7 +910,7 @@ void GameLoop::broadcast_game_started()
 {
     ServerMessage msg;
     msg.opcode = GAME_STARTED;
-    
+
     for (auto &entry : players_messanger)
     {
         auto &queue = entry.second;
@@ -905,7 +921,9 @@ void GameLoop::broadcast_game_started()
                 queue->push(msg);
                 std::cout << "[GameLoop] GAME_STARTED sent to player " << entry.first << std::endl;
             }
-            catch (const ClosedQueue &) {}
+            catch (const ClosedQueue &)
+            {
+            }
         }
     }
 }
@@ -924,12 +942,12 @@ void GameLoop::reset_players_for_race_start()
         player_data.next_checkpoint = 0;
         player_data.race_finished = false;
         player_data.is_dead = false;
-        player_data.god_mode = false;  // Reset god mode para nueva ronda
+        player_data.god_mode = false; // Reset god mode para nueva ronda
         player_data.position.on_bridge = false;
         player_data.position.direction_x = not_horizontal;
         player_data.position.direction_y = not_vertical;
-        
-        // Reset HP 
+
+        // Reset HP
         const CarPhysics &car_physics = physics_config.getCarPhysics(player_data.car.car_name);
         player_data.car.hp = car_physics.max_hp;
 
@@ -958,7 +976,7 @@ void GameLoop::reset_npcs_velocities()
 void GameLoop::start_game()
 {
     bool can_start = false;
-    
+
     // Scope limitado para el lock: solo para leer estado y modificar datos de jugadores
     {
         std::lock_guard<std::mutex> lk(players_map_mutex);
@@ -973,7 +991,7 @@ void GameLoop::start_game()
             // Durante PLAYING, solo permitir reiniciar si todos los jugadores están muertos
             int total_players = static_cast<int>(players.size());
             int dead_count = 0;
-            
+
             for (const auto &[id, player_data] : players)
             {
                 if (player_data.is_dead)
@@ -981,14 +999,14 @@ void GameLoop::start_game()
                     dead_count++;
                 }
             }
-            
+
             if (dead_count == total_players && total_players > 0)
             {
                 can_start = true;
                 std::cout << "[GameLoop] All players dead, restarting race..." << std::endl;
             }
         }
-        
+
         if (!can_start)
         {
             std::cout << "[GameLoop] Cannot start game in current state" << std::endl;
@@ -1074,8 +1092,11 @@ void GameLoop::broadcast_race_end_message()
             PlayerData &pd = entry.second;
             uint32_t time_ms = 10u * 60u * 1000u;
             bool dq = pd.disqualified || pd.is_dead;
-            if (!pd.round_times_ms.empty()) {
-                time_ms = pd.round_times_ms.back();
+
+            int completed_round_idx = pd.rounds_completed - 1;
+            if (completed_round_idx >= 0 && completed_round_idx < TOTAL_ROUNDS)
+            {
+                time_ms = pd.round_times_ms[completed_round_idx];
             }
             msg.race_times.push_back({static_cast<uint32_t>(pid), time_ms, dq, round_index});
         }
@@ -1103,9 +1124,9 @@ void GameLoop::reset_all_players_to_lobby()
         player_data.next_checkpoint = 0;
         player_data.race_finished = false;
         player_data.is_dead = false;
-        player_data.god_mode = false;  // Reset god mode para nueva ronda
+        player_data.god_mode = false; // Reset god mode para nueva ronda
         player_data.lap_start_time = std::chrono::steady_clock::now();
-        
+
         // Reseteo HP
         const CarPhysics &car_physics = physics_config.getCarPhysics(player_data.car.car_name);
         player_data.car.hp = car_physics.max_hp;
@@ -1196,7 +1217,7 @@ void GameLoop::add_player_to_broadcast(std::vector<PlayerPositionUpdate> &broadc
     {
         return;
     }
-    
+
     b2Body *body = player_data.body;
     if (body)
     {
@@ -1218,7 +1239,7 @@ void GameLoop::add_player_to_broadcast(std::vector<PlayerPositionUpdate> &broadc
     update.hp = player_data.car.hp;
     update.collision_flag = player_data.collision_this_frame;
     update.is_stopping = player_data.is_stopping;
-    
+
     // Enviar niveles de mejora
     update.upgrade_speed = player_data.upgrades.speed;
     update.upgrade_acceleration = player_data.upgrades.acceleration;
@@ -1276,8 +1297,8 @@ void GameLoop::add_npc_to_broadcast(std::vector<PlayerPositionUpdate> &broadcast
     update.player_id = npc.npc_id; // id negativo para NPC
     update.new_pos = pos;
     update.car_type = "npc";
-    update.hp = 100.0f; 
-    update.collision_flag = false; 
+    update.hp = 100.0f;
+    update.collision_flag = false;
     broadcast.push_back(update);
 }
 
@@ -1307,7 +1328,7 @@ void GameLoop::update_body_positions()
         {
             continue;
         }
-        
+
         // Si el jugador terminó la carrera, detenerlo completamente
         if (player_data.race_finished)
         {
@@ -1318,7 +1339,7 @@ void GameLoop::update_body_positions()
             }
             continue;
         }
-        
+
         // Si el body está marcado para remover, NO lo destruyo acá (se hace en flush post-Step)
         // Simplemente omito actualizar fuerzas/física para este jugador.
         if (player_data.mark_body_for_removal)
@@ -1729,7 +1750,7 @@ void GameLoop::advance_round_or_reset_to_lobby()
         reset_all_players_to_lobby();
         pending_race_reset.store(false);
         std::cout << "[GameLoop] About to call transition_to_starting_state for championship restart" << std::endl;
-    transition_to_starting_state(10);
+        transition_to_starting_state(10);
     }
 }
 

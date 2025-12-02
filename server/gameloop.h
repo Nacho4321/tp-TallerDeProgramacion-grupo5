@@ -65,7 +65,7 @@ private:
     static constexpr float RIGHT_VECTOR_Y = 0.0f;
     static constexpr float FORWARD_VECTOR_X = 0.0f;
     static constexpr float FORWARD_VECTOR_Y = 1.0f;
-    
+
     // Spawn points loaded from JSON (pixels)
     std::vector<MapLayout::SpawnPointData> spawn_points;
     std::vector<int> player_order; // IDs de jugadores en orden de llegada
@@ -132,9 +132,9 @@ private:
     bool is_valid_checkpoint_collision(b2Fixture *player_fixture, b2Fixture *checkpoint_fixture,
                                        int &out_player_id, int &out_checkpoint_index);
     void handle_checkpoint_reached(PlayerData &player_data, int player_id, int checkpoint_index);
-    void complete_player_race(PlayerData &player_data, int player_id);
+    void complete_player_race(PlayerData &player_data);
     void disqualify_player(PlayerData &player_data, int player_id);
-    
+
     // Car collision damage system
     void handle_car_collision(b2Fixture *fixture_a, b2Fixture *fixture_b);
     void apply_collision_damage(PlayerData &player_data, int player_id, float impact_velocity, const std::string &car_name, float frontal_multiplier = 1.0f);

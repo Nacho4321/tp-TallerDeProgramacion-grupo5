@@ -12,6 +12,8 @@
 class LobbyClient {
 private:
     std::unique_ptr<GameConnection> connection_;
+    std::string host;
+    std::string port;
 
 public:
     LobbyClient();
