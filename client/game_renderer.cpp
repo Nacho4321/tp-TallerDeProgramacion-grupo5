@@ -434,6 +434,23 @@ void GameRenderer::updateResultsUpgrades(uint8_t upgrade_speed,
 void GameRenderer::startCountDown()
 {
     resultsScreen->startCountdown(10);
+    resetAllExplosions();
+}
+
+void GameRenderer::resetAllExplosions()
+{
+    if (mainCar && mainCar->isExploding())
+    {
+        mainCar->stopExplosion();
+    }
+
+    for (auto& [id, car] : otherCars)
+    {
+        if (car.isExploding())
+        {
+            car.stopExplosion();
+        }
+    }
 }
 
 void GameRenderer::triggerPlayerDeath()
