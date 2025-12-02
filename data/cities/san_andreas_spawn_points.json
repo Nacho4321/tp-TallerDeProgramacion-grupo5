@@ -1,0 +1,60 @@
+{
+  "spawn_points": [
+    {
+      "id": 0,
+      "x": 1200,
+      "y": 900,
+      "angle": 0.0,
+      "description": "Spawn 0"
+    },
+    {
+      "id": 1,
+      "x": 1220,
+      "y": 860,
+      "angle": 0.0,
+      "description": "Spawn 1"
+    },
+    {
+      "id": 2,
+      "x": 1200,
+      "y": 820,
+      "angle": 0.0,
+      "description": "Spawn 2"
+    },
+    {
+      "id": 3,
+      "x": 1220,
+      "y": 780,
+      "angle": 0.0,
+      "description": "Spawn 3"
+    },
+    {
+      "id": 4,
+      "x": 1200,
+      "y": 740,
+      "angle": 0.0,
+      "description": "Spawn 4"
+    },
+    {
+      "id": 5,
+      "x": 1220,
+      "y": 700,
+      "angle": 0.0,
+      "description": "Spawn 5"
+    },
+    {
+      "id": 6,
+      "x": 1200,
+      "y": 660,
+      "angle": 0.0,
+      "description": "Spawn 6"
+    },
+    {
+      "id": 7,
+      "x": 1220,
+      "y": 620,
+      "angle": 0.0,
+      "description": "Spawn 7"
+    }
+  ]
+}

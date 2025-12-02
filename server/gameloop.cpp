@@ -64,7 +64,8 @@ void GameLoop::setup_world()
     load_current_round_checkpoints();
     setup_npc_config();
 
-    map_layout.extract_map_npc_data("data/cities/liberty_city.json", street_waypoints, parked_data);
+    uint8_t safe_map_id = (map_id < MAP_COUNT) ? map_id : 0;
+    map_layout.extract_map_npc_data(MAP_JSON_PATHS[safe_map_id], street_waypoints, parked_data);
     if (int(parked_data.size()) > 0)
     {
         init_npcs(parked_data);
@@ -73,7 +74,8 @@ void GameLoop::setup_world()
 
 void GameLoop::setup_map_layout()
 {
-    map_layout.create_map_layout("data/cities/liberty_city.json");
+    uint8_t safe_map_id = (map_id < MAP_COUNT) ? map_id : 0;
+    map_layout.create_map_layout(MAP_JSON_PATHS[safe_map_id]);
 }
 
 void GameLoop::load_current_round_checkpoints()
@@ -263,15 +265,25 @@ void GameLoop::run()
 }
 
 // Constructor para poder setear el contact listener del world
-GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events)
-    : players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), game_state(GameState::LOBBY), next_id(INITIAL_ID), map_layout(world), physics_config(CarPhysicsConfig::getInstance())
+GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id_param)
+    : players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), game_state(GameState::LOBBY), next_id(INITIAL_ID), map_id(map_id_param), map_layout(world), physics_config(CarPhysicsConfig::getInstance())
 {
     if (!physics_config.loadFromFile("config/car_physics.yaml"))
     {
         std::cerr << "[GameLoop] WARNING: Failed to load car physics config, using defaults" << std::endl;
     }
 
-    map_layout.extract_spawn_points("data/cities/spawn_points.json", spawn_points);
+    // Inicializar rutas según el mapa seleccionado
+    uint8_t safe_map_id = (map_id < MAP_COUNT) ? map_id : 0;
+    for (int i = 0; i < 3; ++i) {
+        checkpoint_sets[i] = MAP_CHECKPOINT_PATHS[safe_map_id][i];
+    }
+    
+    // Cargar spawn points del mapa correspondiente
+    map_layout.extract_spawn_points(MAP_SPAWN_POINTS_PATHS[safe_map_id], spawn_points);
+    
+    std::cout << "[GameLoop] Initialized with map_id=" << int(map_id) 
+              << " (" << MAP_NAMES[safe_map_id] << ")" << std::endl;
 
     // seteo el contact listener owner y lo registro con el world
     contact_listener.set_owner(this);

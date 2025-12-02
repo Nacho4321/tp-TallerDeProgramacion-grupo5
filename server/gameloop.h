@@ -70,6 +70,8 @@ private:
     std::vector<MapLayout::SpawnPointData> spawn_points;
     std::vector<int> player_order; // IDs de jugadores en orden de llegada
 
+    uint8_t map_id{0};  // 0=LibertyCity, 1=SanAndreas, 2=ViceCity
+    
     MapLayout map_layout;
     // Mapa de fixtures de checkpoints a sus índices
     std::unordered_map<b2Fixture *, int> checkpoint_fixtures;
@@ -78,11 +80,8 @@ private:
 
     // ----- Multi-race support (3 carreras en mismo mapa con distintos recorridos) -----
     int current_round{0}; // 0..2
-    // Archivos de recorridos que existen en data/
-    std::array<std::string, 3> checkpoint_sets{
-        "data/cities/base_liberty_city_checkpoints_race_1.json",
-        "data/cities/base_liberty_city_checkpoints_race_2.json",
-        "data/cities/base_liberty_city_checkpoints_race_3.json"};
+    // Archivos de recorridos - se inicializan según map_id
+    std::array<std::string, 3> checkpoint_sets;
     void load_current_round_checkpoints();
 
     // ---------------- NPC Support ----------------
@@ -196,7 +195,7 @@ private:
     void transition_to_lobby_state();
 
 public:
-    explicit GameLoop(std::shared_ptr<Queue<Event>> events);
+    explicit GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id = 0);
     void handle_begin_contact(b2Fixture *a, b2Fixture *b);
     void run() override;
     void start_game();

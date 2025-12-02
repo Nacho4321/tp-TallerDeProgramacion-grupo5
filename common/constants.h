@@ -136,6 +136,12 @@ inline const char* const MAP_CHECKPOINT_PATHS[][3] = {
     }
 };
 
+inline const char* const MAP_SPAWN_POINTS_PATHS[] = {
+    "data/cities/liberty_city_spawn_points.json",
+    "data/cities/san_andreas_spawn_points.json",
+    "data/cities/vice_city_spawn_points.json"
+};
+
 #define COLLISION_FLOOR 0x0001     // 1
 #define COLLISION_BRIDGE 0x0002    // 2
 #define COLLISION_UNDER 0x0004     // 4

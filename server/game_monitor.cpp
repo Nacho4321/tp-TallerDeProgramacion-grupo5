@@ -13,7 +13,7 @@ int GameMonitor::add_game(int client_id, std::shared_ptr<Queue<ServerMessage>> p
     auto new_queue = std::make_shared<Queue<Event>>();
     games_queues[game_id] = new_queue;
 
-    auto new_game = std::make_unique<GameLoop>(new_queue);
+    auto new_game = std::make_unique<GameLoop>(new_queue, map_id);
 
     if (!player_outbox) {
         throw std::runtime_error("Outbox not found for creator client");
