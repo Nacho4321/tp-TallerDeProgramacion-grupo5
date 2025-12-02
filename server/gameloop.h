@@ -24,6 +24,7 @@
 #include "gameloop/world/world_manager.h"
 #include "gameloop/player/player_manager.h"
 #include "gameloop/state/game_state_manager.h"
+#include "gameloop/broadcast/broadcast_manager.h"
 #define INITIAL_ID 1
 
 class GameLoop : public Thread
@@ -80,8 +81,7 @@ private:
 
     CarPhysicsConfig &physics_config;
     PlayerManager player_manager;
-
-    void broadcast_positions(ServerMessage &msg);
+    BroadcastManager broadcast_manager;
 
     // Helpers usados por el contact listener
     void process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpointFix);
@@ -104,10 +104,6 @@ private:
 
     // start_game helpers
     void on_playing_started();
-    void broadcast_game_started();
-
-    // perform_race_reset helpers
-    void broadcast_race_end_message();
 
 public:
     explicit GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id = 0);

@@ -78,7 +78,7 @@ void GameLoop::run()
     state_manager.set_on_starting_callback([this]() {
         ServerMessage msg;
         msg.opcode = STARTING_COUNTDOWN;
-        broadcast_positions(msg);
+        broadcast_manager.broadcast(msg);
     });
     state_manager.set_on_playing_callback([this]() {
         on_playing_started();
@@ -208,7 +208,7 @@ void GameLoop::process_playing_state(float &acum)
     ServerMessage msg;
     msg.opcode = UPDATE_POSITIONS;
     msg.positions = broadcast;
-    broadcast_positions(msg);
+    broadcast_manager.broadcast(msg);
 }
 
 void GameLoop::process_lobby_state()
@@ -247,7 +247,7 @@ void GameLoop::process_starting_state()
     ServerMessage msg;
     msg.opcode = UPDATE_POSITIONS;
     msg.positions = broadcast;
-    broadcast_positions(msg);
+    broadcast_manager.broadcast(msg);
 
     // Checkeamos si la cuenta regresiva terminó
     state_manager.check_and_finish_starting();
@@ -271,7 +271,7 @@ void GameLoop::perform_race_reset()
     if (!do_reset)
         return;
 
-    broadcast_race_end_message();
+    broadcast_manager.broadcast_race_end_message(static_cast<uint8_t>(current_round));
     advance_round_or_reset_to_lobby();
 }
 
@@ -307,7 +307,7 @@ void GameLoop::advance_round_or_reset_to_lobby()
                 totals.total_times.push_back({static_cast<uint32_t>(entry.first), entry.second.total_time_ms});
             }
         }
-        broadcast_positions(totals);
+        broadcast_manager.broadcast(totals);
 
         // Reiniciar al round 1 y entrar a STARTING directamente
         std::cout << "[GameLoop] Championship finished. Restarting at round 1 (auto STARTING)." << std::endl;
@@ -322,7 +322,7 @@ void GameLoop::advance_round_or_reset_to_lobby()
 
 // Constructor para poder setear el contact listener del world
 GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id_param)
-    : world_manager(CarPhysicsConfig::getInstance()), players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), state_manager(), next_id(INITIAL_ID), map_id(map_id_param), map_layout(world_manager.get_world()), npc_manager(world_manager.get_world()), physics_config(CarPhysicsConfig::getInstance()), player_manager(players_map_mutex, players, players_messanger, player_order, world_manager, physics_config)
+    : world_manager(CarPhysicsConfig::getInstance()), players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), state_manager(), next_id(INITIAL_ID), map_id(map_id_param), map_layout(world_manager.get_world()), npc_manager(world_manager.get_world()), physics_config(CarPhysicsConfig::getInstance()), player_manager(players_map_mutex, players, players_messanger, player_order, world_manager, physics_config), broadcast_manager(players_map_mutex, players, players_messanger)
 {
     if (!physics_config.loadFromFile("config/car_physics.yaml"))
     {
@@ -356,7 +356,7 @@ void GameLoop::on_playing_started()
         player_data.lap_start_time = race_start_time;
     }
     std::cout << "[GameLoop] Race timer started for all players" << std::endl;
-    broadcast_game_started();
+    broadcast_manager.broadcast_game_started();
 }
 
 void GameLoop::start_game()
@@ -411,106 +411,6 @@ void GameLoop::start_game()
     // Cambiar el estado FUERA del lock para evitar deadlock con el game loop
     state_manager.transition_to_starting(10);
     started = true;
-}
-
-//
-//
-// Refactor: Broadcasts y updates
-//
-//
-
-void GameLoop::broadcast_game_started()
-{
-    ServerMessage msg;
-    msg.opcode = GAME_STARTED;
-
-    for (auto &entry : players_messanger)
-    {
-        auto &queue = entry.second;
-        if (queue)
-        {
-            try
-            {
-                queue->push(msg);
-                std::cout << "[GameLoop] GAME_STARTED sent to player " << entry.first << std::endl;
-            }
-            catch (const ClosedQueue &)
-            {
-            }
-        }
-    }
-}
-
-void GameLoop::broadcast_positions(ServerMessage &msg)
-{
-    // Snapshot de destinatarios para evitar iterar el mapa mientras puede cambiar
-    std::vector<std::pair<int, std::shared_ptr<Queue<ServerMessage>>>> recipients;
-    {
-        std::lock_guard<std::mutex> lk(players_map_mutex);
-        recipients.reserve(players_messanger.size());
-        for (auto &entry : players_messanger)
-        {
-            recipients.emplace_back(entry.first, entry.second);
-        }
-    }
-
-    std::vector<int> to_remove;
-    for (auto &p : recipients)
-    {
-        int id = p.first;
-        auto &queue = p.second;
-        if (!queue)
-        {
-            to_remove.push_back(id);
-            continue;
-        }
-        try
-        {
-            queue->push(msg);
-        }
-        catch (const ClosedQueue &)
-        {
-            // El cliente cerró su outbox: marcar para remover
-            to_remove.push_back(id);
-        }
-    }
-    if (!to_remove.empty())
-    {
-        // Remover jugadores desconectados
-        std::lock_guard<std::mutex> lk(players_map_mutex);
-        for (int id : to_remove)
-        {
-            players_messanger.erase(id);
-            players.erase(id);
-        }
-    }
-}
-
-void GameLoop::broadcast_race_end_message()
-{
-    std::cout << "[GameLoop] Executing race reset..." << std::endl;
-    // Enviar tiempos de la carrera actual a los clientes
-    ServerMessage msg;
-    msg.opcode = RACE_TIMES;
-    {
-        std::lock_guard<std::mutex> lk(players_map_mutex);
-        uint8_t round_index = static_cast<uint8_t>(current_round);
-        for (auto &entry : players)
-        {
-            int pid = entry.first;
-            PlayerData &pd = entry.second;
-            uint32_t time_ms = 10u * 60u * 1000u;
-            bool dq = pd.disqualified || pd.is_dead;
-
-            int completed_round_idx = pd.rounds_completed - 1;
-            if (completed_round_idx >= 0 && completed_round_idx < TOTAL_ROUNDS)
-            {
-                time_ms = pd.round_times_ms[completed_round_idx];
-            }
-            msg.race_times.push_back({static_cast<uint32_t>(pid), time_ms, dq, round_index});
-        }
-    }
-    broadcast_positions(msg);
 }
 
 //

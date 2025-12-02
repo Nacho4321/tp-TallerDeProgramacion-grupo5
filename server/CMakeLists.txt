@@ -25,6 +25,7 @@ target_sources(taller_server
     gameloop/world/world_manager.cpp
     gameloop/player/player_manager.cpp
     gameloop/state/game_state_manager.cpp
+    gameloop/broadcast/broadcast_manager.cpp
     PUBLIC
     # .h files
     acceptor.h
@@ -52,4 +53,5 @@ target_sources(taller_server
     gameloop/world/world_manager.h
     gameloop/player/player_manager.h
     gameloop/state/game_state_manager.h
+    gameloop/broadcast/broadcast_manager.h
     )

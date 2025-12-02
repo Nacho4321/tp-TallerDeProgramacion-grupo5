@@ -32,6 +32,7 @@ target_sources(taller_tests
     ${CMAKE_SOURCE_DIR}/server/gameloop/world/world_manager.cpp
     ${CMAKE_SOURCE_DIR}/server/gameloop/player/player_manager.cpp
     ${CMAKE_SOURCE_DIR}/server/gameloop/state/game_state_manager.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop/broadcast/broadcast_manager.cpp
 
     PUBLIC
     # .h files
