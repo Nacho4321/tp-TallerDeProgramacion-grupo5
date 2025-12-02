@@ -1,6 +1,7 @@
 #include "gameloop.h"
 #include "../common/constants.h"
 #include "npc_config.h"
+#include "install_paths.h"
 #include <thread>
 #include <chrono>
 #include <random>
@@ -59,7 +60,7 @@ void GameLoop::setup_checkpoints_from_file(const std::string &json_path)
 void GameLoop::setup_npc_config()
 {
     auto &npc_cfg = NPCConfig::getInstance();
-    npc_cfg.loadFromFile("config/npc.yaml");
+    npc_cfg.loadFromFile(std::string(CONFIG_DIR) + "/npc.yaml");
 }
 
 void GameLoop::setup_world()
@@ -371,7 +372,7 @@ void GameLoop::advance_round_or_reset_to_lobby()
 GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id_param)
     : players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), game_state(GameState::LOBBY), next_id(INITIAL_ID), map_id(map_id_param), map_layout(world), npc_manager(world), physics_config(CarPhysicsConfig::getInstance())
 {
-    if (!physics_config.loadFromFile("config/car_physics.yaml"))
+    if (!physics_config.loadFromFile(std::string(CONFIG_DIR) + "/car_physics.yaml"))
     {
         std::cerr << "[GameLoop] WARNING: Failed to load car physics config, using defaults" << std::endl;
     }

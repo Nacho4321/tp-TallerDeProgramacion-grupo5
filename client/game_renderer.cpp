@@ -5,9 +5,10 @@
 #include <set>
 #include <cmath>
 #include <algorithm>
+#include "install_paths.h"
 
-static std::string CarDataPath = "data/cars/Mobile - Grand Theft Auto 4 - Miscellaneous - Cars.png";
-static std::string ExplosionDataPath = "data/cars/explosion_pixelfied.png";
+static std::string CarDataPath = std::string(DATA_DIR) + "/cars/Mobile - Grand Theft Auto 4 - Miscellaneous - Cars.png";
+static std::string ExplosionDataPath = std::string(DATA_DIR) + "/cars/explosion_pixelfied.png";
 
 GameRenderer::GameRenderer(const char *windowTitle, int windowWidth, int windowHeight, int mapId, const std::string &tiledJsonPath)
     : sdl(SDL_INIT_VIDEO | SDL_INIT_AUDIO),
@@ -38,7 +39,7 @@ GameRenderer::GameRenderer(const char *windowTitle, int windowWidth, int windowH
     minimap.initialize(renderer, backgroundTexture);
 
     audioManager = std::make_unique<AudioManager>();
-    audioManager->playBackgroundMusic("data/music/background_loop.ogg");
+    audioManager->playBackgroundMusic(std::string(DATA_DIR) + "/music/background_loop.ogg");
 
     resultsScreen = std::make_unique<ResultsScreen>(renderer, logicalWidth, logicalHeight);
 

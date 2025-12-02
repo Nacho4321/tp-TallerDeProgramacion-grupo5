@@ -3,6 +3,7 @@
 #include "player_state_tracker.h"
 #include "position_update_handler.h"
 #include "../common/constants.h"
+#include "install_paths.h"
 #include <iostream>
 #include <string>
 #include <cmath>
@@ -24,7 +25,7 @@ Client::Client(const char *address, const char *port, StartMode mode, int join_g
       active_handler_(nullptr),
       connected(true),
       handler(),
-      game_renderer("Game Renderer", LOGICAL_SCREEN_WIDTH, LOGICAL_SCREEN_HEIGHT, static_cast<int>(MapId::LibertyCity), "data/cities/liberty_city.json"),
+      game_renderer("Game Renderer", LOGICAL_SCREEN_WIDTH, LOGICAL_SCREEN_HEIGHT, static_cast<int>(MapId::LibertyCity), std::string(DATA_DIR) + "/cities/liberty_city.json"),
       start_mode(mode),
       auto_join_game_id(join_game_id),
       auto_create_game_name(game_name)
@@ -40,9 +41,9 @@ Client::Client(std::unique_ptr<GameConnection> connection)
       active_handler_(nullptr),
       connected(true),
       handler(),
-      game_renderer("Game Renderer", LOGICAL_SCREEN_WIDTH, LOGICAL_SCREEN_HEIGHT, 
-                    connection_ ? connection_->getMapId() : 0, 
-                    connection_ ? MAP_JSON_PATHS[connection_->getMapId()] : "data/cities/liberty_city.json"),
+      game_renderer("Game Renderer", LOGICAL_SCREEN_WIDTH, LOGICAL_SCREEN_HEIGHT,
+                    connection_ ? connection_->getMapId() : 0,
+                    connection_ ? MAP_JSON_PATHS[connection_->getMapId()] : (std::string(DATA_DIR) + "/cities/liberty_city.json")),
       start_mode(StartMode::FROM_LOBBY),
       auto_join_game_id(-1),
       auto_create_game_name("")
