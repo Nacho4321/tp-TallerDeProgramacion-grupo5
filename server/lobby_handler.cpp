@@ -165,6 +165,10 @@ void LobbyHandler::start_game(ClientHandlerMessage &message)
 
 void LobbyHandler::leave_game(ClientHandlerMessage &message)
 {
+    // Primero remover al jugador de la partida (si está en alguna)
+    games_monitor.remove_player(message.client_id);
+
+    // Luego cerrar su outbox
     if (message.outbox)
     {
         try

@@ -172,6 +172,7 @@ public:
     void start_game();
     void add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_outbox);
     void remove_player(int client_id);
+    bool has_player(int client_id) const;
     size_t get_player_count() const;
     bool is_joinable() const;
 };

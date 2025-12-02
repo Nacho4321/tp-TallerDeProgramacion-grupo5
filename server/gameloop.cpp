@@ -1414,6 +1414,12 @@ size_t GameLoop::get_player_count() const
     return players.size();
 }
 
+bool GameLoop::has_player(int client_id) const
+{
+    std::lock_guard<std::mutex> lk(players_map_mutex);
+    return players.find(client_id) != players.end();
+}
+
 bool GameLoop::is_joinable() const
 {
     return game_state == GameState::LOBBY;
