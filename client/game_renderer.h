@@ -62,7 +62,8 @@ private:
     void updateCheckpoints(const std::vector<Position> &positions);
 
     void updateOtherCars(const std::map<int, std::pair<CarPosition, int>> &positions,
-                         const std::map<int, bool> &collisionFlags);
+                         const std::map<int, bool> &collisionFlags,
+                         const std::map<int, bool> &isStoppingFlags);
 
     std::set<int> computeNearestCars(
         const std::map<int, std::pair<CarPosition, int>> &positions,
@@ -71,6 +72,7 @@ private:
     void updateOrCreateCars(
         const std::map<int, std::pair<CarPosition, int>> &positions,
         const std::map<int, bool> &collisionFlags,
+        const std::map<int, bool> &isStoppingFlags,
         const CarPosition &mainPos);
 
     void cleanupRemovedCars(
@@ -93,7 +95,9 @@ public:
                 bool mainCarCollisionFlag,
                 bool mainCarIsStopping,
                 float mainCarHP,
-                const std::map<int, bool> &otherCarsCollisionFlags);
+                const std::map<int, bool> &otherCarsCollisionFlags,
+                const std::map<int, bool> &otherCarsIsStoppingFlags
+                );
 
     void setMainCarType(int typeId)
     {
