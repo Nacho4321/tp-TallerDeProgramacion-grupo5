@@ -22,6 +22,7 @@
 #include "gameloop/collision/collision_handler.h"
 #include "gameloop/race/race_manager.h"
 #include "gameloop/world/world_manager.h"
+#include "gameloop/player/player_manager.h"
 #define INITIAL_ID 1
 #include "game_state.h"
 
@@ -87,11 +88,9 @@ private:
     std::atomic<bool> pending_race_reset{false}; // flag para resetear la carrera fuera del callback de Box2D
 
     CarPhysicsConfig &physics_config;
+    PlayerManager player_manager;
 
     void broadcast_positions(ServerMessage &msg);
-    void update_player_positions(std::vector<PlayerPositionUpdate> &broadcast);
-    void add_player_to_broadcast(std::vector<PlayerPositionUpdate> &broadcast, int player_id, PlayerData &player_data);
-    void update_body_positions();
 
     // Helpers usados por el contact listener
     void process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpointFix);
@@ -110,13 +109,7 @@ private:
     void perform_race_reset();
     void advance_round_or_reset_to_lobby();
 
-    // add_player/remove_player helpers
-    bool can_add_player() const;
-    int add_player_to_order(int player_id);
-    PlayerData create_default_player_data(int spawn_idx);
-    void cleanup_player_data(int client_id);
-    void remove_from_player_order(int client_id);
-    void reposition_remaining_players();
+
 
     // start_game helpers
     void transition_to_playing_state();
@@ -127,7 +120,6 @@ private:
 
     // perform_race_reset helpers
     void broadcast_race_end_message();
-    void reset_all_players_to_lobby();
     void transition_to_lobby_state();
 
 public:

@@ -141,7 +141,7 @@ void GameLoop::process_playing_state(float &acum)
     }
 
     npc_manager.update();
-    update_body_positions();
+    player_manager.update_body_positions();
 
     while (acum >= FPS)
     {
@@ -187,7 +187,14 @@ void GameLoop::process_playing_state(float &acum)
     perform_race_reset();
 
     std::vector<PlayerPositionUpdate> broadcast;
-    update_player_positions(broadcast);
+    player_manager.update_player_positions(broadcast, checkpoint_centers);
+
+    // Actualizar estado del bridge para NPCs
+    for (auto &npc : npc_manager.get_npcs())
+    {
+        BridgeHandler::update_bridge_state(npc);
+    }
+    npc_manager.add_to_broadcast(broadcast);
 
     ServerMessage msg;
     msg.opcode = UPDATE_POSITIONS;
@@ -219,7 +226,14 @@ void GameLoop::process_starting_state()
     }
 
     std::vector<PlayerPositionUpdate> broadcast;
-    update_player_positions(broadcast);
+    player_manager.update_player_positions(broadcast, checkpoint_centers);
+
+    // Actualizar estado del bridge para NPCs
+    for (auto &npc : npc_manager.get_npcs())
+    {
+        BridgeHandler::update_bridge_state(npc);
+    }
+    npc_manager.add_to_broadcast(broadcast);
 
     ServerMessage msg;
     msg.opcode = UPDATE_POSITIONS;
@@ -265,7 +279,7 @@ void GameLoop::advance_round_or_reset_to_lobby()
         load_current_round_checkpoints();
 
         // Reposicionar jugadores a los spawns y limpiar estado de carrera
-        reset_all_players_to_lobby();
+        player_manager.reset_all_players_to_lobby(spawn_points);
 
         // Limpiar flags y pasar a STARTING
         pending_race_reset.store(false);
@@ -290,7 +304,7 @@ void GameLoop::advance_round_or_reset_to_lobby()
         std::cout << "[GameLoop] Championship finished. Restarting at round 1 (auto STARTING)." << std::endl;
         current_round = 0;
         load_current_round_checkpoints();
-        reset_all_players_to_lobby();
+        player_manager.reset_all_players_to_lobby(spawn_points);
         pending_race_reset.store(false);
         std::cout << "[GameLoop] About to call transition_to_starting_state for championship restart" << std::endl;
         transition_to_starting_state(10);
@@ -299,7 +313,7 @@ void GameLoop::advance_round_or_reset_to_lobby()
 
 // Constructor para poder setear el contact listener del world
 GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id_param)
-    : world_manager(CarPhysicsConfig::getInstance()), players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), game_state(GameState::LOBBY), next_id(INITIAL_ID), map_id(map_id_param), map_layout(world_manager.get_world()), npc_manager(world_manager.get_world()), physics_config(CarPhysicsConfig::getInstance())
+    : world_manager(CarPhysicsConfig::getInstance()), players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), game_state(GameState::LOBBY), next_id(INITIAL_ID), map_id(map_id_param), map_layout(world_manager.get_world()), npc_manager(world_manager.get_world()), physics_config(CarPhysicsConfig::getInstance()), player_manager(players_map_mutex, players, players_messanger, player_order, world_manager, physics_config)
 {
     if (!physics_config.loadFromFile("config/car_physics.yaml"))
     {
@@ -435,35 +449,6 @@ void GameLoop::start_game()
     started = true;
 }
 
-void GameLoop::reset_all_players_to_lobby()
-{
-    for (size_t i = 0; i < player_order.size(); ++i)
-    {
-        int player_id = player_order[i];
-        auto player_it = players.find(player_id);
-        if (player_it == players.end())
-            continue;
-
-        PlayerData &player_data = player_it->second;
-        const MapLayout::SpawnPointData &spawn = spawn_points[i];
-
-        world_manager.safe_destroy_body(player_data.body);
-        Position new_pos{false, spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
-        player_data.body = world_manager.create_player_body(spawn.x, spawn.y, new_pos.angle, player_data.car.car_name);
-        player_data.position = new_pos;
-
-        player_data.next_checkpoint = 0;
-        player_data.race_finished = false;
-        player_data.is_dead = false;
-        player_data.god_mode = false; // Reset god mode para nueva ronda
-        player_data.lap_start_time = std::chrono::steady_clock::now();
-
-        // Reseteo HP
-        const CarPhysics &car_physics = physics_config.getCarPhysics(player_data.car.car_name);
-        player_data.car.hp = car_physics.max_hp;
-    }
-}
-
 //
 //
 // Refactor: Broadcasts y updates
@@ -564,121 +549,6 @@ void GameLoop::broadcast_race_end_message()
     broadcast_positions(msg);
 }
 
-void GameLoop::add_player_to_broadcast(std::vector<PlayerPositionUpdate> &broadcast, int player_id, PlayerData &player_data)
-{
-    // Si el jugador está muerto y no tiene body, no lo agregamos al broadcast
-    // (el auto desaparece visualmente)
-    if (player_data.is_dead && !player_data.body)
-    {
-        return;
-    }
-
-    b2Body *body = player_data.body;
-    if (body)
-    {
-        b2Vec2 position = body->GetPosition();
-        // Actualizar posición básica
-        player_data.position.new_X = position.x * SCALE;
-        player_data.position.new_Y = position.y * SCALE;
-        player_data.position.angle = PhysicsHandler::normalize_angle(body->GetAngle());
-
-        // IMPORTANTE: Actualizar el estado del puente ANTES de copiar la posición
-        BridgeHandler::update_bridge_state(player_data);
-    }
-
-    // Ahora crear el update con los datos correctos
-    PlayerPositionUpdate update;
-    update.player_id = player_id;
-    update.new_pos = player_data.position; // Ahora incluye on_bridge actualizado
-    update.car_type = player_data.car.car_name;
-    update.hp = player_data.car.hp;
-    update.collision_flag = player_data.collision_this_frame;
-    update.is_stopping = player_data.is_stopping;
-
-    // Enviar niveles de mejora
-    update.upgrade_speed = player_data.upgrades.speed;
-    update.upgrade_acceleration = player_data.upgrades.acceleration;
-    update.upgrade_handling = player_data.upgrades.handling;
-    update.upgrade_durability = player_data.upgrades.durability;
-
-    // Solo enviar checkpoints si el jugador no ha terminado la carrera
-    if (!player_data.race_finished && !checkpoint_centers.empty())
-    {
-        int total = static_cast<int>(checkpoint_centers.size());
-        for (int k = 0; k < CHECKPOINT_LOOKAHEAD; ++k)
-        {
-            int idx = player_data.next_checkpoint + k;
-
-            // Stop at the last checkpoint, don't wrap around
-            if (idx >= total)
-                break;
-
-            b2Vec2 checkpoint_center = checkpoint_centers[idx];
-            Position cp_pos{false, checkpoint_center.x * SCALE, checkpoint_center.y * SCALE, not_horizontal, not_vertical, 0.0f};
-            update.next_checkpoints.push_back(cp_pos);
-        }
-    }
-
-    broadcast.push_back(update);
-}
-
-void GameLoop::update_body_positions()
-{
-    // Velocidad del body (en metros/seg)
-    std::lock_guard<std::mutex> lk(players_map_mutex);
-    for (auto &[id, player_data] : players)
-    {
-        // Si el jugador está muerto, no aplicar fuerzas
-        if (player_data.is_dead)
-        {
-            continue;
-        }
-
-        // Si el jugador terminó la carrera, detenerlo completamente
-        if (player_data.race_finished)
-        {
-            if (player_data.body)
-            {
-                player_data.body->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
-                player_data.body->SetAngularVelocity(0.0f);
-            }
-            continue;
-        }
-
-        // Si el body está marcado para remover, NO lo destruyo acá (se hace en flush post-Step)
-        // Simplemente omito actualizar fuerzas/física para este jugador.
-        if (player_data.mark_body_for_removal)
-        {
-            continue; // se destruye en el flush dentro de process_playing_state
-        }
-        if (!player_data.body)
-            continue;
-        // Aplicar fricción/adhesión primero
-        PhysicsHandler::update_friction_for_player(player_data, physics_config);
-
-        // Aplicar fuerza de conducción / torque basado en la entrada
-        PhysicsHandler::update_drive_for_player(player_data, physics_config);
-    }
-}
-
-void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadcast)
-{
-    std::lock_guard<std::mutex> lk(players_map_mutex);
-
-    for (auto &[id, player_data] : players)
-    {
-        add_player_to_broadcast(broadcast, id, player_data);
-    }
-
-    // Actualizar estado del bridge para NPCs antes de agregar al broadcast
-    for (auto &npc : npc_manager.get_npcs())
-    {
-        BridgeHandler::update_bridge_state(npc);
-    }
-
-    npc_manager.add_to_broadcast(broadcast);
-}
-
 //
 //
 // Refactor: Logica de colisiones y fisicas
@@ -720,86 +590,6 @@ void GameLoop::handle_begin_contact(b2Fixture *fixture_a, b2Fixture *fixture_b)
     }
 }
 
-PlayerData GameLoop::create_default_player_data(int spawn_idx)
-{
-    const MapLayout::SpawnPointData &spawn = spawn_points[spawn_idx];
-    std::cout << "[GameLoop] add_player: assigning spawn point " << spawn_idx
-              << " at (" << spawn.x << "," << spawn.y << ")" << std::endl;
-
-    const CarPhysics &car_phys = physics_config.getCarPhysics(GREEN_CAR);
-
-    Position pos = Position{false, spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
-    PlayerData player_data;
-    player_data.body = world_manager.create_player_body(spawn.x, spawn.y, pos.angle, GREEN_CAR);
-    player_data.state = MOVE_UP_RELEASED_STR;
-    player_data.car = CarInfo{GREEN_CAR, car_phys.max_speed, car_phys.max_acceleration, car_phys.max_hp, car_phys.collision_damage_multiplier, car_phys.torque};
-    player_data.position = pos;
-    player_data.next_checkpoint = 0;
-    player_data.lap_start_time = std::chrono::steady_clock::now();
-    player_data.race_finished = false;
-    player_data.god_mode = false;
-
-    return player_data;
-}
-
-void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_outbox)
-{
-    std::lock_guard<std::mutex> lk(players_map_mutex);
-    std::cout << "[GameLoop] add_player: id=" << id
-              << " players.size()=" << players.size()
-              << " outbox.valid=" << std::boolalpha << static_cast<bool>(player_outbox)
-              << std::endl;
-
-    if (!can_add_player())
-        return;
-
-    int spawn_idx = add_player_to_order(id);
-    PlayerData player_data = create_default_player_data(spawn_idx);
-
-    players[id] = player_data;
-    players_messanger[id] = player_outbox;
-
-    std::cout << "[GameLoop] add_player: done. players.size()=" << players.size()
-              << " messengers.size()=" << players_messanger.size() << std::endl;
-}
-
-void GameLoop::cleanup_player_data(int client_id)
-{
-    auto it = players.find(client_id);
-    if (it == players.end())
-        throw std::runtime_error("player not found");
-
-    PlayerData &pd = it->second;
-    world_manager.safe_destroy_body(pd.body);
-
-    players_messanger.erase(client_id);
-    players.erase(it);
-}
-
-void GameLoop::reposition_remaining_players()
-{
-    std::cout << "[GameLoop] remove_player: reordering remaining " << player_order.size() << " players in lobby" << std::endl;
-
-    for (size_t i = 0; i < player_order.size(); ++i)
-    {
-        int player_id = player_order[i];
-        auto player_it = players.find(player_id);
-        if (player_it == players.end())
-            continue;
-
-        PlayerData &player_data = player_it->second;
-        const MapLayout::SpawnPointData &spawn = spawn_points[i];
-
-        std::cout << "[GameLoop] remove_player: moving player " << player_id
-                  << " to spawn " << i << " at (" << spawn.x << "," << spawn.y << ")" << std::endl;
-
-        world_manager.safe_destroy_body(player_data.body);
-        Position new_pos{false, spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
-        player_data.body = world_manager.create_player_body(spawn.x, spawn.y, new_pos.angle, player_data.car.car_name);
-        player_data.position = new_pos;
-    }
-}
-
 //
 //
 // Refactor: multipartidas
@@ -808,14 +598,12 @@ void GameLoop::reposition_remaining_players()
 
 size_t GameLoop::get_player_count() const
 {
-    std::lock_guard<std::mutex> lk(players_map_mutex);
-    return players.size();
+    return player_manager.get_player_count();
 }
 
 bool GameLoop::has_player(int client_id) const
 {
-    std::lock_guard<std::mutex> lk(players_map_mutex);
-    return players.find(client_id) != players.end();
+    return player_manager.has_player(client_id);
 }
 
 bool GameLoop::is_joinable() const
@@ -823,38 +611,12 @@ bool GameLoop::is_joinable() const
     return game_state == GameState::LOBBY;
 }
 
-bool GameLoop::can_add_player() const
+void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_outbox)
 {
-    if (static_cast<int>(players.size()) >= static_cast<int>(spawn_points.size()))
-    {
-        std::cout << FULL_LOBBY_MSG << std::endl;
-        return false;
-    }
-    return true;
-}
-
-int GameLoop::add_player_to_order(int player_id)
-{
-    player_order.push_back(player_id);
-    return static_cast<int>(player_order.size()) - 1;
-}
-
-void GameLoop::remove_from_player_order(int client_id)
-{
-    auto order_it = std::find(player_order.begin(), player_order.end(), client_id);
-    if (order_it != player_order.end())
-        player_order.erase(order_it);
+    player_manager.add_player(id, player_outbox, spawn_points);
 }
 
 void GameLoop::remove_player(int client_id)
 {
-    std::lock_guard<std::mutex> lk(players_map_mutex);
-
-    cleanup_player_data(client_id);
-    remove_from_player_order(client_id);
-
-    std::cout << "[GameLoop] remove_player: client " << client_id << " removed" << std::endl;
-
-    if (game_state == GameState::LOBBY && !player_order.empty())
-        reposition_remaining_players();
+    player_manager.remove_player(client_id, game_state, spawn_points);
 }

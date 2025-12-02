@@ -23,6 +23,7 @@ target_sources(taller_server
     gameloop/collision/collision_handler.cpp
     gameloop/race/race_manager.cpp
     gameloop/world/world_manager.cpp
+    gameloop/player/player_manager.cpp
     PUBLIC
     # .h files
     acceptor.h
@@ -48,4 +49,5 @@ target_sources(taller_server
     gameloop/collision/collision_handler.h
     gameloop/race/race_manager.h
     gameloop/world/world_manager.h
+    gameloop/player/player_manager.h
     )

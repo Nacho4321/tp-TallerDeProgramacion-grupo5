@@ -30,6 +30,7 @@ target_sources(taller_tests
     ${CMAKE_SOURCE_DIR}/server/gameloop/collision/collision_handler.cpp
     ${CMAKE_SOURCE_DIR}/server/gameloop/race/race_manager.cpp
     ${CMAKE_SOURCE_DIR}/server/gameloop/world/world_manager.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop/player/player_manager.cpp
 
     PUBLIC
     # .h files
