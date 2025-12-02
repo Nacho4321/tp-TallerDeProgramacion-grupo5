@@ -33,7 +33,7 @@ El proyecto requiere las siguientes dependencias:
 
 ### Descripción del Juego
 
-**Micro Machines** es un juego de carreras multijugador para hasta **8 jugadores simultáneos**. Los jugadores compiten en carreras de **3 rondas** en diferentes mapas de ciudades.
+**Need for Speed - FIUBA** es un juego de carreras multijugador para hasta **8 jugadores simultáneos**. Los jugadores compiten en carreras de **3 rondas** en diferentes mapas de ciudades.
 
 ### Creación y Unión a Partidas
 
