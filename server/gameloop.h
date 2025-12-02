@@ -20,24 +20,15 @@
 #include "gameloop/checkpoint/checkpoint_handler.h"
 #include "gameloop/physics/physics_handler.h"
 #include "gameloop/collision/collision_handler.h"
+#include "gameloop/race/race_manager.h"
+#include "gameloop/world/world_manager.h"
 #define INITIAL_ID 1
 #include "game_state.h"
 
 class GameLoop : public Thread
 {
 private:
-    // Contact listener para detectar BeginContact entre jugadores y sensores de checkpoints.
-    class CheckpointContactListener : public b2ContactListener
-    {
-    private:
-        GameLoop *owner = nullptr;
-
-    public:
-        void set_owner(GameLoop *g);
-        void BeginContact(b2Contact *contact) override;
-    };
-
-    b2World world{b2Vec2(0.0f, 0.0f)};
+    WorldManager world_manager;
     mutable std::mutex players_map_mutex;
     std::unordered_map<int, PlayerData> players;
     std::unordered_map<int, std::shared_ptr<Queue<ServerMessage>>> players_messanger;
@@ -95,11 +86,8 @@ private:
     std::atomic<bool> reset_accumulator{false};  // flag para resetear acumulador de física al iniciar
     std::atomic<bool> pending_race_reset{false}; // flag para resetear la carrera fuera del callback de Box2D
 
-    CheckpointContactListener contact_listener;
-
     CarPhysicsConfig &physics_config;
 
-    b2Body *create_player_body(float x, float y, Position &pos, const std::string &car_name);
     void broadcast_positions(ServerMessage &msg);
     void update_player_positions(std::vector<PlayerPositionUpdate> &broadcast);
     void add_player_to_broadcast(std::vector<PlayerPositionUpdate> &broadcast, int player_id, PlayerData &player_data);
@@ -107,7 +95,6 @@ private:
 
     // Helpers usados por el contact listener
     void process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpointFix);
-    void complete_player_race(PlayerData &player_data);
 
     // Setup and initialization helpers
     void setup_world();
@@ -119,11 +106,6 @@ private:
     void process_lobby_state();
     void process_starting_state();
 
-    // Utility helpers
-    void safe_destroy_body(b2Body *&body);
-
-    // Verifica si todos los jugadores terminaron la carrera (solo marca flag)
-    void check_race_completion();
     // Ejecuta el reset al lobby cuando es seguro (fuera del callback de Box2D)
     void perform_race_reset();
     void advance_round_or_reset_to_lobby();
@@ -138,15 +120,12 @@ private:
 
     // start_game helpers
     void transition_to_playing_state();
-    void reset_players_for_race_start();
     void reset_npcs_velocities();
     void broadcast_game_started();
     void transition_to_starting_state(int countdown_seconds);
     void maybe_finish_starting_and_play();
 
     // perform_race_reset helpers
-    bool should_reset_race() const;
-    void check_round_timeout();
     void broadcast_race_end_message();
     void reset_all_players_to_lobby();
     void transition_to_lobby_state();

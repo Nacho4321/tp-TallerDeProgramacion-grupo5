@@ -21,6 +21,8 @@ target_sources(taller_server
     gameloop/checkpoint/checkpoint_handler.cpp
     gameloop/physics/physics_handler.cpp
     gameloop/collision/collision_handler.cpp
+    gameloop/race/race_manager.cpp
+    gameloop/world/world_manager.cpp
     PUBLIC
     # .h files
     acceptor.h
@@ -44,4 +46,6 @@ target_sources(taller_server
     gameloop/checkpoint/checkpoint_handler.h
     gameloop/physics/physics_handler.h
     gameloop/collision/collision_handler.h
+    gameloop/race/race_manager.h
+    gameloop/world/world_manager.h
     )
