@@ -9,5 +9,8 @@
     <file alias="car_5.png">img/car_5.png</file>
     <file alias="car_6.png">img/car_6.png</file>
     <file alias="car_7.png">img/car_7.png</file>
+    <file alias="liberty_city.png">img/liberty_city.png</file>
+    <file alias="san_andreas.png">img/san_andreas.png</file>
+    <file alias="vice_city.png">img/vice_city.png</file>
   </qresource>
 </RCC>

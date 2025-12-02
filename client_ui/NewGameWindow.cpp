@@ -126,11 +126,11 @@ void NewGameWindow::updateMapDisplay() {
         return;
     }
     
-    // Actualizar el nombre del mapa
     ui->mapNameLabel->setText(QString::fromUtf8(MAP_NAMES[currentMapIndex_]));
     
-    // Intentar cargar la imagen del mapa
-    QString imagePath = QString::fromUtf8(MAP_BACKGROUND_PATHS[currentMapIndex_]);
+    // Construir path dinámicamente como en CarSelectionDialog
+    static const char* mapFiles[] = {"liberty_city", "san_andreas", "vice_city"};
+    QString imagePath = QString(":/img/%1.png").arg(mapFiles[currentMapIndex_]);
     QPixmap pixmap(imagePath);
     
     if (!pixmap.isNull()) {
@@ -139,7 +139,6 @@ void NewGameWindow::updateMapDisplay() {
                                Qt::SmoothTransformation);
         ui->mapImageLabel->setPixmap(pixmap);
     } else {
-        // Placeholder si no hay imagen
         ui->mapImageLabel->setText(QString("[ %1 ]").arg(MAP_NAMES[currentMapIndex_]));
     }
 }

@@ -40,7 +40,7 @@ Client::Client(std::unique_ptr<GameConnection> connection)
       connected(true),
       handler(),
       game_renderer("Game Renderer", LOGICAL_SCREEN_WIDTH, LOGICAL_SCREEN_HEIGHT, 
-                    connection_ ? (connection_->getMapId() + 1) : 1,  // MapId enum (0,1,2) -> LIBERTY/SAN/VICE (1,2,3)
+                    connection_ ? connection_->getMapId() : 0, 
                     connection_ ? MAP_JSON_PATHS[connection_->getMapId()] : "data/cities/liberty_city.json"),
       start_mode(StartMode::FROM_LOBBY),
       auto_join_game_id(-1),
@@ -51,9 +51,6 @@ Client::Client(std::unique_ptr<GameConnection> connection)
     my_game_id = connection_->getGameId();
     my_player_id = static_cast<int32_t>(connection_->getPlayerId());
     original_player_id = my_player_id;
-    
-    std::cout << "[Client] Iniciado desde lobby con map_id=" << int(connection_->getMapId()) << std::endl;
-    
     handler.setAudioManager(game_renderer.getAudioManager());
 }
 
