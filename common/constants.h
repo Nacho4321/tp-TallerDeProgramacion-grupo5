@@ -96,7 +96,8 @@ const std::string GET_GAMES_STR = "get_games";
 const std::string START_GAME_STR = "start_game";   
 const std::string LEAVE_GAME_STR = "leave_game";   
 
-enum class MapId : uint8_t {
+enum class MapId : uint8_t
+{
     LibertyCity = 0,
     SanAndreas = 1,
     ViceCity = 2
@@ -104,11 +105,10 @@ enum class MapId : uint8_t {
 
 constexpr int MAP_COUNT = 3;
 
-inline const char* const MAP_NAMES[] = {
+inline const char *const MAP_NAMES[] = {
     "Liberty City",
     "San Andreas",
-    "Vice City"
-};
+    "Vice City"};
 
 inline std::string getMapJsonPath(int mapId) {
     const char* paths[] = {
@@ -199,15 +199,6 @@ inline const std::string MAP_SPAWN_POINTS_PATHS[] = {
     getMapSpawnPointsPath(2)
 };
 
-#define COLLISION_FLOOR 0x0001     
-#define COLLISION_BRIDGE 0x0002    
-#define COLLISION_UNDER 0x0004    
-#define SENSOR_START_BRIDGE 0x0008 
-#define SENSOR_END_BRIDGE 0x0010   
-
-#define CAR_GROUND 0x0020 
-#define CAR_BRIDGE 0x0040 
-
 #define GREEN_CAR "green_car"
 #define RED_SQUARED_CAR "red_squared_car"
 #define RED_SPORTS_CAR "red_sports_car"
@@ -264,8 +255,5 @@ enum class CarUpgrade
 #define HANDLING_UPGRADE_MULTIPLIER 1.15f
 #define MAX_UPGRADES_PER_STAT 3
 #define PENALIZATION_TIME 2000
-
-// Campeonato: 3 rondas
-constexpr int TOTAL_ROUNDS = 3;
 
 #endif

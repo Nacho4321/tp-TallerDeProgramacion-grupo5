@@ -1,13 +1,13 @@
-#include "message_handler.h"
+#include "lobby_handler.h"
 
-MessageHandler::MessageHandler(GameMonitor &games_mon)
+LobbyHandler::LobbyHandler(GameMonitor &games_mon)
     : games_monitor(games_mon),
       lobby_command_handlers()
 {
     init_dispatch();
 }
 
-void MessageHandler::handle_message(ClientHandlerMessage &message)
+void LobbyHandler::handle_message(ClientHandlerMessage &message)
 {
     auto it = lobby_command_handlers.find(message.msg.cmd);
     if (it != lobby_command_handlers.end())
@@ -33,14 +33,14 @@ void MessageHandler::handle_message(ClientHandlerMessage &message)
         }
         else
         {
-            std::cerr << "[MessageHandler] WARNING: No se encontró cola para game_id="
+            std::cerr << "[LobbyHandler] WARNING: No se encontró cola para game_id="
                       << target_gid << ", evento='" << message.msg.cmd
                       << "' desde client=" << message.client_id << std::endl;
         }
     }
 }
 
-void MessageHandler::init_dispatch()
+void LobbyHandler::init_dispatch()
 {
     lobby_command_handlers[CREATE_GAME_STR] = [this](ClientHandlerMessage &message)
     { create_game(message); };
@@ -54,14 +54,14 @@ void MessageHandler::init_dispatch()
     { leave_game(message); };
 }
 
-void MessageHandler::create_game(ClientHandlerMessage &message)
+void LobbyHandler::create_game(ClientHandlerMessage &message)
 {
 
     // Obtener outbox del mensaje
     auto client_queue = message.outbox;
     if (!client_queue)
     {
-        std::cerr << "[MessageHandler] ERROR: No se encontró outbox en el mensaje" << std::endl;
+        std::cerr << "[LobbyHandler] ERROR: No se encontró outbox en el mensaje" << std::endl;
         return;
     }
 
@@ -80,11 +80,11 @@ void MessageHandler::create_game(ClientHandlerMessage &message)
     }
     catch (const ClosedQueue &)
     {
-        std::cerr << "[MessageHandler] Cola cerrada para cliente " << message.client_id << ", descartando respuesta" << std::endl;
+        std::cerr << "[LobbyHandler] Cola cerrada para cliente " << message.client_id << ", descartando respuesta" << std::endl;
     }
 }
 
-void MessageHandler::join_game(ClientHandlerMessage &message)
+void LobbyHandler::join_game(ClientHandlerMessage &message)
 {
     ServerMessage response;
 
@@ -122,11 +122,11 @@ void MessageHandler::join_game(ClientHandlerMessage &message)
     }
     catch (const ClosedQueue &)
     {
-        std::cerr << "[MessageHandler] Cola cerrada para cliente " << message.client_id << std::endl;
+        std::cerr << "[LobbyHandler] Cola cerrada para cliente " << message.client_id << std::endl;
     }
 }
 
-void MessageHandler::get_games(ClientHandlerMessage &message)
+void LobbyHandler::get_games(ClientHandlerMessage &message)
 {
     (void)message;
     ServerMessage resp;
@@ -145,7 +145,7 @@ void MessageHandler::get_games(ClientHandlerMessage &message)
     }
 }
 
-void MessageHandler::start_game(ClientHandlerMessage &message)
+void LobbyHandler::start_game(ClientHandlerMessage &message)
 {
     GameLoop *game = games_monitor.get_game(message.msg.game_id);
     if (!game)
@@ -159,22 +159,26 @@ void MessageHandler::start_game(ClientHandlerMessage &message)
     }
     catch (const std::exception &e)
     {
-        std::cerr << "[MessageHandler] Error al iniciar partida: " << e.what() << std::endl;
+        std::cerr << "[LobbyHandler] Error al iniciar partida: " << e.what() << std::endl;
     }
 }
 
-void MessageHandler::leave_game(ClientHandlerMessage &message)
+void LobbyHandler::leave_game(ClientHandlerMessage &message)
 {
+    // Primero remover al jugador de la partida (si está en alguna)
+    games_monitor.remove_player(message.client_id);
+
+    // Luego cerrar su outbox
     if (message.outbox)
     {
         try
         {
             message.outbox->close();
-            std::cout << "[MessageHandler] Outbox del cliente " << message.client_id << " cerrada" << std::endl;
+            std::cout << "[LobbyHandler] Outbox del cliente " << message.client_id << " cerrada" << std::endl;
         }
         catch (const std::exception &e)
         {
-            std::cerr << "[MessageHandler] WARNING: outbox->close() lanzó excepción: " << e.what() << std::endl;
+            std::cerr << "[LobbyHandler] WARNING: outbox->close() lanzó excepción: " << e.what() << std::endl;
         }
     }
 }

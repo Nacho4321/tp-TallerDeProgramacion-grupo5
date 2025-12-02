@@ -16,34 +16,31 @@
 #include <atomic>
 #include <chrono>
 #include "gameloop/npc/npc_manager.h"
+#include "gameloop/bridge/bridge_handler.h"
+#include "gameloop/checkpoint/checkpoint_handler.h"
+#include "gameloop/physics/physics_handler.h"
+#include "gameloop/collision/collision_handler.h"
+#include "gameloop/race/race_manager.h"
+#include "gameloop/world/world_manager.h"
+#include "gameloop/player/player_manager.h"
+#include "gameloop/state/game_state_manager.h"
+#include "gameloop/broadcast/broadcast_manager.h"
+#include "gameloop/tick/tick_processor.h"
+#include "gameloop/contact/contact_handler.h"
+#include "gameloop/setup/setup_manager.h"
 #define INITIAL_ID 1
-#include "game_state.h"
 
 class GameLoop : public Thread
 {
 private:
-    // Contact listener para detectar BeginContact entre jugadores y sensores de checkpoints.
-    class CheckpointContactListener : public b2ContactListener
-    {
-    private:
-        GameLoop *owner = nullptr;
-
-    public:
-        void set_owner(GameLoop *g);
-        void BeginContact(b2Contact *contact) override;
-    };
-
-    b2World world{b2Vec2(0.0f, 0.0f)};
+    WorldManager world_manager;
     mutable std::mutex players_map_mutex;
     std::unordered_map<int, PlayerData> players;
     std::unordered_map<int, std::shared_ptr<Queue<ServerMessage>>> players_messanger;
     std::shared_ptr<Queue<Event>> event_queue;
     EventLoop event_loop;
     bool started;
-    GameState game_state; // Estado actual del juego (lobby o jugando)
-    // Cuenta regresiva antes de iniciar la carrera
-    std::chrono::steady_clock::time_point starting_deadline{};
-    bool starting_active{false};
+    GameStateManager state_manager;
     int next_id;
 
     // Spawn points para hasta 8 jugadores (en píxeles)
@@ -80,98 +77,33 @@ private:
     int current_round{0}; // 0..2
     // Archivos de recorridos - se inicializan según map_id
     std::array<std::string, 3> checkpoint_sets;
-    void load_current_round_checkpoints();
 
     // ---------------- NPC Support ----------------
     NPCManager npc_manager;
-    std::atomic<bool> reset_accumulator{false};  // flag para resetear acumulador de física al iniciar
-    std::atomic<bool> pending_race_reset{false}; // flag para resetear la carrera fuera del callback de Box2D
-
-    CheckpointContactListener contact_listener;
 
     CarPhysicsConfig &physics_config;
+    PlayerManager player_manager;
+    BroadcastManager broadcast_manager;
+    TickProcessor tick_processor;
+    ContactHandler contact_handler;
+    SetupManager setup_manager;
 
-    b2Body *create_player_body(float x, float y, Position &pos, const std::string &car_name);
-    void broadcast_positions(ServerMessage &msg);
-    void update_player_positions(std::vector<PlayerPositionUpdate> &broadcast);
-    void add_player_to_broadcast(std::vector<PlayerPositionUpdate> &broadcast, int player_id, PlayerData &player_data);
-    void update_body_positions();
-
-    // Helpers usados por el contact listener
-    int find_player_by_body(b2Body *body);
-    void process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpointFix);
-    bool is_valid_checkpoint_collision(b2Fixture *player_fixture, b2Fixture *checkpoint_fixture,
-                                       int &out_player_id, int &out_checkpoint_index);
-    void handle_checkpoint_reached(PlayerData &player_data, int player_id, int checkpoint_index);
-    void complete_player_race(PlayerData &player_data);
-    void disqualify_player(PlayerData &player_data, int player_id);
-
-    // Car collision damage system
-    void handle_car_collision(b2Fixture *fixture_a, b2Fixture *fixture_b);
-    void apply_collision_damage(PlayerData &player_data, int player_id, float impact_velocity, const std::string &car_name, float frontal_multiplier = 1.0f);
-
-    // Setup and initialization helpers
-    void setup_world();
-    void setup_checkpoints_from_file(const std::string &json_path);
-    void setup_npc_config();
-    void setup_map_layout();
-
-    // Game tick processing
-    void process_playing_state(float &acum);
-    void process_lobby_state();
-    void process_starting_state();
-
-    // Utility helpers
-    float normalize_angle(double angle) const;
-    void safe_destroy_body(b2Body *&body);
-
-    b2Vec2 get_lateral_velocity(b2Body *body) const;
-    b2Vec2 get_forward_velocity(b2Body *body) const;
-    void update_friction_for_player(class PlayerData &player_data);
-    void update_drive_for_player(class PlayerData &player_data);
-    float calculate_desired_speed(bool want_up, bool want_down, const CarPhysics &car_physics) const;
-    void apply_forward_drive_force(b2Body *body, float desired_speed, const CarPhysics &car_physics);
-    void apply_steering_torque(b2Body *body, bool want_left, bool want_right, float torque);
-
-    // Verifica si todos los jugadores terminaron la carrera (solo marca flag)
-    void check_race_completion();
     // Ejecuta el reset al lobby cuando es seguro (fuera del callback de Box2D)
     void perform_race_reset();
     void advance_round_or_reset_to_lobby();
-    bool update_bridge_state_for_player(PlayerData &player_data);
-    void set_car_category(PlayerData &player_data, uint16 newCategory);
-    void update_bridge_state_for_npc(NPCData &npc_data);
-    void set_npc_category(NPCData &npc_data, uint16 newCategory);
 
-    // add_player/remove_player helpers
-    bool can_add_player() const;
-    int add_player_to_order(int player_id);
-    PlayerData create_default_player_data(int spawn_idx);
-    void cleanup_player_data(int client_id);
-    void remove_from_player_order(int client_id);
-    void reposition_remaining_players();
+
 
     // start_game helpers
-    void transition_to_playing_state();
-    void reset_players_for_race_start();
-    void reset_npcs_velocities();
-    void broadcast_game_started();
-    void transition_to_starting_state(int countdown_seconds);
-    void maybe_finish_starting_and_play();
-
-    // perform_race_reset helpers
-    bool should_reset_race() const;
-    void broadcast_race_end_message();
-    void reset_all_players_to_lobby();
-    void transition_to_lobby_state();
+    void on_playing_started();
 
 public:
     explicit GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id = 0);
-    void handle_begin_contact(b2Fixture *a, b2Fixture *b);
     void run() override;
     void start_game();
     void add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_outbox);
     void remove_player(int client_id);
+    bool has_player(int client_id) const;
     size_t get_player_count() const;
     bool is_joinable() const;
 };

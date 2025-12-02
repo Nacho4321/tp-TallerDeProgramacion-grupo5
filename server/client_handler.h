@@ -16,14 +16,14 @@
 #include "client_sender.h"
 
 // Forward declaration
-class MessageHandler;
+class LobbyHandler;
 
 // ---------------- ClientHandler ----------------
 class ClientHandler
 {
     Protocol protocol;
     std::shared_ptr<Queue<ServerMessage>> outbox;
-    MessageHandler &message_handler;
+    LobbyHandler &message_handler;
     ClientSender sender;
     int client_id;
     ClientReceiver receiver;
@@ -31,7 +31,7 @@ class ClientHandler
     static int next_id;
 
 public:
-    ClientHandler(Socket &&p, MessageHandler &msg_handler);
+    ClientHandler(Socket &&p, LobbyHandler &msg_handler);
     ~ClientHandler();
 
     void start();

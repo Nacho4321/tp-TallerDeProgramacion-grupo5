@@ -14,9 +14,11 @@ NPCManager::NPCManager(b2World &world)
 }
 
 void NPCManager::init(const std::vector<MapLayout::ParkedCarData> &parked_data,
-                      const std::vector<MapLayout::WaypointData> &waypoints)
+                      const std::vector<MapLayout::WaypointData> &waypoints,
+                      const std::vector<MapLayout::SpawnPointData> &spawn_points)
 {
     street_waypoints = waypoints;
+    player_spawn_points = spawn_points;
     int next_negative_id = -1;
     spawn_parked_npcs(parked_data, next_negative_id);
     spawn_moving_npcs(parked_data, next_negative_id);
@@ -151,19 +153,24 @@ std::vector<int> NPCManager::get_valid_waypoints_away_from_parked(const std::vec
     for (int idx = 0; idx < static_cast<int>(street_waypoints.size()); ++idx)
     {
         b2Vec2 wp_pos = street_waypoints[idx].position;
-        bool too_close = false;
+        
+        // Verificar distancia a spawn points de jugadores
+        if (!should_select_spawn_position(wp_pos))
+            continue;
 
+        // Verificar distancia a autos estacionados
+        bool too_close_to_parked = false;
         for (const auto &parked_car : parked_data)
         {
             float distance = (wp_pos - parked_car.position).Length();
             if (distance < MIN_DISTANCE_FROM_PARKED_M)
             {
-                too_close = true;
+                too_close_to_parked = true;
                 break;
             }
         }
 
-        if (!too_close)
+        if (!too_close_to_parked)
             candidate_waypoints.push_back(idx);
     }
 
@@ -171,10 +178,24 @@ std::vector<int> NPCManager::get_valid_waypoints_away_from_parked(const std::vec
     {
         for (int idx = 0; idx < static_cast<int>(street_waypoints.size()); ++idx)
             candidate_waypoints.push_back(idx);
-        std::cout << "[NPCManager] Warning: All waypoints filtered out by parked proximity; using full set." << std::endl;
+        std::cout << "[NPCManager] Warning: All waypoints filtered out; using full set." << std::endl;
     }
 
     return candidate_waypoints;
+}
+
+bool NPCManager::should_select_spawn_position(const b2Vec2 &waypoint_pos) const
+{
+    for (const auto &spawn : player_spawn_points)
+    {
+        // Convertir spawn point de píxeles a metros
+        b2Vec2 spawn_pos_m(spawn.x / SCALE, spawn.y / SCALE);
+        float distance = (waypoint_pos - spawn_pos_m).Length();
+        
+        if (distance < MIN_DISTANCE_FROM_SPAWN_M)
+            return false;
+    }
+    return true;
 }
 
 int NPCManager::select_closest_waypoint_connection(int start_waypoint_idx)
@@ -237,9 +258,7 @@ NPCData NPCManager::create_moving_npc(int start_idx, int target_idx, float initi
     return npc;
 }
 
-// ============================================================================
 // Body creation
-// ============================================================================
 
 b2Body *NPCManager::create_npc_body(float x_m, float y_m, bool is_static, float angle_rad)
 {
@@ -272,9 +291,7 @@ b2Body *NPCManager::create_npc_body(float x_m, float y_m, bool is_static, float 
     return npc_body;
 }
 
-// ============================================================================
 // Update helpers
-// ============================================================================
 
 bool NPCManager::should_select_new_waypoint(NPCData &npc, const b2Vec2 &target_pos)
 {
@@ -320,9 +337,7 @@ void NPCManager::move_npc_towards_target(NPCData &npc, const b2Vec2 &target_pos)
     }
 }
 
-// ============================================================================
 // Broadcast helper
-// ============================================================================
 
 void NPCManager::add_npc_to_broadcast(std::vector<PlayerPositionUpdate> &broadcast, NPCData &npc)
 {
@@ -359,9 +374,7 @@ void NPCManager::add_npc_to_broadcast(std::vector<PlayerPositionUpdate> &broadca
     broadcast.push_back(update);
 }
 
-// ============================================================================
 // Utility
-// ============================================================================
 
 float NPCManager::normalize_angle(double angle) const
 {

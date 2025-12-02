@@ -1,11 +1,11 @@
 #include "acceptor.h"
-#include "message_handler.h"
+#include "lobby_handler.h"
 #include <algorithm>
 
-Acceptor::Acceptor(Socket &acc, MessageHandler &msg_admin) 
+Acceptor::Acceptor(Socket &acc, LobbyHandler &msg_admin) 
     : acceptor(std::move(acc)), message_handler(msg_admin) {}
 
-Acceptor::Acceptor(const char *port, MessageHandler &msg_admin) 
+Acceptor::Acceptor(const char *port, LobbyHandler &msg_admin) 
     : acceptor(Socket(port)), message_handler(msg_admin) {}
 
 void Acceptor::run()

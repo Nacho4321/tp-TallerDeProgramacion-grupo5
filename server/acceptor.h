@@ -14,17 +14,17 @@
 #include "client_handler_msg.h"
 
 // Forward declaration para evitar dependencia circular
-class MessageHandler;
+class LobbyHandler;
 
 class Acceptor : public Thread
 {
     Socket acceptor;
-    MessageHandler &message_handler;
+    LobbyHandler &message_handler;
     std::vector<std::unique_ptr<ClientHandler>> clients;
 
 public:
-    explicit Acceptor(const char *port, MessageHandler &msg_admin);
-    explicit Acceptor(Socket &acc, MessageHandler &msg_admin);
+    explicit Acceptor(const char *port, LobbyHandler &msg_admin);
+    explicit Acceptor(Socket &acc, LobbyHandler &msg_admin);
 
     void run() override;
     void stop() override;

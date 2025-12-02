@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include "../common/constants.h"
+#include "gameloop/gameloop_constants.h"
 class MapLayout
 {
 private:
