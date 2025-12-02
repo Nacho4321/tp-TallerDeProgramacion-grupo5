@@ -25,6 +25,9 @@
 #include "gameloop/player/player_manager.h"
 #include "gameloop/state/game_state_manager.h"
 #include "gameloop/broadcast/broadcast_manager.h"
+#include "gameloop/tick/tick_processor.h"
+#include "gameloop/contact/contact_handler.h"
+#include "gameloop/setup/setup_manager.h"
 #define INITIAL_ID 1
 
 class GameLoop : public Thread
@@ -74,7 +77,6 @@ private:
     int current_round{0}; // 0..2
     // Archivos de recorridos - se inicializan según map_id
     std::array<std::string, 3> checkpoint_sets;
-    void load_current_round_checkpoints();
 
     // ---------------- NPC Support ----------------
     NPCManager npc_manager;
@@ -82,19 +84,9 @@ private:
     CarPhysicsConfig &physics_config;
     PlayerManager player_manager;
     BroadcastManager broadcast_manager;
-
-    // Helpers usados por el contact listener
-    void process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpointFix);
-
-    // Setup and initialization helpers
-    void setup_world();
-    void setup_npc_config();
-    void setup_map_layout();
-
-    // Game tick processing
-    void process_playing_state(float &acum);
-    void process_lobby_state();
-    void process_starting_state();
+    TickProcessor tick_processor;
+    ContactHandler contact_handler;
+    SetupManager setup_manager;
 
     // Ejecuta el reset al lobby cuando es seguro (fuera del callback de Box2D)
     void perform_race_reset();
@@ -107,7 +99,6 @@ private:
 
 public:
     explicit GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id = 0);
-    void handle_begin_contact(b2Fixture *a, b2Fixture *b);
     void run() override;
     void start_game();
     void add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_outbox);

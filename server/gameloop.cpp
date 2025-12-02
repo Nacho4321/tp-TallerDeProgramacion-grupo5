@@ -1,73 +1,8 @@
 #include "gameloop.h"
 #include "../common/constants.h"
-#include "npc_config.h"
 #include <thread>
 #include <chrono>
-#include <random>
-#include <algorithm>
-#include <iomanip>
-#define INITIAL_X_POS 960
-#define INITIAL_Y_POS 540
-#define FULL_LOBBY_MSG "can't join lobby, maximum players reached"
-#define SCALE 32.0f
-#define FPS (1.0f / 60.0f)
-#define VELOCITY_ITERS 8
-#define COLLISION_ITERS 3
-// JSON loader
-#include <nlohmann/json.hpp>
-#include <fstream>
-#include <limits>
-
-//
-//
-// Refactor: Mapas y checkpoints
-//
-//
-
-void GameLoop::setup_npc_config()
-{
-    auto &npc_cfg = NPCConfig::getInstance();
-    npc_cfg.loadFromFile("config/npc.yaml");
-}
-
-void GameLoop::setup_world()
-{
-    std::vector<MapLayout::ParkedCarData> parked_data;
-    std::vector<MapLayout::WaypointData> street_waypoints;
-    setup_map_layout();
-    load_current_round_checkpoints();
-    setup_npc_config();
-
-    uint8_t safe_map_id = (map_id < MAP_COUNT) ? map_id : 0;
-    map_layout.extract_map_npc_data(MAP_JSON_PATHS[safe_map_id], street_waypoints, parked_data);
-    if (!parked_data.empty() || !street_waypoints.empty())
-    {
-        npc_manager.init(parked_data, street_waypoints, spawn_points);
-    }
-}
-
-void GameLoop::setup_map_layout()
-{
-    uint8_t safe_map_id = (map_id < MAP_COUNT) ? map_id : 0;
-    map_layout.create_map_layout(MAP_JSON_PATHS[safe_map_id]);
-}
-
-void GameLoop::load_current_round_checkpoints()
-{
-    CheckpointHandler::load_round_checkpoints(
-        current_round,
-        checkpoint_sets,
-        world_manager.get_world(),
-        map_layout,
-        checkpoint_centers,
-        checkpoint_fixtures);
-}
-
-//
-//
-// Refactor: Logica del game loop
-//
-//
+#include <iostream>
 
 void GameLoop::run()
 {
@@ -84,16 +19,13 @@ void GameLoop::run()
         on_playing_started();
     });
 
-    setup_world();
+    setup_manager.setup_world(current_round);
 
     while (should_keep_running())
     {
         try
         {
-            // Falla segura: antes de procesar eventos, validar si el countdown terminó
-            // para evitar quedar bloqueados por procesamiento de eventos.
             state_manager.check_and_finish_starting();
-
             event_loop.process_available_events(state_manager.get_state());
 
             auto now = std::chrono::steady_clock::now();
@@ -101,25 +33,11 @@ void GameLoop::run()
             last_tick = now;
             acum += dt;
 
-            if (state_manager.is_playing())
-            {
-                process_playing_state(acum);
-            }
-            else if (state_manager.get_state() == GameState::LOBBY)
-            {
-                process_lobby_state();
-            }
-            else if (state_manager.is_starting())
-            {
-                process_starting_state();
-                // Falla segura: aunque por algún motivo no se ejecute el process,
-                // chequeamos igualmente la finalización del countdown en el loop.
-                state_manager.check_and_finish_starting();
-            }
+            tick_processor.process(state_manager.get_state(), acum);
+            perform_race_reset();
         }
         catch (const ClosedQueue &)
         {
-            // Ignorar: alguna cola de cliente cerrada; ya se limpia en broadcast_positions
         }
         catch (const std::exception &e)
         {
@@ -128,129 +46,6 @@ void GameLoop::run()
 
         std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
-}
-
-void GameLoop::process_playing_state(float &acum)
-{
-
-    if (players.empty())
-        return;
-
-    if (state_manager.should_reset_accumulator())
-    {
-        acum = 0.0f;
-        std::cout << "[GameLoop] Physics accumulator reset on start." << std::endl;
-    }
-    RaceManager::check_round_timeout(players, state_manager.get_state(), state_manager.get_round_timeout_checked(), state_manager.get_round_start_time(), state_manager.get_pending_race_reset());
-
-    // Reset collision flags at the start of each frame
-    for (auto &entry : players)
-    {
-        entry.second.collision_this_frame = false;
-    }
-
-    npc_manager.update();
-    player_manager.update_body_positions();
-
-    while (acum >= FPS)
-    {
-        world_manager.step(FPS, VELOCITY_ITERS, COLLISION_ITERS);
-        acum -= FPS;
-    }
-
-    // Flush de destrucciones diferidas (un solo lugar). El mundo ya no está locked.
-    {
-        std::lock_guard<std::mutex> lk(players_map_mutex);
-        for (auto &[id, player_data] : players)
-        {
-            // Procesar cheat de completar ronda pendiente
-            if (player_data.pending_race_complete && !player_data.race_finished)
-            {
-                RaceManager::complete_player_race(player_data, state_manager.get_pending_race_reset(), players);
-                player_data.pending_race_complete = false;
-            }
-
-            // Procesar cheat de descalificación pendiente
-            if (player_data.pending_disqualification && !player_data.is_dead)
-            {
-                CollisionHandler::disqualify_player(player_data);
-                RaceManager::check_race_completion(players, state_manager.get_pending_race_reset());
-                player_data.pending_disqualification = false;
-            }
-
-            if (player_data.mark_body_for_removal && player_data.body)
-            {
-                if (world_manager.is_locked())
-                {
-                    // Esto no debería pasar acá, pero dejo el log por si aparece alguna condición rara.
-                    std::cout << "[GameLoop] World locked during flush, postergando destroy para player " << id << std::endl;
-                    continue;
-                }
-                world_manager.safe_destroy_body(player_data.body);
-                player_data.mark_body_for_removal = false;
-                std::cout << "[GameLoop] Destroyed body for player " << id << " (flush)." << std::endl;
-            }
-        }
-    }
-
-    perform_race_reset();
-
-    std::vector<PlayerPositionUpdate> broadcast;
-    player_manager.update_player_positions(broadcast, checkpoint_centers);
-
-    // Actualizar estado del bridge para NPCs
-    for (auto &npc : npc_manager.get_npcs())
-    {
-        BridgeHandler::update_bridge_state(npc);
-    }
-    npc_manager.add_to_broadcast(broadcast);
-
-    ServerMessage msg;
-    msg.opcode = UPDATE_POSITIONS;
-    msg.positions = broadcast;
-    broadcast_manager.broadcast(msg);
-}
-
-void GameLoop::process_lobby_state()
-{
-    if (players.empty())
-        return;
-
-    // Reset collision flags at the start of each frame
-    for (auto &entry : players)
-    {
-        entry.second.collision_this_frame = false;
-    }
-}
-
-void GameLoop::process_starting_state()
-{
-    // Durante STARTING igual avanzamos la cuenta regresiva aunque no haya jugadores,
-    // para evitar quedar trabados en este estado.
-
-    // Reset collision flags at the start of each frame
-    for (auto &entry : players)
-    {
-        entry.second.collision_this_frame = false;
-    }
-
-    std::vector<PlayerPositionUpdate> broadcast;
-    player_manager.update_player_positions(broadcast, checkpoint_centers);
-
-    // Actualizar estado del bridge para NPCs
-    for (auto &npc : npc_manager.get_npcs())
-    {
-        BridgeHandler::update_bridge_state(npc);
-    }
-    npc_manager.add_to_broadcast(broadcast);
-
-    ServerMessage msg;
-    msg.opcode = UPDATE_POSITIONS;
-    msg.positions = broadcast;
-    broadcast_manager.broadcast(msg);
-
-    // Checkeamos si la cuenta regresiva terminó
-    state_manager.check_and_finish_starting();
 }
 
 void GameLoop::perform_race_reset()
@@ -285,7 +80,7 @@ void GameLoop::advance_round_or_reset_to_lobby()
         std::cout << "[GameLoop] Advancing to round " << (current_round + 1) << " of 3 (auto STARTING)" << std::endl;
 
         // Preparar siguiente ronda: recargar checkpoints
-        load_current_round_checkpoints();
+        setup_manager.load_checkpoints(current_round);
 
         // Reposicionar jugadores a los spawns y limpiar estado de carrera
         player_manager.reset_all_players_to_lobby(spawn_points);
@@ -312,7 +107,7 @@ void GameLoop::advance_round_or_reset_to_lobby()
         // Reiniciar al round 1 y entrar a STARTING directamente
         std::cout << "[GameLoop] Championship finished. Restarting at round 1 (auto STARTING)." << std::endl;
         current_round = 0;
-        load_current_round_checkpoints();
+        setup_manager.load_checkpoints(current_round);
         player_manager.reset_all_players_to_lobby(spawn_points);
         state_manager.get_pending_race_reset().store(false);
         std::cout << "[GameLoop] About to call transition_to_starting for championship restart" << std::endl;
@@ -322,7 +117,7 @@ void GameLoop::advance_round_or_reset_to_lobby()
 
 // Constructor para poder setear el contact listener del world
 GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id_param)
-    : world_manager(CarPhysicsConfig::getInstance()), players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), state_manager(), next_id(INITIAL_ID), map_id(map_id_param), map_layout(world_manager.get_world()), npc_manager(world_manager.get_world()), physics_config(CarPhysicsConfig::getInstance()), player_manager(players_map_mutex, players, players_messanger, player_order, world_manager, physics_config), broadcast_manager(players_map_mutex, players, players_messanger)
+    : world_manager(CarPhysicsConfig::getInstance()), players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), state_manager(), next_id(INITIAL_ID), map_id(map_id_param), map_layout(world_manager.get_world()), npc_manager(world_manager.get_world()), physics_config(CarPhysicsConfig::getInstance()), player_manager(players_map_mutex, players, players_messanger, player_order, world_manager, physics_config), broadcast_manager(players_map_mutex, players, players_messanger), tick_processor(players_map_mutex, players, state_manager, player_manager, npc_manager, world_manager, broadcast_manager, checkpoint_centers), contact_handler(players_map_mutex, players, checkpoint_fixtures, checkpoint_centers, state_manager.get_pending_race_reset(), [this]() { return state_manager.get_state(); }), setup_manager(map_id, map_layout, world_manager, npc_manager, checkpoint_sets, spawn_points, checkpoint_fixtures, checkpoint_centers)
 {
     if (!physics_config.loadFromFile("config/car_physics.yaml"))
     {
@@ -344,7 +139,7 @@ GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id_param)
 
     // Configurar el callback de contacto
     world_manager.set_contact_callback([this](b2Fixture *a, b2Fixture *b) {
-        this->handle_begin_contact(a, b);
+        this->contact_handler.handle_begin_contact(a, b);
     });
 }
 
@@ -403,7 +198,7 @@ void GameLoop::start_game()
         // para evitar que perform_race_reset() dispare inmediatamente.
         state_manager.get_pending_race_reset().store(false);
         // Asegurar que los checkpoints de la ronda actual estén cargados al iniciar
-        load_current_round_checkpoints();
+        setup_manager.load_checkpoints(current_round);
         RaceManager::reset_players_for_race_start(players, physics_config);
         npc_manager.reset_velocities();
     } // <-- Lock se libera aquí
@@ -416,47 +211,6 @@ void GameLoop::start_game()
 //
 //
 // Refactor: Logica de colisiones y fisicas
-//
-//
-
-void GameLoop::process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpointFix)
-{
-    int player_id, checkpoint_index;
-    if (!CheckpointHandler::is_valid_checkpoint_collision(
-            maybePlayerFix, maybeCheckpointFix, players, checkpoint_fixtures,
-            player_id, checkpoint_index))
-        return;
-
-    PlayerData &player_data = players[player_id];
-    int total = static_cast<int>(checkpoint_centers.size());
-    bool completed_lap = CheckpointHandler::handle_checkpoint_reached(
-        player_data, player_id, checkpoint_index, total);
-    
-    if (completed_lap)
-    {
-        RaceManager::complete_player_race(player_data, state_manager.get_pending_race_reset(), players);
-    }
-}
-
-void GameLoop::handle_begin_contact(b2Fixture *fixture_a, b2Fixture *fixture_b)
-{
-    std::lock_guard<std::mutex> lk(players_map_mutex);
-
-    // Checkeo checkpoint
-    process_pair(fixture_a, fixture_b);
-    process_pair(fixture_b, fixture_a);
-
-    // Checkeo colisiones entre autos
-    bool any_death = CollisionHandler::handle_car_collision(fixture_a, fixture_b, players, state_manager.get_state());
-    if (any_death)
-    {
-        RaceManager::check_race_completion(players, state_manager.get_pending_race_reset());
-    }
-}
-
-//
-//
-// Refactor: multipartidas
 //
 //
 

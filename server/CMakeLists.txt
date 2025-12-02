@@ -26,6 +26,9 @@ target_sources(taller_server
     gameloop/player/player_manager.cpp
     gameloop/state/game_state_manager.cpp
     gameloop/broadcast/broadcast_manager.cpp
+    gameloop/tick/tick_processor.cpp
+    gameloop/contact/contact_handler.cpp
+    gameloop/setup/setup_manager.cpp
     PUBLIC
     # .h files
     acceptor.h
@@ -54,4 +57,7 @@ target_sources(taller_server
     gameloop/player/player_manager.h
     gameloop/state/game_state_manager.h
     gameloop/broadcast/broadcast_manager.h
+    gameloop/tick/tick_processor.h
+    gameloop/contact/contact_handler.h
+    gameloop/setup/setup_manager.h
     )
