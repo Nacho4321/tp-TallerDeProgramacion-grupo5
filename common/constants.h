@@ -75,12 +75,6 @@ enum class CheatType : uint8_t {
     FULL_UPGRADE = 3
 };
 
-// Multiplicadores de mejora
-constexpr float SPEED_UPGRADE_MULTIPLIER = 1.15f;
-constexpr float ACCELERATION_UPGRADE_MULTIPLIER = 1.15f;
-constexpr float HANDLING_UPGRADE_MULTIPLIER = 1.15f;
-constexpr float DURABILITY_UPGRADE_REDUCTION = 0.15f;  // Reduce daño recibido
-constexpr uint8_t MAX_UPGRADE_LEVEL = 3;
 
 const std::string MOVE_UP_PRESSED_STR = "move_up_pressed";         // NOLINT
 const std::string MOVE_UP_RELEASED_STR = "move_up_released";       // NOLINT
