@@ -19,35 +19,27 @@ private:
     std::vector<uint8_t> buffer;
     std::vector<uint8_t> readBuffer;
 
-    // Mapas de handlers
     using ClientMessageHandler = std::function<ClientMessage()>;
     std::unordered_map<uint8_t, ClientMessageHandler> receive_handlers;
     
-    // Mapas de encode handlers
     using ServerEncodeHandler = std::function<void(ServerMessage&)>;
     std::unordered_map<uint8_t, ServerEncodeHandler> server_encode_handlers;
     
     using ClientEncodeHandler = std::function<void(const ClientMessage&, uint8_t)>;
     std::unordered_map<uint8_t, ClientEncodeHandler> client_encode_handlers;
     
-    // Mapa de handlers para receiveAnyServerPacket
     using ServerReceiveHandler = std::function<void(ServerMessage&, GameJoinedResponse&)>;
     std::unordered_map<uint8_t, ServerReceiveHandler> server_receive_handlers;
     
     using CmdToOpcodeMap = std::unordered_map<std::string, uint8_t>;
     CmdToOpcodeMap cmd_to_opcode;
     
-    // Inicializa los mapas
     void init_handlers();
     void init_cmd_map();
     void init_encode_handlers();
     void init_server_receive_handlers();
 
-    //
-    // Helpers para armar y desarmar mensajes
-    //
 
-    // Agrega un valor al buffer
     template <typename T>
     void appendValue(T value)
     {
@@ -56,7 +48,6 @@ private:
         std::memcpy(buffer.data() + old_size, &value, sizeof(T));
     }
 
-    // Lee un valor del buffer y avanza el índice
     template <typename T>
     T readValue(const std::vector<uint8_t> &buffer, size_t &idx)
     {
@@ -66,7 +57,6 @@ private:
         return value;
     }
 
-    // Inserta tipos específicos en el buffer
     void insertUint16(std::uint16_t value);
     void insertUint32(std::uint32_t value);
     void insertFloat(float value);
@@ -74,30 +64,23 @@ private:
     void insertString(const std::string& str);
     void insertPosition(const Position& pos);
 
-    // Extrae tipos específicos del buffer
     uint16_t exportUint16(const std::vector<uint8_t> &buffer, size_t &idx);
     uint32_t exportUint32(const std::vector<uint8_t> &buffer, size_t &idx);
     float exportFloat(const std::vector<uint8_t> &buffer, size_t &idx);
     int exportInt(const std::vector<uint8_t> &buffer, size_t &idx);
-    bool exportBoolFromNitroStatus(const std::vector<uint8_t> &buffer, size_t &idx);
 
-    // Lee player_id y game_id de la red y los coloca en msg
     void readClientIds(ClientMessage& msg);
     
-    // Helpers de receive para receivePositionsUpdate
     bool readPosition(Position& pos);
     bool readString(std::string& str);
     bool readPlayerPositionUpdate(PlayerPositionUpdate& update);
 
-    // Traduce un ClientMessage a bytes
     std::vector<std::uint8_t> encodeClientMessage(const ClientMessage &msg);
     std::vector<std::uint8_t> encodeServerMessage(ServerMessage& out);
     std::vector<std::uint8_t> encodeGameJoinedResponse(const GameJoinedResponse& response);
 
-    // Helpers de encode internos para solo opcode
     std::vector<std::uint8_t> encodeOpcode(std::uint8_t opcode);
 
-    // Helpers de encode para ServerMessage
     void encodeUpdatePositions(ServerMessage& out);
     void encodeGameJoined(ServerMessage& out);
     void encodeGamesList(ServerMessage& out);
@@ -105,13 +88,11 @@ private:
     void encodeTotalTimes(ServerMessage& out);
     void encodeDefaultOpcode(ServerMessage& out);
     
-    // Helpers de encode para ClientMessage
     void encodeCreateGame(const ClientMessage& msg);
     void encodeChangeCar(const ClientMessage& msg);
     void encodeUpgrade(const ClientMessage& msg);
     void encodeCheat(const ClientMessage& msg);
 
-    // Helpers de receive
     ClientMessage receiveUpPressed();
     ClientMessage receiveUpRealesed();
     ClientMessage receiveDownPressed();
@@ -133,11 +114,11 @@ private:
     GameJoinedResponse receiveGameJoinedResponse();
     ServerMessage receiveRaceTimes();
     ServerMessage receiveTotalTimes();
-    // Helper para decodificar STARTING_COUNTDOWN (sin payload)
+
     ServerMessage receiveStartingCountdown();
 
 public:
-    explicit Protocol(Socket &&socket) noexcept; // constructor que toma ownership del socket
+    explicit Protocol(Socket &&socket) noexcept;
     Protocol() = delete;
     ~Protocol() = default;
     Protocol(const Protocol &) = delete;
@@ -151,9 +132,6 @@ public:
                                 GameJoinedResponse& outJoined,
                                 uint8_t& outOpcode);
     
-    // Lobby methods (cliente recibe respuesta del servidor)
-
-    // Envía mensaje al socket
     void sendMessage(ServerMessage& out);
     void sendMessage(ClientMessage& out);
     void sendMessage(const GameJoinedResponse& response);

@@ -175,7 +175,6 @@ void Client::start()
             }
             else
             {
-                // comandos de movimiento u otros
                 active_handler_->send(input);
             }
         }

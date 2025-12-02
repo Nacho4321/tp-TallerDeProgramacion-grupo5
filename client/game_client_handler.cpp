@@ -6,19 +6,16 @@ GameClientHandler::GameClientHandler(Protocol& proto)
             sender(protocol, outgoing), receiver(protocol, incoming, join_results) {}
 
 void GameClientHandler::start() {
-    // iniciar sender y receiver
     sender.start();
     receiver.start();
 }
 
 void GameClientHandler::stop() {
-    // parar ambos
     sender.stop();
     receiver.stop();
 }
 
 void GameClientHandler::join() {
-    // esperar que terminen
     sender.join();
     receiver.join();
 }
@@ -40,7 +37,6 @@ void GameClientHandler::set_game_id(int32_t id) {
 }
 
 bool GameClientHandler::create_game_blocking(uint32_t& out_game_id, uint32_t& out_player_id, uint8_t& out_map_id, const std::string& game_name, uint8_t map_id) {
-    // Reset IDs to -1 before solicitar creación
     sender.set_game_id(-1);
     sender.set_player_id(-1);
     
@@ -51,12 +47,11 @@ bool GameClientHandler::create_game_blocking(uint32_t& out_game_id, uint32_t& ou
     }
     
     try {
-        ServerMessage resp = join_results.pop(); // bloquea hasta respuesta
+        ServerMessage resp = join_results.pop();
         if (resp.opcode != GAME_JOINED) {
             return false;
         }
         if (resp.success) {
-            // Actualizamos sender con IDs asignados
             sender.set_game_id(static_cast<int32_t>(resp.game_id));
             sender.set_player_id(static_cast<int32_t>(resp.player_id));
             out_game_id = resp.game_id;
@@ -67,12 +62,11 @@ bool GameClientHandler::create_game_blocking(uint32_t& out_game_id, uint32_t& ou
         return false;
     } catch (const ClosedQueue&) {
         std::cerr << "[Handler] ERROR: Cola cerrada antes de recibir respuesta" << std::endl;
-        return false; // cola cerrada -> fallo
+        return false;
     }
 }
 
 bool GameClientHandler::join_game_blocking(int32_t game_id_to_join, uint32_t& out_player_id, uint8_t& out_map_id) {
-    // Seteamos game_id deseado antes de enviar join
     sender.set_game_id(game_id_to_join);
     send("join_game");
     try {
@@ -81,7 +75,6 @@ bool GameClientHandler::join_game_blocking(int32_t game_id_to_join, uint32_t& ou
             return false;
         }
         if (resp.success) {
-            // Ajustamos IDs reales devueltos
             sender.set_game_id(static_cast<int32_t>(resp.game_id));
             sender.set_player_id(static_cast<int32_t>(resp.player_id));
             out_player_id = resp.player_id;
@@ -113,7 +106,7 @@ std::vector<ServerMessage::GameSummary> GameClientHandler::get_games_blocking() 
 }
 
 bool GameClientHandler::wait_for_game_started(int timeout_ms) {
-    (void)timeout_ms;  // por si hay que modificarlo en algun futuro
+    (void)timeout_ms;
     try {
         ServerMessage msg;
         bool got = join_results.try_pop(msg);

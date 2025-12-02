@@ -13,7 +13,7 @@ void GameClientReceiver::run() {
             bool ok = protocol.receiveAnyServerPacket(positionsMsg, joinResp, opcode);
             if (!ok) {
                 std::cout << "[ClientReceiver] Conexión cerrada o error" << std::endl;
-                break;  // EOF o desconexión o paquete inválido
+                break;
             }
             if (opcode == GAME_JOINED) {
                 ServerMessage m; 
@@ -28,7 +28,6 @@ void GameClientReceiver::run() {
                     incoming_messages.push(std::move(positionsMsg));
                 }
             } else if (opcode == GAMES_LIST) {
-                // Enviar la lista de partidas a incoming messages para que get_games_blocking lareciba
                 incoming_messages.push(std::move(positionsMsg));
             } else if (opcode == GAME_STARTED) {
                 ServerMessage m;
@@ -36,16 +35,13 @@ void GameClientReceiver::run() {
                 join_results.push(std::move(m)); 
                 incoming_messages.push(std::move(positionsMsg));
             } else if (opcode == STARTING_COUNTDOWN) {
-                // Pasar el mensaje de inicio de countdown al cliente
                 ServerMessage m;
                 m.opcode = GAME_STARTED;
                 join_results.push(std::move(m)); 
                 incoming_messages.push(std::move(positionsMsg));
             } else if (opcode == RACE_TIMES) {
-                // Tiempos de la ronda: pasar para que el cliente los muestre
                 incoming_messages.push(std::move(positionsMsg));
             } else if (opcode == TOTAL_TIMES) {
-                // Totales del campeonato
                 incoming_messages.push(std::move(positionsMsg));
             } else {
                 // Paquete desconocido: ignorar

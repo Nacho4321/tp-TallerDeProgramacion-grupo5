@@ -83,9 +83,7 @@ ClientMessage Protocol::receiveCreateGame()
     ClientMessage msg;
     msg.cmd = CREATE_GAME_STR;
     readClientIds(msg);
-    // Leer nombre
     readString(msg.game_name);
-    // Leer map_id
     uint8_t map_id_buf = 0;
     if (skt.recvall(&map_id_buf, 1) > 0)
     {
@@ -118,11 +116,9 @@ ClientMessage Protocol::receiveStartGame()
     return msg;
 }
 
-// Helper para decodificar STARTING_COUNTDOWN (sin payload)
 ServerMessage Protocol::receiveStartingCountdown() {
     ServerMessage out;
     out.opcode = STARTING_COUNTDOWN;
-    // No hay payload, solo el opcode
     return out;
 }
 
@@ -131,9 +127,7 @@ ClientMessage Protocol::receiveChangeCar()
     ClientMessage msg;
     msg.cmd = CHANGE_CAR_STR;
     readClientIds(msg);
-    // Leer car_type
     if (readString(msg.car_type) && !msg.car_type.empty()) {
-        // Reconstruir cmd completo para que llegue como evento legible: "change_car <tipo>"
         msg.cmd = std::string(CHANGE_CAR_STR) + " " + msg.car_type;
     }
     return msg;
@@ -144,7 +138,6 @@ ClientMessage Protocol::receiveUpgradeCar()
     ClientMessage msg;
     msg.cmd = "upgrade_car";
     readClientIds(msg);
-    // Leer upgrade_type 
     uint8_t upgrade_byte;
     if (skt.recvall(&upgrade_byte, sizeof(upgrade_byte)) <= 0)
         return msg;
@@ -158,12 +151,12 @@ ClientMessage Protocol::receiveCheat()
     ClientMessage msg;
     msg.cmd = "cheat";
     readClientIds(msg);
-    // Leer cheat_type
+
     uint8_t cheat_byte;
     if (skt.recvall(&cheat_byte, sizeof(cheat_byte)) <= 0)
         return msg;
     msg.cheat_type = static_cast<CheatType>(cheat_byte);
-    // Construir cmd con el tipo de cheat para el dispatcher
+
     switch (msg.cheat_type) {
         case CheatType::GOD_MODE:
             msg.cmd = CHEAT_GOD_MODE_STR;
@@ -181,10 +174,9 @@ ClientMessage Protocol::receiveCheat()
     return msg;
 }
 
-// Helpers de receive para receivePositionsUpdate
 
 bool Protocol::readPosition(Position& pos) {
-    // on_bridge (1) + direction_x (1) + direction_y (1) + X (4) + Y (4) + angle (4) = 15 bytes
+
     readBuffer.resize(sizeof(uint8_t) + 2 * sizeof(int8_t) + 3 * sizeof(float));
     if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0)
         return false;
@@ -257,7 +249,7 @@ bool Protocol::readPlayerPositionUpdate(PlayerPositionUpdate& update) {
         return false;
     update.collision_flag = (collision_byte != 0);
 
-    // Upgrades (4 bytes)
+    // Upgrades
     uint8_t upgrade_bytes[4];
     if (skt.recvall(upgrade_bytes, sizeof(upgrade_bytes)) <= 0)
         return false;
@@ -266,7 +258,6 @@ bool Protocol::readPlayerPositionUpdate(PlayerPositionUpdate& update) {
     update.upgrade_handling = upgrade_bytes[2];
     update.upgrade_durability = upgrade_bytes[3];
 
-    // Is stopping
     uint8_t stopping_byte;
     if (skt.recvall(&stopping_byte, sizeof(stopping_byte)) <= 0)
         return false;
@@ -299,7 +290,6 @@ GameJoinedResponse Protocol::receiveGameJoinedResponse()
 {
     GameJoinedResponse resp;
 
-    // Leer game_id (uint32) + player_id (uint32) + success (uint8) + map_id (uint8)
     readBuffer.resize(sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint8_t));
     if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0)
     {
@@ -326,7 +316,7 @@ ServerMessage Protocol::receiveGamesList()
 {
     ServerMessage msg;
     msg.opcode = GAMES_LIST;
-    // Leer cantidad
+
     readBuffer.resize(sizeof(uint32_t));
     if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0)
         return msg;
@@ -334,7 +324,6 @@ ServerMessage Protocol::receiveGamesList()
     uint32_t count = exportUint32(readBuffer, idx);
     for (uint32_t i = 0; i < count; ++i)
     {
-        // game_id (4) + player_count (4) + map_id (1) + nameLen (2) = 11 bytes
         readBuffer.resize(sizeof(uint32_t) * 2 + sizeof(uint8_t) + sizeof(uint16_t));
         if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0)
             return msg;

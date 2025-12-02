@@ -52,7 +52,6 @@ private:
     static constexpr int HP_BAR_HEIGHT = 6;
     static constexpr int HP_BAR_OFFSET_Y = 3;
 
-    // --- Rendering ---
     void renderBackground();
     void renderCar(Car &car);
     void renderHPBar(const Car& car, int carScreenX, int carScreenY, int spriteWidth, int spriteHeight);

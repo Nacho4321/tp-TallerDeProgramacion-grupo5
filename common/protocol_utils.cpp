@@ -43,14 +43,6 @@ int Protocol::exportInt(const std::vector<uint8_t>& buffer, size_t& idx) {
     return static_cast<int>(int_value);
 }
 
-bool Protocol::exportBoolFromNitroStatus(const std::vector<uint8_t>& buffer, size_t& idx) {
-    uint8_t value = readValue<uint8_t>(buffer, idx);
-    if (value == 0x07)
-        return true;  // nitro activado
-    else
-        return false;  // nitro expirado
-}
-
 void Protocol::insertString(const std::string& str) {
     uint16_t len = static_cast<uint16_t>(str.size());
     insertUint16(len);

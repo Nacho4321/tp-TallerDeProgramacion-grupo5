@@ -12,7 +12,6 @@
 #include <string>
 #include <memory>
 
-// Agrego esto para q no tengamos que apretar teclas al unirnos a una partida, pero siga funcionadno esa opcion
 enum class StartMode
 {
     NORMAL,      // espera comandos (create/join)
@@ -26,7 +25,6 @@ class Client
 private:
     std::unique_ptr<GameConnection> connection_;
     
-    // conexion creada internamente (para pruebas)
     std::unique_ptr<Protocol> owned_protocol_;
     std::unique_ptr<GameClientHandler> owned_handler_;
     
@@ -53,7 +51,6 @@ private:
     int auto_join_game_id;
     std::string auto_create_game_name;
     
-    // Helper para inicializar conexion como antes
     void initLegacyConnection(const char* address, const char* port);
 
 public:
@@ -62,7 +59,6 @@ public:
                     int join_game_id = -1,
                     const std::string &game_name = "");
     
-    // constructor nuevo
     explicit Client(std::unique_ptr<GameConnection> connection);
     
     ~Client();
