@@ -23,12 +23,25 @@ private:
     using ClientMessageHandler = std::function<ClientMessage()>;
     std::unordered_map<uint8_t, ClientMessageHandler> receive_handlers;
     
+    // Mapas de encode handlers
+    using ServerEncodeHandler = std::function<void(ServerMessage&)>;
+    std::unordered_map<uint8_t, ServerEncodeHandler> server_encode_handlers;
+    
+    using ClientEncodeHandler = std::function<void(const ClientMessage&, uint8_t)>;
+    std::unordered_map<uint8_t, ClientEncodeHandler> client_encode_handlers;
+    
+    // Mapa de handlers para receiveAnyServerPacket
+    using ServerReceiveHandler = std::function<void(ServerMessage&, GameJoinedResponse&)>;
+    std::unordered_map<uint8_t, ServerReceiveHandler> server_receive_handlers;
+    
     using CmdToOpcodeMap = std::unordered_map<std::string, uint8_t>;
     CmdToOpcodeMap cmd_to_opcode;
     
     // Inicializa los mapas
     void init_handlers();
     void init_cmd_map();
+    void init_encode_handlers();
+    void init_server_receive_handlers();
 
     //
     // Helpers para armar y desarmar mensajes
@@ -76,6 +89,21 @@ private:
 
     // Helpers de encode internos para solo opcode
     std::vector<std::uint8_t> encodeOpcode(std::uint8_t opcode);
+
+    // Helpers de encode para ServerMessage
+    void encodeUpdatePositions(ServerMessage& out);
+    void encodeGameJoined(ServerMessage& out);
+    void encodeGamesList(ServerMessage& out);
+    void encodeRaceTimes(ServerMessage& out);
+    void encodeTotalTimes(ServerMessage& out);
+    void encodeDefaultOpcode(ServerMessage& out);
+    
+    // Helpers de encode para ClientMessage
+    void encodeCreateGame(const ClientMessage& msg);
+    void encodeChangeCar(const ClientMessage& msg);
+    void encodeUpgrade(const ClientMessage& msg);
+    void encodeCheat(const ClientMessage& msg);
+    void logClientEncode(uint8_t opcode, const ClientMessage& msg);
 
     // Helpers de receive
     ClientMessage receiveUpPressed();
