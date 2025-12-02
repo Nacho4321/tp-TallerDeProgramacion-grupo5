@@ -116,8 +116,12 @@ void Client::start()
     GameStateTracker stateManager;
     PositionUpdateHandler positionHandler;
 
+    const Uint32 TARGET_FRAME_TIME = 16;
+
     while (connected)
     {
+        Uint32 frameStart = SDL_GetTicks();
+
         std::string input = handler.receive();
         if (input == "QUIT")
         {
@@ -294,6 +298,10 @@ void Client::start()
             );
         }
 
-        SDL_Delay(16);
+        Uint32 frameTime = SDL_GetTicks() - frameStart;
+        if (frameTime < TARGET_FRAME_TIME)
+        {
+            SDL_Delay(TARGET_FRAME_TIME - frameTime);
+        }
     }
 }
