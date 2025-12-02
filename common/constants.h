@@ -56,19 +56,20 @@ constexpr int MAX_PARKED_NPCS = 10;      // NPCs estacionados
 constexpr float NPC_SPEED_PX_S = 120.0f; // pixels/sec
 
 // Car change (runtime swap during game)
-constexpr uint8_t CHANGE_CAR = 0x30;             // opcode para cambio de auto
-const std::string CHANGE_CAR_STR = "change_car"; // comando base
+constexpr uint8_t CHANGE_CAR = 0x30;               // opcode para cambio de auto
+const std::string CHANGE_CAR_STR = "change_car";   // comando base
 const std::string UPGRADE_CAR_STR = "upgrade_car"; // comando para mejora de auto
 
 // Cheats opcodes y strings
-constexpr uint8_t CHEAT_CMD = 0x50;                         // opcode para cheats
-const std::string CHEAT_GOD_MODE_STR = "cheat_god";         // vida infinita toggle
-const std::string CHEAT_DIE_STR = "cheat_die";              // morir/perder
-const std::string CHEAT_SKIP_LAP_STR = "cheat_skip_lap";    // completar vuelta actual
+constexpr uint8_t CHEAT_CMD = 0x50;                              // opcode para cheats
+const std::string CHEAT_GOD_MODE_STR = "cheat_god";              // vida infinita toggle
+const std::string CHEAT_DIE_STR = "cheat_die";                   // morir/perder
+const std::string CHEAT_SKIP_LAP_STR = "cheat_skip_lap";         // completar vuelta actual
 const std::string CHEAT_FULL_UPGRADE_STR = "cheat_full_upgrade"; // todas las mejoras al max
 
 // Tipos de cheat (para el payload del opcode CHEAT_CMD)
-enum class CheatType : uint8_t {
+enum class CheatType : uint8_t
+{
     GOD_MODE = 0,
     DIE = 1,
     SKIP_LAP = 2,
@@ -171,7 +172,8 @@ inline const char *const CAR_TYPES[] = {
     PURPLE_TRUCK,
     LIMOUSINE_CAR};
 
-enum class CarUpgrade {
+enum class CarUpgrade
+{
     ACCELERATION_BOOST = 0,
     SPEED_BOOST = 1,
     HANDLING_IMPROVEMENT = 2,
@@ -205,7 +207,7 @@ enum class CarUpgrade {
 #define DURABILITY_UPGRADE_REDUCTION 1.0f
 #define HANDLING_UPGRADE_MULTIPLIER 1.15f
 #define MAX_UPGRADES_PER_STAT 3
-
+#define PENALIZATION_TIME 2000
 // Campeonato: 3 rondas
 constexpr int TOTAL_ROUNDS = 3;
 

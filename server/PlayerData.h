@@ -20,7 +20,7 @@ struct CarInfo
     float acceleration;
     float hp;
     float durability;
-    float handling;  
+    float handling;
 };
 
 struct PlayerData
@@ -28,7 +28,7 @@ struct PlayerData
     b2Body *body;
     std::string state;
     CarInfo car;
-    UpgradeLevels upgrades;  // Contadores de niveles de mejora
+    UpgradeLevels upgrades; // Contadores de niveles de mejora
     Position position;
 
     // Indice del próximo checkpoint que el jugador debe pasar (empieza en 0)
@@ -45,14 +45,14 @@ struct PlayerData
 
     // --- Timing de carreras y campeonato ---
     // Tiempos por ronda (en ms), máx 3 rondas
-    std::vector<uint32_t> round_times_ms;
+    std::vector<uint32_t> round_times_ms{0, 0, 0};
     // Tiempo total acumulado del campeonato (en ms)
     uint32_t total_time_ms = 0;
     // Cantidad de rondas completadas (0..3)
     int rounds_completed = 0;
     // Flag de descalificación de la ronda actual (muerte cuenta como 10 min)
     bool disqualified = false;
-    // Flag de frenazo 
+    // Flag de frenazo
     bool is_stopping = false;
     // Cheat: modo dios (vida infinita)
     bool god_mode = false;
