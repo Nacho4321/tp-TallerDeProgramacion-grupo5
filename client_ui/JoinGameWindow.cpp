@@ -119,7 +119,25 @@ void JoinGameWindow::onJoin() {
         gameStarted_ = true;
         auto connection = lobbyClient_->extractConnection();
         GameLauncher::launchWithConnection(std::move(connection));
-        accept();
+
+        if (lobbyClient_) {
+            std::string host = lobbyClient_->getAddress();
+            std::string port = lobbyClient_->getPort();
+
+            std::cout << "[JoinGameWindow] Game ended, reconnecting to server..." << std::endl;
+            if (lobbyClient_->connect(host, port)) {
+                std::cout << "[JoinGameWindow] Reconnected successfully" << std::endl;
+                if (parentWidget()) {
+                    parentWidget()->show();
+                }
+                this->close();
+            } else {
+                std::cerr << "[JoinGameWindow] Failed to reconnect" << std::endl;
+                accept();
+            }
+        } else {
+            accept();
+        }
     } else if (lobbyWindow.wasForceClosed()) {
         QApplication::quit();
     } else {

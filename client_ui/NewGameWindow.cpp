@@ -91,8 +91,25 @@ void NewGameWindow::onCreate() {
         
         std::cout << "[NewGameWindow] Transfiriendo conexión al cliente SDL" << std::endl;
         GameLauncher::launchWithConnection(std::move(connection));
-        
-        accept(); 
+
+        if (lobbyClient_) {
+            std::string host = lobbyClient_->getAddress();
+            std::string port = lobbyClient_->getPort();
+
+            std::cout << "[NewGameWindow] Game ended, reconnecting to server..." << std::endl;
+            if (lobbyClient_->connect(host, port)) {
+                std::cout << "[NewGameWindow] Reconnected successfully" << std::endl;
+                if (parentWidget()) {
+                    parentWidget()->show();
+                }
+                this->close();
+            } else {
+                std::cerr << "[NewGameWindow] Failed to reconnect" << std::endl;
+                accept();
+            }
+        } else {
+            accept();
+        } 
     } else if (lobbyWindow.wasForceClosed()) {
         QApplication::quit();
     } else {
