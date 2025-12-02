@@ -17,6 +17,7 @@ target_sources(taller_server
     event.cpp
     map_layout.cpp
     gameloop/npc/npc_manager.cpp
+    gameloop/bridge/bridge_handler.cpp
     PUBLIC
     # .h files
     acceptor.h
@@ -36,4 +37,5 @@ target_sources(taller_server
     map_layout.h
     gameloop/npc/npc_manager.h
     gameloop/npc/npc_data.h
+    gameloop/bridge/bridge_handler.h
     )

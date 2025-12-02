@@ -66,4 +66,4 @@ private:
     float normalize_angle(double angle) const;
 };
 
-#endif // NPC_MANAGER_H
+#endif 

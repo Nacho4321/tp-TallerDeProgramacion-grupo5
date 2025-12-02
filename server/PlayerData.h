@@ -3,6 +3,7 @@
 #include "event.h"
 #include <box2d/b2_body.h>
 #include <chrono>
+#include <vector>
 
 struct UpgradeLevels
 {

@@ -16,6 +16,7 @@
 #include <atomic>
 #include <chrono>
 #include "gameloop/npc/npc_manager.h"
+#include "gameloop/bridge/bridge_handler.h"
 #define INITIAL_ID 1
 #include "game_state.h"
 
@@ -138,10 +139,6 @@ private:
     // Ejecuta el reset al lobby cuando es seguro (fuera del callback de Box2D)
     void perform_race_reset();
     void advance_round_or_reset_to_lobby();
-    bool update_bridge_state_for_player(PlayerData &player_data);
-    void set_car_category(PlayerData &player_data, uint16 newCategory);
-    void update_bridge_state_for_npc(NPCData &npc_data);
-    void set_npc_category(NPCData &npc_data, uint16 newCategory);
 
     // add_player/remove_player helpers
     bool can_add_player() const;
