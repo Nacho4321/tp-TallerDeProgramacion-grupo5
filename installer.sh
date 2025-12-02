@@ -37,7 +37,7 @@ install_game() {
     $SUDO apt-get install -y \
         build-essential cmake git \
         qt6-base-dev qt6-base-dev-tools \
-        libopus-dev libopusfile-dev \
+        libopus-dev libopusfile-dev libbox2d-dev\
         libxmp-dev \
         libfluidsynth-dev fluidsynth \
         libwavpack1 libwavpack-dev \

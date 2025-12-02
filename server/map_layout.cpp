@@ -24,7 +24,7 @@ void MapLayout::create_map_layout(const std::string &jsonPath)
             continue;
         }
         auto layer_category = collisions_byte_map.find(layer[NAME_STR]);
-        if (layer_category->first.empty())
+        if (layer_category == collisions_byte_map.end())
         {
             continue;
         }
@@ -76,7 +76,7 @@ void MapLayout::extract_checkpoints(const std::string &jsonPath, std::vector<b2V
     if (!file)
     {
         std::cerr << "[MapLayout] Could not open JSON: " << jsonPath << std::endl;
-        return;
+        throw std::runtime_error("Could not open JSON file: " + jsonPath);
     }
     json data;
     file >> data;
