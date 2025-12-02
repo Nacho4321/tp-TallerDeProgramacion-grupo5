@@ -13,12 +13,16 @@
 #include <QWheelEvent>
 #include <QComboBox>
 #include <QGroupBox>
+#include <QRadioButton>
 #include <vector>
 #include <string>
 
 #include "checkpoint_data.h"
 #include "checkpoint_item.h"
+#include "spawn_formation_item.h"
 #include "editor_config.h"
+
+enum class EditorMode { Checkpoints, Spawnpoints };
 
 class CheckpointEditorWindow : public QMainWindow {
     Q_OBJECT
@@ -33,27 +37,43 @@ protected:
     void closeEvent(QCloseEvent* event) override;
 
 private:
-    // UI Components
     QGraphicsScene* mapScene;
     QGraphicsView* mapView;
     QGraphicsPixmapItem* backgroundItem;
     QGraphicsPathItem* routeLine;
     QDockWidget* sidePanel;
+    
+    QRadioButton* checkpointModeRadio;
+    QRadioButton* spawnpointModeRadio;
+    EditorMode currentMode;
+
     QComboBox* raceSelector;
+    QLabel* currentFileLabel;
+    
+    QGroupBox* checkpointsGroup;
     QListWidget* checkpointList;
     QPushButton* moveUpButton;
     QPushButton* moveDownButton;
     QPushButton* deleteButton;
+    QLabel* infoLabel;
+    
+    QGroupBox* spawnpointsGroup;
+    QPushButton* rotateLeftButton;
+    QPushButton* rotateRightButton;
+    QLabel* spawnInfoLabel;
+    
     QPushButton* zoomInButton;
     QPushButton* zoomOutButton;
     QPushButton* resetZoomButton;
+    
     QPushButton* saveButton;
     QPushButton* loadButton;
-    QLabel* infoLabel;
-    QLabel* currentFileLabel;
 
     std::vector<CheckpointData> checkpoints;
     std::vector<CheckpointItem*> checkpointItems;
+    
+    SpawnFormationItem* spawnFormation;
+    
     std::string mapImagePath;
     RaceId currentRace;
     bool hasUnsavedChanges;
@@ -66,8 +86,11 @@ private:
     void loadConfiguration();
     void loadMapImage();
 
+    void setEditorMode(EditorMode mode);
+    
     void switchToRace(RaceId race);
     std::string getCurrentCheckpointsPath() const;
+    std::string getSpawnPointsPath() const;
 
     void loadCheckpoints();
     void saveCheckpoints();
@@ -75,6 +98,10 @@ private:
     void addCheckpointAt(float x, float y);
     void removeSelectedCheckpoint();
     void swapCheckpoints(int indexA, int indexB);
+
+    void loadSpawnPoints();
+    void saveSpawnPoints();
+    void createDefaultSpawnFormation(float x, float y);
 
     void refreshCheckpointList();
     void refreshCheckpointVisuals();
@@ -87,6 +114,7 @@ private:
     void resetZoom();
 
 private slots:
+    void onModeChanged();
     void onRaceSelectionChanged(int index);
     void onMapClicked(QPointF scenePos);
     void onSaveClicked();
@@ -94,6 +122,8 @@ private slots:
     void onDeleteClicked();
     void onMoveUpClicked();
     void onMoveDownClicked();
+    void onRotateLeftClicked();
+    void onRotateRightClicked();
 };
 
 #endif

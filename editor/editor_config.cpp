@@ -78,6 +78,10 @@ bool EditorConfig::loadFromFile(const std::string& configPath) {
             }
         }
         
+        if (editor["spawn_points_file"]) {
+            spawnPointsPath = editor["spawn_points_file"].as<std::string>();
+        }
+        
         return true;
         
     } catch (const YAML::Exception& e) {
@@ -103,6 +107,10 @@ std::string EditorConfig::getCheckpointsFilePath(RaceId race) const {
 
 std::map<RaceId, std::string> EditorConfig::getAllCheckpointsPaths() const {
     return checkpointsPaths;
+}
+
+std::string EditorConfig::getSpawnPointsFilePath() const {
+    return spawnPointsPath;
 }
 
 std::string EditorConfig::getRaceName(RaceId race) {

@@ -20,6 +20,7 @@ public:
     
     std::string getCheckpointsFilePath(RaceId race) const;
     std::map<RaceId, std::string> getAllCheckpointsPaths() const;
+    std::string getSpawnPointsFilePath() const;
     static std::string getRaceName(RaceId race);
 
 private:
@@ -31,6 +32,7 @@ private:
     
     std::string mapImagePath;
     std::map<RaceId, std::string> checkpointsPaths;
+    std::string spawnPointsPath;
     
     std::string findConfigFile() const;
 };
