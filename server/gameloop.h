@@ -15,6 +15,7 @@
 #include "car_physics_config.h"
 #include <atomic>
 #include <chrono>
+#include "gameloop/npc/npc_manager.h"
 #define INITIAL_ID 1
 #include "game_state.h"
 
@@ -54,11 +55,8 @@ private:
     };
     static constexpr int MAX_PLAYERS = 8;
 
-    // Configuración de checkpoints y NPCs
+    // Configuración de checkpoints
     static constexpr int CHECKPOINT_LOOKAHEAD = 3;
-    static constexpr float NPC_DIRECTION_THRESHOLD = 0.05f;
-    static constexpr float NPC_ARRIVAL_THRESHOLD_M = 0.5f;
-    static constexpr float MIN_DISTANCE_FROM_PARKED_M = 1.0f;
 
     // Vectores de dirección para Box2D
     static constexpr float RIGHT_VECTOR_X = 1.0f;
@@ -70,8 +68,8 @@ private:
     std::vector<MapLayout::SpawnPointData> spawn_points;
     std::vector<int> player_order; // IDs de jugadores en orden de llegada
 
-    uint8_t map_id{0};  // 0=LibertyCity, 1=SanAndreas, 2=ViceCity
-    
+    uint8_t map_id{0}; // 0=LibertyCity, 1=SanAndreas, 2=ViceCity
+
     MapLayout map_layout;
     // Mapa de fixtures de checkpoints a sus índices
     std::unordered_map<b2Fixture *, int> checkpoint_fixtures;
@@ -85,35 +83,9 @@ private:
     void load_current_round_checkpoints();
 
     // ---------------- NPC Support ----------------
-    struct NPCData
-    {
-        b2Body *body{nullptr};
-        int npc_id{0};             // id negativo para el broadcast
-        int current_waypoint{0};   // último waypoint alcanzado
-        int target_waypoint{0};    // próximo waypoint objetivo
-        float speed_mps{0.0f};     // velocidad de movimiento en metros/segundo
-        bool is_parked{false};     // true = estacionado (cuerpo estático)
-        bool is_horizontal{false}; // true = orientado horizontalmente (solo para estacionados)
-        bool on_bridge = false;
-    };
-    std::vector<MapLayout::WaypointData> street_waypoints; // grafo de waypoints para navegación de NPCs
-    std::vector<NPCData> npcs;                             // lista activa de NPCs
-    std::atomic<bool> reset_accumulator{false};            // flag para resetear acumulador de física al iniciar
-    std::atomic<bool> pending_race_reset{false};           // flag para resetear la carrera fuera del callback de Box2D
-
-    // Crea el cuerpo de un NPC. Recibe coordenadas ya en metros (el JSON se convierte a metros en MapLayout).
-    b2Body *create_npc_body(float x_m, float y_m, bool is_static, float angle_rad = 0.0f);
-    void init_npcs(const std::vector<MapLayout::ParkedCarData> &parked_data);
-    void spawn_parked_npcs(const std::vector<MapLayout::ParkedCarData> &parked_data, int &next_negative_id);
-    void spawn_moving_npcs(const std::vector<MapLayout::ParkedCarData> &parked_data, int &next_negative_id);
-    std::vector<int> get_valid_waypoints_away_from_parked(const std::vector<MapLayout::ParkedCarData> &parked_data);
-    int select_closest_waypoint_connection(int start_waypoint_idx);
-    float calculate_initial_npc_angle(const b2Vec2 &spawn_pos, const b2Vec2 &target_pos) const;
-    NPCData create_moving_npc(int start_idx, int target_idx, float initial_angle, int &next_negative_id);
-    void update_npcs();
-    bool should_select_new_waypoint(NPCData &npc, const b2Vec2 &target_pos);
-    void select_next_waypoint(NPCData &npc, std::mt19937 &gen);
-    void move_npc_towards_target(NPCData &npc, const b2Vec2 &target_pos);
+    NPCManager npc_manager;
+    std::atomic<bool> reset_accumulator{false};  // flag para resetear acumulador de física al iniciar
+    std::atomic<bool> pending_race_reset{false}; // flag para resetear la carrera fuera del callback de Box2D
 
     CheckpointContactListener contact_listener;
 
@@ -123,7 +95,6 @@ private:
     void broadcast_positions(ServerMessage &msg);
     void update_player_positions(std::vector<PlayerPositionUpdate> &broadcast);
     void add_player_to_broadcast(std::vector<PlayerPositionUpdate> &broadcast, int player_id, PlayerData &player_data);
-    void add_npc_to_broadcast(std::vector<PlayerPositionUpdate> &broadcast, NPCData &npc);
     void update_body_positions();
 
     // Helpers usados por el contact listener

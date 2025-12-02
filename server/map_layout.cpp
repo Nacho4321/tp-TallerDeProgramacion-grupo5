@@ -1,7 +1,6 @@
 #include "map_layout.h"
 #include <fstream>
 #include <iostream>
-#include "../common/constants.h"
 #define MAP_WIDTH (4640.0f / 32.0f)
 #define MAP_HEIGHT (4672.0f / 32.0f)
 #define SCALE 32.0f
@@ -24,33 +23,12 @@ void MapLayout::create_map_layout(const std::string &jsonPath)
         {
             continue;
         }
-
-        uint16_t category = 0;
-        if (layer[NAME_STR] == LAYER_COLLISIONS_STR)
-        {
-            category = COLLISION_FLOOR;
-        }
-        if (layer[NAME_STR] == LAYER_COLLISIONS_BRIDGE_STR)
-        {
-            category = COLLISION_BRIDGE;
-        }
-        if (layer[NAME_STR] == LAYER_END_BRIDGE_STR)
-        {
-            category = SENSOR_END_BRIDGE;
-        }
-        if (layer[NAME_STR] == LAYER_COLLISIONS_UNDER_STR)
-        {
-            category = COLLISION_UNDER; // cosas que no son puente pero estan por arriba
-        }
-        if (layer[NAME_STR] == LAYER_START_BRIDGE_STR)
-        {
-            category = SENSOR_START_BRIDGE;
-        }
-
-        if (category == 0)
+        auto layer_category = collisions_byte_map.find(layer[NAME_STR]);
+        if (layer_category->first.empty())
         {
             continue;
         }
+        uint16_t category = layer_category->second;
         for (auto &obj : layer[OBJECTS_STR])
         {
 
@@ -139,7 +117,6 @@ void MapLayout::get_parked_cars(const std::string &json_path_parked, std::vector
     nlohmann::json root;
     file_parked >> root;
 
-    // Buscar la capa "parked_cars" dentro de "layers"
     if (root.contains(LAYERS_STR))
     {
         for (auto &layer : root[LAYERS_STR])
@@ -157,13 +134,12 @@ void MapLayout::get_parked_cars(const std::string &json_path_parked, std::vector
 
                         pc.position.Set(px, py);
 
-                        // Buscar "horizontal" en properties
-                        pc.horizontal = false; // valor por defecto
+                        pc.horizontal = false;
                         if (item.contains("properties") && !item["properties"].empty())
                         {
                             for (auto &prop : item["properties"])
                             {
-                                if (prop.contains("name") && prop["name"] == "horizontal")
+                                if (prop.contains(NAME_STR) && prop[NAME_STR] == HORIZONTAL_STR)
                                 {
                                     pc.horizontal = prop["value"].get<bool>();
                                     break;
@@ -213,7 +189,7 @@ void MapLayout::get_npc_waypoints(const std::string &json_path_wp, std::vector<W
                         {
                             for (auto &prop : obj["properties"])
                             {
-                                if (prop["name"] == "connections")
+                                if (prop[NAME_STR] == "connections")
                                 {
                                     std::string conexiones = prop["value"].get<std::string>();
                                     std::vector<std::string> lista = split(conexiones, ",");
@@ -222,17 +198,16 @@ void MapLayout::get_npc_waypoints(const std::string &json_path_wp, std::vector<W
                                         wp.connections.push_back(std::stoi(s));
                                     }
                                 }
-                                else if (prop["name"] == "id")
+                                else if (prop[NAME_STR] == "id")
                                 {
                                     id = prop["value"].get<int>();
                                 }
                             }
                         }
 
-                        // Extraer ID del nombre si no hay property "id"
                         if (id == -1)
                         {
-                            std::string name = obj["name"].get<std::string>();
+                            std::string name = obj[NAME_STR].get<std::string>();
                             size_t pos = name.find("_");
                             if (pos != std::string::npos)
                             {
@@ -247,19 +222,15 @@ void MapLayout::get_npc_waypoints(const std::string &json_path_wp, std::vector<W
         }
     }
 
-    // Encontrar el ID máximo
     int max_id = 0;
     for (const auto &p : temp)
     {
         if (p.first > max_id)
             max_id = p.first;
     }
-
-    // Crear vector del tamaño necesario
     npc_waypoints.clear();
     npc_waypoints.resize(max_id + 1);
 
-    // Colocar cada waypoint en su posición según su ID
     for (const auto &p : temp)
     {
         npc_waypoints[p.first] = p.second;
@@ -327,8 +298,6 @@ void MapLayout::extract_spawn_points(const std::string &jsonPath, std::vector<Sp
         if (obj.contains("angle"))
             angle = obj["angle"].get<float>();
 
-        // Optional units conversion: by default assume pixels (same as built-in array).
-        // If entry sets "units":"meters" then convert to pixel space.
         std::string units = "pixels";
         if (obj.contains("units") && obj["units"].is_string())
             units = obj["units"].get<std::string>();
@@ -338,8 +307,6 @@ void MapLayout::extract_spawn_points(const std::string &jsonPath, std::vector<Sp
             y *= SCALE;
         }
 
-        // Apply same OFFSET used in map layout if caller provided raw map editor coordinates without offset.
-        // We only apply offset if field "raw": true OR an explicit flag "apply_offset": true.
         bool apply_offset = false;
         if (obj.contains("raw") && obj["raw"].is_boolean() && obj["raw"].get<bool>() == true)
             apply_offset = true;
@@ -347,7 +314,6 @@ void MapLayout::extract_spawn_points(const std::string &jsonPath, std::vector<Sp
             apply_offset = true;
         if (apply_offset)
         {
-            // OFFSET_X/Y definen traslación en PIXELES, así que sumamos directamente.
             x += OFFSET_X;
             y += OFFSET_Y;
         }
@@ -358,8 +324,6 @@ void MapLayout::extract_spawn_points(const std::string &jsonPath, std::vector<Sp
         sp.angle = angle;
         out.push_back(sp);
     }
-
-    std::cout << "[MapLayout] Loaded " << out.size() << " spawn points from " << jsonPath << std::endl;
 }
 
 void MapLayout::create_polygon_layout(const std::vector<b2Vec2> &vertices, uint16_t category)

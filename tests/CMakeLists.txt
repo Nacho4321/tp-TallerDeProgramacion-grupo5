@@ -23,6 +23,7 @@ target_sources(taller_tests
     ${CMAKE_SOURCE_DIR}/server/eventloop.cpp
     ${CMAKE_SOURCE_DIR}/server/car_physics_config.cpp
     ${CMAKE_SOURCE_DIR}/server/eventDispatcher.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop/npc/npc_manager.cpp
 
     PUBLIC
     # .h files
