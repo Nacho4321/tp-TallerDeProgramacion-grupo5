@@ -4,13 +4,13 @@
 #include <box2d/b2_body.h>
 #include <chrono>
 
-// Contadores de niveles de mejora (0 = sin mejora, max 3)
+// Niveles de mejora por stat (0 = sin mejora, máx 3)
 struct UpgradeLevels
 {
-    uint8_t speed = 0;        // Nivel de mejora de velocidad máxima
-    uint8_t acceleration = 0; // Nivel de mejora de aceleración
-    uint8_t handling = 0;     // Nivel de mejora de manejo (torque)
-    uint8_t durability = 0;   // Nivel de mejora de durabilidad
+    uint8_t speed = 0;
+    uint8_t acceleration = 0;
+    uint8_t handling = 0;
+    uint8_t durability = 0;
 };
 
 struct CarInfo
@@ -19,8 +19,8 @@ struct CarInfo
     float speed;
     float acceleration;
     float hp;
-    float durability;  // collision_damage_multiplier
-    float handling;    // torque
+    float durability;
+    float handling;  
 };
 
 struct PlayerData
@@ -28,15 +28,14 @@ struct PlayerData
     b2Body *body;
     std::string state;
     CarInfo car;
+    UpgradeLevels upgrades;  // Contadores de niveles de mejora
     Position position;
     UpgradeLevels upgrades;  // Niveles de mejora aplicados
     // Indice del próximo checkpoint que el jugador debe pasar (empieza en 0)
     int next_checkpoint = 0;
-    // Cuántas vueltas completas (listas de checkpoints) el jugador ha completado
-    int laps_completed = 0;
-    // Tiempo de inicio de la vuelta actual
+    // Tiempo de inicio de la ronda actual
     std::chrono::steady_clock::time_point lap_start_time;
-    // Si el jugador ya completó la carrera (esperando a que otros terminen)
+    // Si el jugador ya completó la ronda actual (esperando a que otros terminen)
     bool race_finished = false;
     // Si el jugador murió (HP <= 0)
     bool is_dead = false;
@@ -55,5 +54,11 @@ struct PlayerData
     bool disqualified = false;
     // Flag de frenazo 
     bool is_stopping = false;
+    // Cheat: modo dios (vida infinita)
+    bool god_mode = false;
+    // Cheat: pendiente de descalificación (procesado por gameloop)
+    bool pending_disqualification = false;
+    // Cheat: pendiente de completar ronda (procesado por gameloop)
+    bool pending_race_complete = false;
 };
 #endif

@@ -156,6 +156,48 @@ ClientMessage Protocol::receiveChangeCar()
     return msg;
 }
 
+ClientMessage Protocol::receiveUpgradeCar()
+{
+    ClientMessage msg;
+    msg.cmd = "upgrade_car";
+    readClientIds(msg);
+    // Leer upgrade_type 
+    uint8_t upgrade_byte;
+    if (skt.recvall(&upgrade_byte, sizeof(upgrade_byte)) <= 0)
+        return msg;
+    msg.upgrade_type = static_cast<CarUpgrade>(upgrade_byte);
+    msg.cmd = std::string("upgrade_car") + " " + std::to_string(upgrade_byte);
+    return msg;
+}
+
+ClientMessage Protocol::receiveCheat()
+{
+    ClientMessage msg;
+    msg.cmd = "cheat";
+    readClientIds(msg);
+    // Leer cheat_type
+    uint8_t cheat_byte;
+    if (skt.recvall(&cheat_byte, sizeof(cheat_byte)) <= 0)
+        return msg;
+    msg.cheat_type = static_cast<CheatType>(cheat_byte);
+    // Construir cmd con el tipo de cheat para el dispatcher
+    switch (msg.cheat_type) {
+        case CheatType::GOD_MODE:
+            msg.cmd = CHEAT_GOD_MODE_STR;
+            break;
+        case CheatType::DIE:
+            msg.cmd = CHEAT_DIE_STR;
+            break;
+        case CheatType::SKIP_LAP:
+            msg.cmd = CHEAT_SKIP_LAP_STR;
+            break;
+        case CheatType::FULL_UPGRADE:
+            msg.cmd = CHEAT_FULL_UPGRADE_STR;
+            break;
+    }
+    return msg;
+}
+
 ServerMessage Protocol::receivePositionsUpdate()
 {
     ServerMessage msg;
@@ -273,6 +315,16 @@ ServerMessage Protocol::receivePositionsUpdate()
         if (skt.recvall(&stopping_byte, sizeof(stopping_byte)) <= 0)
             return msg;
         update.is_stopping = (stopping_byte != 0);
+        
+        // Leer niveles de mejora 
+        uint8_t upgrade_bytes[4];
+        if (skt.recvall(upgrade_bytes, sizeof(upgrade_bytes)) <= 0)
+            return msg;
+        update.upgrade_speed = upgrade_bytes[0];
+        update.upgrade_acceleration = upgrade_bytes[1];
+        update.upgrade_handling = upgrade_bytes[2];
+        update.upgrade_durability = upgrade_bytes[3];
+        
         msg.positions.push_back(update);
     }
 

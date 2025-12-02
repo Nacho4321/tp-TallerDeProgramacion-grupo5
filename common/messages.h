@@ -44,6 +44,12 @@ struct PlayerPositionUpdate
     uint8_t upgrade_durability = 0;
     // Flag de frenazo 
     bool is_stopping = false;
+    
+    // Niveles de mejora
+    uint8_t upgrade_speed = 0;
+    uint8_t upgrade_acceleration = 0;
+    uint8_t upgrade_handling = 0;
+    uint8_t upgrade_durability = 0;
 };
 
 // Mensaje unificado del servidor: puede ser una actualización de posiciones
@@ -100,5 +106,9 @@ struct ClientMessage
     std::string game_name;
     // Tipo de auto solicitado en un cambio de auto (solo si cmd comienza con CHANGE_CAR_STR)
     std::string car_type;
+    // Mejora solicitada
+    CarUpgrade upgrade_type = CarUpgrade::ACCELERATION_BOOST;
+    // Cheat solicitado
+    CheatType cheat_type = CheatType::GOD_MODE;
 };
 #endif

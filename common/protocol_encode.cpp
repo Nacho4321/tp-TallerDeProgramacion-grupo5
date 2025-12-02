@@ -19,6 +19,18 @@ std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage &msg
     {
         opcode = CHANGE_CAR;
     }
+    else if (cmd.rfind(UPGRADE_CAR_STR, 0) == 0)
+    {
+        opcode = UPGRADE_CAR;
+        std::cout << "[Protocol(Client)] Encoding UPGRADE_CAR with upgrade_type=" << static_cast<int>(msg.upgrade_type) << std::endl;
+    }
+    // Cheats - todos mapean al mismo opcode CHEAT_CMD
+    else if (cmd == CHEAT_GOD_MODE_STR || cmd == CHEAT_DIE_STR || 
+             cmd == CHEAT_SKIP_LAP_STR || cmd == CHEAT_FULL_UPGRADE_STR)
+    {
+        opcode = CHEAT_CMD;
+        std::cout << "[Protocol(Client)] Encoding CHEAT_CMD type=" << static_cast<int>(msg.cheat_type) << std::endl;
+    }
     else
     {
         // Búsqueda directa en el mapa
@@ -61,6 +73,14 @@ std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage &msg
         insertUint16(len);
         for (char c : msg.car_type)
             buffer.push_back(static_cast<uint8_t>(c));
+    }
+    else if (opcode == UPGRADE_CAR)
+    {
+        buffer.push_back(static_cast<uint8_t>(msg.upgrade_type));
+    }
+    else if (opcode == CHEAT_CMD)
+    {
+        buffer.push_back(static_cast<uint8_t>(msg.cheat_type));
     }
     return buffer;
 }
@@ -131,6 +151,12 @@ std::vector<std::uint8_t> Protocol::encodeServerMessage(ServerMessage &out)
             buffer.push_back(pos_update.upgrade_durability);
             // Enviar is_stopping (frenazo)
             buffer.push_back(pos_update.is_stopping ? 1 : 0);
+            
+            // Enviar niveles de mejora 
+            buffer.push_back(pos_update.upgrade_speed);
+            buffer.push_back(pos_update.upgrade_acceleration);
+            buffer.push_back(pos_update.upgrade_handling);
+            buffer.push_back(pos_update.upgrade_durability);
         }
         return buffer;
     }
