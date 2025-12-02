@@ -128,28 +128,20 @@ void LobbyHandler::join_game(ClientHandlerMessage &message)
 
 void LobbyHandler::get_games(ClientHandlerMessage &message)
 {
-    std::cout << "[LobbyHandler] get_games() llamado por cliente " << message.client_id << std::endl;
     (void)message;
     ServerMessage resp;
     resp.opcode = GAMES_LIST;
     resp.games = games_monitor.list_games();
-    std::cout << "[LobbyHandler] Enviando GAMES_LIST con " << resp.games.size() << " partidas" << std::endl;
     auto client_queue = message.outbox;
     if (client_queue)
     {
         try
         {
             client_queue->push(resp);
-            std::cout << "[LobbyHandler] GAMES_LIST pusheado a outbox del cliente" << std::endl;
         }
         catch (const ClosedQueue &)
-        {
-            std::cerr << "[LobbyHandler] ERROR: Cola cerrada al enviar GAMES_LIST" << std::endl;
+        { /* Cola cerrada */
         }
-    }
-    else
-    {
-        std::cerr << "[LobbyHandler] ERROR: outbox es nullptr en get_games" << std::endl;
     }
 }
 

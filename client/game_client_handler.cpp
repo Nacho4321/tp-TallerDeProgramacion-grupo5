@@ -89,20 +89,15 @@ bool GameClientHandler::join_game_blocking(int32_t game_id_to_join, uint32_t& ou
 
 std::vector<ServerMessage::GameSummary> GameClientHandler::get_games_blocking() {
     std::vector<ServerMessage::GameSummary> games;
-    std::cout << "[Handler] Enviando GET_GAMES..." << std::endl;
     send(GET_GAMES_STR);
     
     try {
-        std::cout << "[Handler] Esperando respuesta GAMES_LIST..." << std::endl;
         ServerMessage resp = incoming.pop();
-        std::cout << "[Handler] Recibido opcode: 0x" << std::hex << (int)resp.opcode << std::dec << std::endl;
         
         if (resp.opcode != GAMES_LIST) {
-            std::cerr << "[Handler] ERROR: Esperaba GAMES_LIST (0x14) pero recibí 0x" << std::hex << (int)resp.opcode << std::dec << std::endl;
             return games;
         }
         
-        std::cout << "[Handler] GAMES_LIST recibido con " << resp.games.size() << " partidas" << std::endl;
         return resp.games;
     } catch (const ClosedQueue& e) {
         std::cerr << "[Handler] ERROR: Cola cerrada antes de recibir GAMES_LIST" << std::endl;

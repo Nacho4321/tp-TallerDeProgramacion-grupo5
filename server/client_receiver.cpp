@@ -6,16 +6,13 @@ ClientReceiver::ClientReceiver(Protocol &proto, int id, LobbyHandler &msg_admin,
 
 void ClientReceiver::run()
 {
-    std::cout << "[ClientReceiver(Server)] Hilo receiver iniciado para cliente " << client_id << std::endl;
     try
     {
         while (should_keep_running())
         {
             ClientMessage client_msg = protocol.receiveClientMessage();
-            std::cout << "[ClientReceiver(Server)] Cliente " << client_id << " envió cmd: '" << client_msg.cmd << "'" << std::endl;
             if (client_msg.cmd.empty())
             {
-                std::cout << "[ClientReceiver(Server)] Terminando receiver de cliente " << client_id << std::endl;
                 ClientHandlerMessage leave_msg;
                 leave_msg.client_id = client_id;
                 leave_msg.msg.cmd = LEAVE_GAME_STR; 

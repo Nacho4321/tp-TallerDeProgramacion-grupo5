@@ -5,15 +5,12 @@ GameClientSender::GameClientSender(Protocol& proto, Queue<std::string>& messages
     protocol(proto), outgoing_messages(messages) {}
 
 void GameClientSender::run() {
-    std::cout << "[GameClientSender] Hilo sender iniciado" << std::endl;
     try {
         while (should_keep_running()) {
             std::string msg;
             try {
                 msg = outgoing_messages.pop();
-                std::cout << "[GameClientSender] Mensaje a enviar: '" << msg << "'" << std::endl;
             } catch (const ClosedQueue&) {
-                std::cout << "[GameClientSender] Cola cerrada, saliendo" << std::endl;
                 break;
             }
             if (!should_keep_running()) break;
@@ -87,9 +84,7 @@ void GameClientSender::run() {
             if (client_msg.cmd == GET_GAMES_STR) {
                 // no payload extra
             }
-            std::cout << "[GameClientSender] Enviando mensaje cmd='" << client_msg.cmd << "'..." << std::endl;
             protocol.sendMessage(client_msg);
-            std::cout << "[GameClientSender] Mensaje enviado OK" << std::endl;
         }
     } catch (const std::exception& e) {
         std::cerr << "[Game Client Sender] Exception: " << e.what() << std::endl;
