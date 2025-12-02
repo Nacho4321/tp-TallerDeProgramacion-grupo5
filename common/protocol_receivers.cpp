@@ -97,7 +97,6 @@ ClientMessage Protocol::receiveCreateGame()
             msg.game_name.assign(reinterpret_cast<char *>(nameBuf.data()), nameBuf.size());
         }
     }
-    // Leer map_id (1 byte)
     uint8_t map_id_buf = 0;
     if (skt.recvall(&map_id_buf, 1) > 0)
     {
@@ -332,7 +331,7 @@ ServerMessage Protocol::receiveGamesList()
         ServerMessage::GameSummary summary{};
         summary.game_id = exportUint32(readBuffer, j);
         summary.player_count = exportUint32(readBuffer, j);
-        summary.map_id = readBuffer[j++];  // Leer map_id (1 byte)
+        summary.map_id = readBuffer[j++];
         uint16_t nameLen = exportUint16(readBuffer, j);
         if (nameLen > 0)
         {

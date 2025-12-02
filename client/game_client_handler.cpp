@@ -50,7 +50,6 @@ bool GameClientHandler::create_game_blocking(uint32_t& out_game_id, uint32_t& ou
         send("create_game " + game_name + "|" + std::to_string(map_id));
     }
     
-    std::cout << "[Handler] CREATE_GAME enviado (map_id=" << int(map_id) << "), esperando respuesta..." << std::endl;
     try {
         ServerMessage resp = join_results.pop(); // bloquea hasta respuesta
         if (resp.opcode != GAME_JOINED) {

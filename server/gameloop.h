@@ -33,7 +33,6 @@ private:
     };
 
     b2World world{b2Vec2(0.0f, 0.0f)};
-    uint8_t map_id_{0};  // ID del mapa (0=LibertyCity, 1=SanAndreas, 2=ViceCity)
     mutable std::mutex players_map_mutex;
     std::unordered_map<int, PlayerData> players;
     std::unordered_map<int, std::shared_ptr<Queue<ServerMessage>>> players_messanger;
@@ -79,8 +78,11 @@ private:
 
     // ----- Multi-race support (3 carreras en mismo mapa con distintos recorridos) -----
     int current_round{0}; // 0..2
-    // Archivos de recorridos (se inicializan en el constructor según map_id_)
-    std::array<std::string, 3> checkpoint_sets;
+    // Archivos de recorridos que existen en data/
+    std::array<std::string, 3> checkpoint_sets{
+        "data/cities/base_liberty_city_checkpoints_race_1.json",
+        "data/cities/base_liberty_city_checkpoints_race_2.json",
+        "data/cities/base_liberty_city_checkpoints_race_3.json"};
     void load_current_round_checkpoints();
 
     // ---------------- NPC Support ----------------

@@ -43,14 +43,13 @@ void GameClientSender::run() {
                 size_t sp = client_msg.cmd.find(' ');
                 if (sp != std::string::npos && sp + 1 < client_msg.cmd.size()) {
                     std::string payload = client_msg.cmd.substr(sp + 1);
-                    // Buscar separador | para extraer map_id
                     size_t pipe_pos = payload.find('|');
                     if (pipe_pos != std::string::npos) {
                         client_msg.game_name = payload.substr(0, pipe_pos);
                         try {
                             client_msg.map_id = static_cast<uint8_t>(std::stoi(payload.substr(pipe_pos + 1)));
                         } catch (...) {
-                            client_msg.map_id = 0; // Default: Liberty City
+                            client_msg.map_id = 0;
                         }
                     } else {
                         client_msg.game_name = payload;

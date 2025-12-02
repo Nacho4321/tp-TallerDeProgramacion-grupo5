@@ -128,7 +128,6 @@ void NewGameWindow::updateMapDisplay() {
     
     ui->mapNameLabel->setText(QString::fromUtf8(MAP_NAMES[currentMapIndex_]));
     
-    // Construir path dinámicamente como en CarSelectionDialog
     static const char* mapFiles[] = {"liberty_city", "san_andreas", "vice_city"};
     QString imagePath = QString(":/img/%1.png").arg(mapFiles[currentMapIndex_]);
     QPixmap pixmap(imagePath);

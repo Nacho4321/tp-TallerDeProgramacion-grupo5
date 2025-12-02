@@ -71,7 +71,7 @@ void MessageHandler::create_game(ClientHandlerMessage &message)
     response.game_id = static_cast<uint32_t>(game_id);
     response.player_id = static_cast<uint32_t>(message.client_id);
     response.success = true;
-    response.map_id = message.msg.map_id;  // Incluir el mapa seleccionado
+    response.map_id = message.msg.map_id; 
     
     std::cout << "[MessageHandler] Enviando respuesta: game_id=" << game_id 
               << " player_id=" << message.client_id 
@@ -108,7 +108,7 @@ void MessageHandler::join_game(ClientHandlerMessage &message)
         response.game_id = static_cast<uint32_t>(message.msg.game_id);
         response.player_id = static_cast<uint32_t>(message.client_id);
         response.success = true;
-        response.map_id = games_monitor.get_game_map_id(message.msg.game_id);  // Obtener el mapa de la partida
+        response.map_id = games_monitor.get_game_map_id(message.msg.game_id);
     } catch (...) {
         // Fallo al unirse (juego no existe u otro error)
         response.opcode = GAME_JOINED;

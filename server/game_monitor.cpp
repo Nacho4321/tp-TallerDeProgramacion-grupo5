@@ -95,7 +95,7 @@ uint8_t GameMonitor::get_game_map_id(int game_id) {
     if (it != game_maps.end()) {
         return it->second;
     }
-    return 0;  // Default: Liberty City
+    return 0; 
 }
 
 GameMonitor::~GameMonitor()
