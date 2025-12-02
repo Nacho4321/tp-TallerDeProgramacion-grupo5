@@ -24,9 +24,6 @@ std::string EditorConfig::findConfigFile() const {
 
 bool EditorConfig::loadFromFile(const std::string& configPath) {
     try {
-        std::cout << "[EditorConfig] Using DATA_DIR: " << DATA_DIR << std::endl;
-        std::cout << "[EditorConfig] Using CONFIG_DIR: " << CONFIG_DIR << std::endl;
-
         std::string actualPath = configPath.empty() ? findConfigFile() : configPath;
 
         if (actualPath.empty()) {

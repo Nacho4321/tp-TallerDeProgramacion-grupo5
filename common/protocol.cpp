@@ -114,12 +114,6 @@ bool Protocol::receiveAnyServerPacket(ServerMessage& outServer,
                                       uint8_t& outOpcode) {
     ssize_t recv_result = skt.recvall(&outOpcode, sizeof(outOpcode));
     if (recv_result <= 0) {
-        if (recv_result == 0) {
-            std::cout << "[Protocol] receiveAnyServerPacket: conexión cerrada por el servidor (recv=0)" << std::endl;
-        } else {
-            std::cout << "[Protocol] receiveAnyServerPacket: error en recv, errno=" << errno 
-                      << " (" << strerror(errno) << ")" << std::endl;
-        }
         return false;
     }
     

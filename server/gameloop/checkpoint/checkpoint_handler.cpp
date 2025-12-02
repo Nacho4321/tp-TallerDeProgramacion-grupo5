@@ -35,9 +35,6 @@ void CheckpointHandler::setup_checkpoints_from_file(
         b2Fixture *fixture = checkpoint_body->CreateFixture(&fd);
         checkpoint_fixtures[fixture] = static_cast<int>(i);
     }
-
-    std::cout << "[CheckpointHandler] Created " << checkpoint_centers.size()
-              << " checkpoint sensors (from " << json_path << ")." << std::endl;
 }
 
 void CheckpointHandler::load_round_checkpoints(
@@ -62,7 +59,6 @@ void CheckpointHandler::load_round_checkpoints(
 
     std::string json_path = checkpoint_sets[current_round];
     setup_checkpoints_from_file(json_path, world, map_layout, checkpoint_centers, checkpoint_fixtures);
-    std::cout << "[CheckpointHandler] Round " << current_round + 1 << " loaded checkpoints from: " << json_path << std::endl;
 }
 
 int CheckpointHandler::find_player_by_body(
@@ -103,7 +99,6 @@ bool CheckpointHandler::is_valid_checkpoint_collision(
 
 bool CheckpointHandler::handle_checkpoint_reached(
     PlayerData &player_data,
-    int player_id,
     int checkpoint_index,
     int total_checkpoints)
 {
@@ -123,9 +118,6 @@ bool CheckpointHandler::handle_checkpoint_reached(
     else
     {
         player_data.next_checkpoint = new_next;
-
-        std::cout << "[CheckpointHandler] Player " << player_id << " passed checkpoint "
-                  << checkpoint_index << " next=" << player_data.next_checkpoint << std::endl;
         return false;
     }
 }

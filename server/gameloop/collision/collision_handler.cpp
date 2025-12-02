@@ -43,8 +43,7 @@ float CollisionHandler::calculate_frontal_multiplier(const b2Vec2 &vel_a, const 
 bool CollisionHandler::process_player_collision_damage(
     b2Body *player_body,
     b2Body *other_body,
-    std::unordered_map<int, PlayerData> &players,
-    const std::string &collision_type)
+    std::unordered_map<int, PlayerData> &players)
 {
     int player_id = find_player_by_body(player_body, players);
     if (player_id == -1)
@@ -60,12 +59,7 @@ bool CollisionHandler::process_player_collision_damage(
     float impact_velocity = relative_vel.Length();
 
     float frontal_multiplier = calculate_frontal_multiplier(vel_player, vel_other);
-
-    std::cout << "[Collision] " << collision_type
-              << " | Player " << player_id
-              << " | Impact: " << impact_velocity << " m/s" << std::endl;
-
-    return apply_collision_damage(it->second, player_id, impact_velocity, it->second.car.car_name, frontal_multiplier);
+    return apply_collision_damage(it->second, impact_velocity, frontal_multiplier);
 }
 
 bool CollisionHandler::handle_car_collision(
@@ -122,7 +116,7 @@ bool CollisionHandler::handle_car_collision(
     // Aplicar daño para el jugador A si es un jugador
     if (a_is_player)
     {
-        if (process_player_collision_damage(body_a, body_b, players, collision_type_a))
+        if (process_player_collision_damage(body_a, body_b, players))
             any_death = true;
     }
 
@@ -130,7 +124,7 @@ bool CollisionHandler::handle_car_collision(
     if (b_is_player && (!a_is_player || !b_is_player))
     {
         // Solo log si no es player vs player (evitar doble log)
-        if (process_player_collision_damage(body_b, body_a, players, collision_type_b))
+        if (process_player_collision_damage(body_b, body_a, players))
             any_death = true;
     }
     else if (b_is_player && a_is_player)
@@ -148,8 +142,8 @@ bool CollisionHandler::handle_car_collision(
                 float impact_velocity = relative_vel.Length();
                 float frontal_multiplier = calculate_frontal_multiplier(vel_a, vel_b);
 
-                if (apply_collision_damage(it_b->second, player_b_id, impact_velocity, 
-                                       it_b->second.car.car_name, frontal_multiplier))
+                if (apply_collision_damage(it_b->second, impact_velocity, 
+                                         frontal_multiplier))
                     any_death = true;
             }
         }
@@ -160,17 +154,11 @@ bool CollisionHandler::handle_car_collision(
 
 bool CollisionHandler::apply_collision_damage(
     PlayerData &player_data,
-    int player_id,
     float impact_velocity,
-    const std::string &car_name,
     float frontal_multiplier)
 {
-    (void)player_id; // Usado para logging en versiones anteriores
-    (void)car_name;  // Usado para logging
-
-    if (player_data.is_dead)
-        return false;
-
+    if (player_data.is_dead){ return false; }
+        
     // Usar durability del player (upgradeada)
     float durability = player_data.car.durability;
 
@@ -179,7 +167,7 @@ bool CollisionHandler::apply_collision_damage(
     float damage = impact_velocity * durability * frontal_multiplier * 0.1f;
 
     // Solo aplico daño si es significativo
-    if (damage < 0.5f)
+    if (damage < MIN_COLLISION_DAMAGE)
         return false;
 
     player_data.car.hp -= damage;
@@ -203,8 +191,8 @@ void CollisionHandler::disqualify_player(PlayerData &player_data)
     player_data.disqualified = true;
     player_data.god_mode = false;
 
-    // Asignar tiempo de descalificación: 10 minutos
-    uint32_t dq_ms = 10u * 60u * 1000u;
+    // Asignar tiempo de descalificación: 10 minutos (mismo que timeout de ronda)
+    uint32_t dq_ms = ROUND_TIME_LIMIT_MS;
     int round_idx = player_data.rounds_completed;
     if (round_idx >= 0 && round_idx < TOTAL_ROUNDS)
     {

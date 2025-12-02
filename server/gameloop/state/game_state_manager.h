@@ -13,49 +13,49 @@ public:
 
     GameStateManager();
 
-    // State queries
+    // Getters de estado
     GameState get_state() const { return game_state; }
     bool is_joinable() const { return game_state == GameState::LOBBY; }
     bool is_playing() const { return game_state == GameState::PLAYING; }
     bool is_starting() const { return game_state == GameState::STARTING; }
 
-    // State transitions
+    // Trancisiones de estado
     void transition_to_lobby();
     void transition_to_starting(int countdown_seconds);
     void transition_to_playing();
 
-    // Called each frame to check if countdown finished
+    // Llamado cada frame para verificar si el countdown terminó
     bool check_and_finish_starting();
 
-    // Callbacks for when transitions happen
+    // Callbacks para cuando ocurren transiciones
     void set_on_playing_callback(TransitionCallback callback) { on_playing_callback = callback; }
     void set_on_starting_callback(TransitionCallback callback) { on_starting_callback = callback; }
 
-    // Reset accumulator flag (for physics reset on game start)
+    // Resetear acumulador de física
     bool should_reset_accumulator();
     void request_accumulator_reset() { reset_accumulator.store(true); }
 
-    // Race reset flag
+    // Flag de reinicio de carrera
     std::atomic<bool> &get_pending_race_reset() { return pending_race_reset; }
 
-    // Round timeout tracking
+    // Seguimiento del tiempo límite de la ronda
     std::chrono::steady_clock::time_point &get_round_start_time() { return round_start_time; }
     bool &get_round_timeout_checked() { return round_timeout_checked; }
 
 private:
     GameState game_state;
     
-    // Starting countdown
+    // Countdown de inicio
     std::chrono::steady_clock::time_point starting_deadline{};
     bool starting_active{false};
     
-    // Physics accumulator reset
+    // Resetear acumulador de física
     std::atomic<bool> reset_accumulator{false};
     
-    // Race reset flag
+    // Flag de reinicio de carrera
     std::atomic<bool> pending_race_reset{false};
     
-    // Round timeout
+    // Seguimiento del tiempo límite de la ronda
     std::chrono::steady_clock::time_point round_start_time{};
     bool round_timeout_checked{false};
 

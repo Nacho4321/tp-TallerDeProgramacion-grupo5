@@ -46,7 +46,6 @@ public:
     // Retorna true si el jugador completó la vuelta
     static bool handle_checkpoint_reached(
         PlayerData &player_data,
-        int player_id,
         int checkpoint_index,
         int total_checkpoints);
 

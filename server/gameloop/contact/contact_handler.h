@@ -23,7 +23,7 @@ public:
         std::atomic<bool> &pending_race_reset,
         std::function<GameState()> get_state);
 
-    // Main contact handler - called by Box2D
+    // Main contact handler - llamado por Box2D
     void handle_begin_contact(b2Fixture *fixture_a, b2Fixture *fixture_b);
 
 private:

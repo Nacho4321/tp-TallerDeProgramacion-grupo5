@@ -12,6 +12,7 @@
 #include "../world/world_manager.h"
 #include "../../../common/messages.h"
 #include "../../../common/queue.h"
+#include "../gameloop_constants.h"
 
 class PlayerManager
 {
@@ -24,18 +25,18 @@ public:
         WorldManager &world_manager,
         CarPhysicsConfig &physics_config);
 
-    // Player lifecycle
+    // Ciclo de vida del player
     void add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_outbox,
                     const std::vector<MapLayout::SpawnPointData> &spawn_points);
     void remove_player(int client_id, GameState game_state,
                        const std::vector<MapLayout::SpawnPointData> &spawn_points);
 
-    // Queries
+    // Consultas
     bool has_player(int client_id) const;
     size_t get_player_count() const;
     bool can_add_player(const std::vector<MapLayout::SpawnPointData> &spawn_points) const;
 
-    // Position updates
+    // Actualizaciones de posición
     void update_body_positions();
     void update_player_positions(std::vector<PlayerPositionUpdate> &broadcast,
                                  const std::vector<b2Vec2> &checkpoint_centers);
@@ -52,7 +53,7 @@ private:
     WorldManager &world_manager;
     CarPhysicsConfig &physics_config;
 
-    // Internal helpers
+    // Helpers internos
     int add_player_to_order(int player_id);
     void remove_from_player_order(int client_id);
     PlayerData create_default_player_data(int spawn_idx,
@@ -62,9 +63,7 @@ private:
                                  int player_id, PlayerData &player_data,
                                  const std::vector<b2Vec2> &checkpoint_centers);
 
-    static constexpr int CHECKPOINT_LOOKAHEAD = 3;
-    static constexpr float SCALE = 32.0f;
-    static constexpr const char *FULL_LOBBY_MSG = "can't join lobby, maximum players reached";
+
 };
 
 #endif 

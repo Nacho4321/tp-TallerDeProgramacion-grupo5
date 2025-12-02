@@ -9,7 +9,6 @@ void GameLoop::run()
     auto last_tick = std::chrono::steady_clock::now();
     float acum = 0.0f;
 
-    // Setup callbacks for state transitions
     state_manager.set_on_starting_callback([this]() {
         ServerMessage msg;
         msg.opcode = STARTING_COUNTDOWN;
@@ -50,8 +49,6 @@ void GameLoop::run()
 
 void GameLoop::perform_race_reset()
 {
-    // Evitar realizar operaciones pesadas (destroy/recreate bodies, reload checkpoints)
-    // bajo el lock del mapa de jugadores. Primero chequeamos el flag y salimos del lock.
     bool do_reset = false;
     {
         std::lock_guard<std::mutex> lk(players_map_mutex);
@@ -72,12 +69,10 @@ void GameLoop::perform_race_reset()
 
 void GameLoop::advance_round_or_reset_to_lobby()
 {
-    // Nueva política: NO volver a LOBBY entre rondas.
     // Avanzar de ronda (o reiniciar campeonato) y entrar directamente en STARTING (cuenta regresiva) automáticamente.
     if (current_round < 2)
     {
         current_round++;
-        std::cout << "[GameLoop] Advancing to round " << (current_round + 1) << " of 3 (auto STARTING)" << std::endl;
 
         // Preparar siguiente ronda: recargar checkpoints
         setup_manager.load_checkpoints(current_round);
@@ -87,7 +82,6 @@ void GameLoop::advance_round_or_reset_to_lobby()
 
         // Limpiar flags y pasar a STARTING
         state_manager.get_pending_race_reset().store(false);
-        std::cout << "[GameLoop] About to call transition_to_starting for round " << (current_round + 1) << std::endl;
         state_manager.transition_to_starting(10);
     }
     else
@@ -105,12 +99,10 @@ void GameLoop::advance_round_or_reset_to_lobby()
         broadcast_manager.broadcast(totals);
 
         // Reiniciar al round 1 y entrar a STARTING directamente
-        std::cout << "[GameLoop] Championship finished. Restarting at round 1 (auto STARTING)." << std::endl;
         current_round = 0;
         setup_manager.load_checkpoints(current_round);
         player_manager.reset_all_players_to_lobby(spawn_points);
         state_manager.get_pending_race_reset().store(false);
-        std::cout << "[GameLoop] About to call transition_to_starting for championship restart" << std::endl;
         state_manager.transition_to_starting(10);
     }
 }
@@ -119,7 +111,6 @@ void GameLoop::advance_round_or_reset_to_lobby()
 GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id_param)
     : world_manager(CarPhysicsConfig::getInstance()), players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), state_manager(), next_id(INITIAL_ID), map_id(map_id_param), map_layout(world_manager.get_world()), npc_manager(world_manager.get_world()), physics_config(CarPhysicsConfig::getInstance()), player_manager(players_map_mutex, players, players_messanger, player_order, world_manager, physics_config), broadcast_manager(players_map_mutex, players, players_messanger), tick_processor(players_map_mutex, players, state_manager, player_manager, npc_manager, world_manager, broadcast_manager, checkpoint_centers), contact_handler(players_map_mutex, players, checkpoint_fixtures, checkpoint_centers, state_manager.get_pending_race_reset(), [this]() { return state_manager.get_state(); }), setup_manager(map_id, map_layout, world_manager, npc_manager, checkpoint_sets, spawn_points, checkpoint_fixtures, checkpoint_centers)
 {
-    std::cout << "[GameLoop] Using CONFIG_DIR: " << CONFIG_DIR << std::endl;
     if (!physics_config.loadFromFile(std::string(CONFIG_DIR) + "/car_physics.yaml"))
     {
         std::cerr << "[GameLoop] WARNING: Failed to load car physics config, using defaults" << std::endl;
@@ -135,9 +126,6 @@ GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id_param)
     // Cargar spawn points del mapa correspondiente
     map_layout.extract_spawn_points(getMapSpawnPointsPath(safe_map_id), spawn_points);
 
-    std::cout << "[GameLoop] Initialized with map_id=" << int(map_id)
-              << " (" << MAP_NAMES[safe_map_id] << ")" << std::endl;
-
     // Configurar el callback de contacto
     world_manager.set_contact_callback([this](b2Fixture *a, b2Fixture *b) {
         this->contact_handler.handle_begin_contact(a, b);
@@ -151,7 +139,6 @@ void GameLoop::on_playing_started()
     {
         player_data.lap_start_time = race_start_time;
     }
-    std::cout << "[GameLoop] Race timer started for all players" << std::endl;
     broadcast_manager.broadcast_game_started();
 }
 
@@ -159,7 +146,6 @@ void GameLoop::start_game()
 {
     bool can_start = false;
 
-    // Scope limitado para el lock: solo para leer estado y modificar datos de jugadores
     {
         std::lock_guard<std::mutex> lk(players_map_mutex);
 
@@ -185,13 +171,11 @@ void GameLoop::start_game()
             if (dead_count == total_players && total_players > 0)
             {
                 can_start = true;
-                std::cout << "[GameLoop] All players dead, restarting race..." << std::endl;
             }
         }
 
         if (!can_start)
         {
-            std::cout << "[GameLoop] Cannot start game in current state" << std::endl;
             return;
         }
 
@@ -202,18 +186,12 @@ void GameLoop::start_game()
         setup_manager.load_checkpoints(current_round);
         RaceManager::reset_players_for_race_start(players, physics_config);
         npc_manager.reset_velocities();
-    } // <-- Lock se libera aquí
+    }
 
     // Cambiar el estado FUERA del lock para evitar deadlock con el game loop
     state_manager.transition_to_starting(10);
     started = true;
 }
-
-//
-//
-// Refactor: Logica de colisiones y fisicas
-//
-//
 
 size_t GameLoop::get_player_count() const
 {

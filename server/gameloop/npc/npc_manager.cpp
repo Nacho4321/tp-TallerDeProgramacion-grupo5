@@ -74,9 +74,7 @@ void NPCManager::add_to_broadcast(std::vector<PlayerPositionUpdate> &broadcast)
     }
 }
 
-// ============================================================================
 // Spawn helpers
-// ============================================================================
 
 void NPCManager::spawn_parked_npcs(const std::vector<MapLayout::ParkedCarData> &parked_data, int &next_negative_id)
 {
@@ -178,7 +176,6 @@ std::vector<int> NPCManager::get_valid_waypoints_away_from_parked(const std::vec
     {
         for (int idx = 0; idx < static_cast<int>(street_waypoints.size()); ++idx)
             candidate_waypoints.push_back(idx);
-        std::cout << "[NPCManager] Warning: All waypoints filtered out; using full set." << std::endl;
     }
 
     return candidate_waypoints;

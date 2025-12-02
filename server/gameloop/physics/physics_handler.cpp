@@ -105,7 +105,6 @@ void PhysicsHandler::update_drive_for_player(PlayerData &player_data, CarPhysics
         if (current_speed > threshold)
         {
             player_data.is_stopping = true;
-            std::cout << "[FRENAZO] Player frenazo Velocidad: " << current_speed << std::endl;
         }
     }
 

@@ -60,12 +60,6 @@ void RaceManager::check_race_completion(
 
     if (all_done)
     {
-        std::cout << "\n======================================" << std::endl;
-        std::cout << "   ALL PLAYERS FINISHED OR DIED!" << std::endl;
-        std::cout << "   Preparing to return to lobby..." << std::endl;
-        std::cout << "======================================\n"
-                  << std::endl;
-
         pending_race_reset.store(true);
     }
 }
@@ -94,16 +88,6 @@ void RaceManager::reset_players_for_race_start(
         // Reset HP
         const CarPhysics &car_physics = physics_config.getCarPhysics(player_data.car.car_name);
         player_data.car.hp = car_physics.max_hp;
-
-        b2Vec2 current_pos = player_data.body->GetPosition();
-        float current_x_px = current_pos.x * SCALE;
-        float current_y_px = current_pos.y * SCALE;
-
-        std::cout << "[RaceManager] reset_players_for_race_start: Player " << id
-                  << " at body_pos=(" << current_x_px << "," << current_y_px << ")"
-                  << " stored_pos=(" << player_data.position.new_X << "," << player_data.position.new_Y << ")"
-                  << " HP=" << player_data.car.hp
-                  << std::endl;
     }
 }
 

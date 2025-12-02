@@ -30,7 +30,6 @@ Client::Client(const char *address, const char *port, StartMode mode, int join_g
       auto_join_game_id(join_game_id),
       auto_create_game_name(game_name)
 {
-    std::cout << "[Client] Using DATA_DIR: " << DATA_DIR << std::endl;
     initLegacyConnection(address, port);
     handler.setAudioManager(game_renderer.getAudioManager());
 }
@@ -49,7 +48,6 @@ Client::Client(std::unique_ptr<GameConnection> connection)
       auto_join_game_id(-1),
       auto_create_game_name("")
 {
-    std::cout << "[Client] Using DATA_DIR: " << DATA_DIR << std::endl;
     active_handler_ = connection_->getHandler();
 
     my_game_id = connection_->getGameId();
@@ -85,7 +83,7 @@ void Client::start()
         }
         else
         {
-            std::cout << "[Client] Failed to autocreate game" << std::endl;
+            std::cerr << "[Client] Failed to autocreate game" << std::endl;
             connected = false;
             return;
         }
@@ -109,7 +107,7 @@ void Client::start()
         }
         else
         {
-            std::cout << "[Client] Failed to auto-join game " << auto_join_game_id << std::endl;
+            std::cerr << "[Client] Failed to auto-join game " << auto_join_game_id << std::endl;
             connected = false;
             return;
         }
@@ -140,7 +138,7 @@ void Client::start()
                 }
                 else
                 {
-                    std::cout << "[Client] Failed to create game." << std::endl;
+                    std::cerr << "[Client] Failed to create game." << std::endl;
                 }
             }
             else if (input.rfind(JOIN_GAME_STR, 0) == 0)
@@ -163,7 +161,7 @@ void Client::start()
                         }
                         else
                         {
-                            std::cout << "[Client] Failed to join game " << gid << ". ¿Existe esa partida? (Los IDs empiezan en 1)" << std::endl;
+                            std::cerr << "[Client] Failed to join game " << gid << ". ¿Existe esa partida? (Los IDs empiezan en 1)" << std::endl;
                         }
                     }
                     catch (...)

@@ -174,7 +174,6 @@ void LobbyHandler::leave_game(ClientHandlerMessage &message)
         try
         {
             message.outbox->close();
-            std::cout << "[LobbyHandler] Outbox del cliente " << message.client_id << " cerrada" << std::endl;
         }
         catch (const std::exception &e)
         {

@@ -29,7 +29,7 @@ public:
         BroadcastManager &broadcast_manager,
         std::vector<b2Vec2> &checkpoint_centers);
 
-    // Process one tick based on current state
+    // Procesar un tick según el estado del juego
     void process(GameState state, float &acum);
 
 private:
@@ -37,10 +37,10 @@ private:
     void process_lobby();
     void process_starting();
 
-    // Helper for deferred body destruction
+    // Helper para destrucción diferida de cuerpos
     void flush_deferred_operations();
 
-    // Helper to broadcast positions (used by playing and starting)
+    // Helper para enviar actualizaciones de posiciones (usado en playing y starting)
     void broadcast_positions_update();
 
     std::mutex &players_map_mutex;

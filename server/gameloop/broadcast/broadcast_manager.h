@@ -16,13 +16,13 @@ public:
         std::unordered_map<int, PlayerData> &players,
         std::unordered_map<int, std::shared_ptr<Queue<ServerMessage>>> &players_messanger);
 
-    // Send message to all connected players
+    // Envio mensaje a todos los jugadores conectados
     void broadcast(ServerMessage &msg);
 
-    // Broadcast GAME_STARTED to all players
+    // Envio mensaje GAME_STARTED a todos los jugadores
     void broadcast_game_started();
 
-    // Broadcast race end times to all players
+    // Envio mensaje de tiempos de carrera a todos los jugadores
     void broadcast_race_end_message(uint8_t current_round);
 
 private:

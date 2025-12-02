@@ -45,7 +45,6 @@ void TickProcessor::process_playing(float &acum)
     if (state_manager.should_reset_accumulator())
     {
         acum = 0.0f;
-        std::cout << "[TickProcessor] Physics accumulator reset on start." << std::endl;
     }
 
     RaceManager::check_round_timeout(
@@ -55,7 +54,7 @@ void TickProcessor::process_playing(float &acum)
         state_manager.get_round_start_time(),
         state_manager.get_pending_race_reset());
 
-    // Reset collision flags at the start of each frame
+    // Resetear flags de colisión al principio de cada frame
     for (auto &entry : players)
     {
         entry.second.collision_this_frame = false;
@@ -79,7 +78,7 @@ void TickProcessor::process_lobby()
     if (players.empty())
         return;
 
-    // Reset collision flags at the start of each frame
+    // Resetear flags de colisión al principio de cada frame
     for (auto &entry : players)
     {
         entry.second.collision_this_frame = false;
@@ -88,7 +87,7 @@ void TickProcessor::process_lobby()
 
 void TickProcessor::process_starting()
 {
-    // Reset collision flags at the start of each frame
+    // Resetear flags de colisión al principio de cada frame
     for (auto &entry : players)
     {
         entry.second.collision_this_frame = false;
@@ -122,12 +121,10 @@ void TickProcessor::flush_deferred_operations()
         {
             if (world_manager.is_locked())
             {
-                std::cout << "[TickProcessor] World locked during flush, postergando destroy para player " << id << std::endl;
                 continue;
             }
             world_manager.safe_destroy_body(player_data.body);
             player_data.mark_body_for_removal = false;
-            std::cout << "[TickProcessor] Destroyed body for player " << id << " (flush)." << std::endl;
         }
     }
 }

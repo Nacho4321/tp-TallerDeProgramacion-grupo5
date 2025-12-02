@@ -30,9 +30,7 @@ public:
     // Retorna true si el jugador murió por esta colisión
     static bool apply_collision_damage(
         PlayerData &player_data,
-        int player_id,
         float impact_velocity,
-        const std::string &car_name,
         float frontal_multiplier = 1.0f);
 
     // Descalifica a un jugador (muerte por daño)
@@ -47,8 +45,7 @@ private:
     static bool process_player_collision_damage(
         b2Body *player_body,
         b2Body *other_body,
-        std::unordered_map<int, PlayerData> &players,
-        const std::string &collision_type);
+        std::unordered_map<int, PlayerData> &players);
 };
 
 #endif

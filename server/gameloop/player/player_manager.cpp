@@ -27,7 +27,6 @@ bool PlayerManager::can_add_player(const std::vector<MapLayout::SpawnPointData> 
 {
     if (static_cast<int>(players.size()) >= static_cast<int>(spawn_points.size()))
     {
-        std::cout << FULL_LOBBY_MSG << std::endl;
         return false;
     }
     return true;
@@ -50,9 +49,6 @@ PlayerData PlayerManager::create_default_player_data(int spawn_idx,
                                                      const std::vector<MapLayout::SpawnPointData> &spawn_points)
 {
     const MapLayout::SpawnPointData &spawn = spawn_points[spawn_idx];
-    std::cout << "[PlayerManager] add_player: assigning spawn point " << spawn_idx
-              << " at (" << spawn.x << "," << spawn.y << ")" << std::endl;
-
     const CarPhysics &car_phys = physics_config.getCarPhysics(GREEN_CAR);
 
     Position pos = Position{false, spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
@@ -86,11 +82,6 @@ void PlayerManager::add_player(int id, std::shared_ptr<Queue<ServerMessage>> pla
                                const std::vector<MapLayout::SpawnPointData> &spawn_points)
 {
     std::lock_guard<std::mutex> lk(players_map_mutex);
-    std::cout << "[PlayerManager] add_player: id=" << id
-              << " players.size()=" << players.size()
-              << " outbox.valid=" << std::boolalpha << static_cast<bool>(player_outbox)
-              << std::endl;
-
     if (!can_add_player(spawn_points))
         return;
 
@@ -99,9 +90,6 @@ void PlayerManager::add_player(int id, std::shared_ptr<Queue<ServerMessage>> pla
 
     players[id] = player_data;
     players_messanger[id] = player_outbox;
-
-    std::cout << "[PlayerManager] add_player: done. players.size()=" << players.size()
-              << " messengers.size()=" << players_messanger.size() << std::endl;
 }
 
 void PlayerManager::remove_player(int client_id, GameState game_state,
@@ -111,8 +99,6 @@ void PlayerManager::remove_player(int client_id, GameState game_state,
 
     cleanup_player_data(client_id);
     remove_from_player_order(client_id);
-
-    std::cout << "[PlayerManager] remove_player: client " << client_id << " removed" << std::endl;
 
     if (game_state == GameState::LOBBY && !player_order.empty())
         reposition_remaining_players(spawn_points);
@@ -132,8 +118,6 @@ size_t PlayerManager::get_player_count() const
 
 void PlayerManager::reposition_remaining_players(const std::vector<MapLayout::SpawnPointData> &spawn_points)
 {
-    std::cout << "[PlayerManager] reordering remaining " << player_order.size() << " players in lobby" << std::endl;
-
     for (size_t i = 0; i < player_order.size(); ++i)
     {
         int player_id = player_order[i];
@@ -143,9 +127,6 @@ void PlayerManager::reposition_remaining_players(const std::vector<MapLayout::Sp
 
         PlayerData &player_data = player_it->second;
         const MapLayout::SpawnPointData &spawn = spawn_points[i];
-
-        std::cout << "[PlayerManager] moving player " << player_id
-                  << " to spawn " << i << " at (" << spawn.x << "," << spawn.y << ")" << std::endl;
 
         world_manager.safe_destroy_body(player_data.body);
         Position new_pos{false, spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};

@@ -12,7 +12,6 @@ void GameClientReceiver::run() {
             uint8_t opcode = 0;
             bool ok = protocol.receiveAnyServerPacket(positionsMsg, joinResp, opcode);
             if (!ok) {
-                std::cout << "[ClientReceiver] Conexión cerrada o error" << std::endl;
                 break;
             }
             if (opcode == GAME_JOINED) {

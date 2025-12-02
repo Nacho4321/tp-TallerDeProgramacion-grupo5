@@ -10,12 +10,6 @@
 class PhysicsHandler
 {
 public:
-    // Constantes de física
-    static constexpr float RIGHT_VECTOR_X = 1.0f;
-    static constexpr float RIGHT_VECTOR_Y = 0.0f;
-    static constexpr float FORWARD_VECTOR_X = 0.0f;
-    static constexpr float FORWARD_VECTOR_Y = 1.0f;
-
     // Obtener componentes de velocidad
     static b2Vec2 get_lateral_velocity(b2Body *body);
     static b2Vec2 get_forward_velocity(b2Body *body);

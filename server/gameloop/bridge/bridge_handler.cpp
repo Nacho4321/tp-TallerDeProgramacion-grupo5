@@ -13,13 +13,11 @@ bool BridgeHandler::update_bridge_state(PlayerData &player_data)
     // Actualizar el estado del puente
     if (result.entering_bridge && !player_data.position.on_bridge)
     {
-        std::cout << "[BRIDGE] Player entering bridge (CAR_GROUND -> CAR_BRIDGE)" << std::endl;
         set_collision_category(player_data, CAR_BRIDGE);
         player_data.position.on_bridge = true;
     }
     else if (result.leaving_bridge && player_data.position.on_bridge)
     {
-        std::cout << "[BRIDGE] Player leaving bridge (CAR_BRIDGE -> CAR_GROUND)" << std::endl;
         set_collision_category(player_data, CAR_GROUND);
         player_data.position.on_bridge = false;
     }
@@ -39,13 +37,11 @@ void BridgeHandler::update_bridge_state(NPCData &npc_data)
     // Actualizar el estado del puente
     if (result.entering_bridge && !npc_data.on_bridge)
     {
-        std::cout << "[BRIDGE] NPC entering bridge (CAR_GROUND -> CAR_BRIDGE)" << std::endl;
         set_collision_category(npc_data, CAR_BRIDGE);
         npc_data.on_bridge = true;
     }
     else if (result.leaving_bridge && npc_data.on_bridge)
     {
-        std::cout << "[BRIDGE] NPC leaving bridge (CAR_BRIDGE -> CAR_GROUND)" << std::endl;
         set_collision_category(npc_data, CAR_GROUND);
         npc_data.on_bridge = false;
     }

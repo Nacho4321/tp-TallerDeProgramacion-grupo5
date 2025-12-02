@@ -69,7 +69,6 @@ void GameClientSender::run() {
                         client_msg.upgrade_type = static_cast<CarUpgrade>(upgrade_val);
                     } catch (...) {
                         client_msg.upgrade_type = CarUpgrade::ACCELERATION_BOOST;
-                        std::cout << "[Sender] UPGRADE_CAR parse failed, using default ACCELERATION_BOOST" << std::endl;
                     }
                 }
             }

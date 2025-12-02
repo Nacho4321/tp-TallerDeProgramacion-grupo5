@@ -15,4 +15,4 @@ struct NPCData
     bool on_bridge{false};
 };
 
-#endif // NPC_DATA_H
+#endif 

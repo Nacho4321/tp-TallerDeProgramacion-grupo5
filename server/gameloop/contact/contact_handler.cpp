@@ -43,7 +43,7 @@ void ContactHandler::process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeChe
     PlayerData &player_data = players[player_id];
     int total = static_cast<int>(checkpoint_centers.size());
     bool completed_lap = CheckpointHandler::handle_checkpoint_reached(
-        player_data, player_id, checkpoint_index, total);
+        player_data, checkpoint_index, total);
 
     if (completed_lap)
     {

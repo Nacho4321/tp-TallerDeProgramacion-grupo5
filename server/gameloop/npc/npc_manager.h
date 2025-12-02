@@ -35,12 +35,6 @@ public:
     const std::vector<NPCData> &get_npcs() const { return npcs; }
 
 private:
-    // Constantes
-    static constexpr float NPC_DIRECTION_THRESHOLD = 0.05f;
-    static constexpr float NPC_ARRIVAL_THRESHOLD_M = 0.5f;
-    static constexpr float MIN_DISTANCE_FROM_PARKED_M = 1.0f;
-    static constexpr float MIN_DISTANCE_FROM_SPAWN_M = 5.0f;
-
     b2World &world;
     std::vector<NPCData> npcs;
     std::vector<MapLayout::WaypointData> street_waypoints;

@@ -81,11 +81,9 @@ void GameMonitor::remove_player(int client_id)
         if (game && game->has_player(client_id))
         {
             game->remove_player(client_id);
-            std::cout << "[GameMonitor] Removed player " << client_id << " from game " << game_id << std::endl;
             return;
         }
     }
-    std::cout << "[GameMonitor] Player " << client_id << " not found in any game" << std::endl;
 }
 
 std::shared_ptr<Queue<Event>> GameMonitor::get_game_queue(int game_id)

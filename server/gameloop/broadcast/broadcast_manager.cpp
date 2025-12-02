@@ -70,7 +70,6 @@ void BroadcastManager::broadcast_game_started()
             try
             {
                 queue->push(msg);
-                std::cout << "[BroadcastManager] GAME_STARTED sent to player " << entry.first << std::endl;
             }
             catch (const ClosedQueue &)
             {
@@ -81,7 +80,6 @@ void BroadcastManager::broadcast_game_started()
 
 void BroadcastManager::broadcast_race_end_message(uint8_t current_round)
 {
-    std::cout << "[BroadcastManager] Broadcasting race end message..." << std::endl;
     // Enviar tiempos de la carrera actual a los clientes
     ServerMessage msg;
     msg.opcode = RACE_TIMES;

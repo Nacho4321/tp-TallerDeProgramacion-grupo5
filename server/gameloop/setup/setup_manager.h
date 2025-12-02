@@ -25,10 +25,10 @@ public:
         std::unordered_map<b2Fixture *, int> &checkpoint_fixtures,
         std::vector<b2Vec2> &checkpoint_centers);
 
-    // Full world setup (calls all other setup methods)
+    // Setup del world
     void setup_world(int current_round);
 
-    // Individual setup methods
+    // Métodos individuales de setup
     void setup_npc_config();
     void setup_map_layout();
     void load_checkpoints(int current_round);
