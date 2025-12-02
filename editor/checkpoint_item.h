@@ -8,11 +8,6 @@
 #include <QWidget>
 
 class CheckpointItem : public QGraphicsRectItem {
-private:
-    int checkpointIndex; 
-    bool isStart;
-    bool isFinish;
-
 public:
     CheckpointItem(float x, float y, int index, QGraphicsItem* parent = nullptr);
 
@@ -22,11 +17,17 @@ public:
     void setIsStart(bool start);
     void setIsFinish(bool finish);
 
-    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
+               QWidget* widget = nullptr) override;
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+
+private:
+    int checkpointIndex; 
+    bool isStart;
+    bool isFinish;
 };
 
 #endif 
