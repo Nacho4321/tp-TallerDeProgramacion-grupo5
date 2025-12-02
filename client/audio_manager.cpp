@@ -299,13 +299,11 @@ void AudioManager::stopEnginesExcept(const std::set<int>& activeCarIds) {
 void AudioManager::increaseMasterVolume() {
     masterVolume = std::min(masterVolume + VOLUME_STEP, MAX_VOLUME_LIMIT);
     applyMasterVolume();
-    std::cout << "[Audio] Master volume: " << masterVolume << "/128" << std::endl;
 }
 
 void AudioManager::decreaseMasterVolume() {
     masterVolume = std::max(masterVolume - VOLUME_STEP, MIN_VOLUME);
     applyMasterVolume();
-    std::cout << "[Audio] Master volume: " << masterVolume << "/128" << std::endl;
 }
 
 void AudioManager::applyMasterVolume() {

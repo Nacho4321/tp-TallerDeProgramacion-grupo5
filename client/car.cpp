@@ -51,7 +51,7 @@ void Car::startExplosion()
 {
     exploding = true;
     explosionFrame = 0;
-    explosionFrameDelay = 3; // Show each frame for n render cycles
+    explosionFrameDelay = 3;
     stopFlash();
 }
 

@@ -70,9 +70,6 @@ void NewGameWindow::onCreate() {
     gameId_ = outGameId;
     playerId_ = outPlayerId;
     
-    std::cout << "[NewGameWindow] Game created successfully. game_id=" << gameId_ 
-              << " player_id=" << playerId_ << std::endl;
-    
     this->hide();
     
     CarSelectionDialog carDialog(this);
@@ -89,16 +86,13 @@ void NewGameWindow::onCreate() {
         
         auto connection = lobbyClient_->extractConnection();
         
-        std::cout << "[NewGameWindow] Transfiriendo conexión al cliente SDL" << std::endl;
         GameLauncher::launchWithConnection(std::move(connection));
 
         if (lobbyClient_) {
             std::string host = lobbyClient_->getAddress();
             std::string port = lobbyClient_->getPort();
 
-            std::cout << "[NewGameWindow] Game ended, reconnecting to server..." << std::endl;
             if (lobbyClient_->connect(host, port)) {
-                std::cout << "[NewGameWindow] Reconnected successfully" << std::endl;
                 if (parentWidget()) {
                     parentWidget()->show();
                 }

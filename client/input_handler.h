@@ -13,18 +13,15 @@ class InputHandler {
 private:
     unsigned int prev_ticks;
     
-    // Mapas para dispatch de teclas a comandos
     std::unordered_map<SDL_Keycode, std::string> keydown_actions;
     std::unordered_map<SDL_Keycode, std::string> keyup_actions;
-    std::unordered_map<SDL_Keycode, std::function<std::string()>> keydown_special; // Para casos especiales
+    std::unordered_map<SDL_Keycode, std::function<std::string()>> keydown_special;
     
-    // Modo de ingreso para JOIN GAME: esperar un id numérico
     bool awaiting_join_id = false;
     std::string join_id_buffer;
     
     AudioManager* audioManager = nullptr;
     
-    // Inicializar mapas de dispatch
     void init_key_maps(); 
 
 public:

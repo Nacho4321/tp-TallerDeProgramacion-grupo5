@@ -77,21 +77,21 @@ enum class CheatType : uint8_t
 };
 
 
-const std::string MOVE_UP_PRESSED_STR = "move_up_pressed";         // NOLINT
-const std::string MOVE_UP_RELEASED_STR = "move_up_released";       // NOLINT
-const std::string MOVE_DOWN_PRESSED_STR = "move_down_pressed";     // NOLINT
-const std::string MOVE_DOWN_RELEASED_STR = "move_down_released";   // NOLINT
-const std::string MOVE_LEFT_PRESSED_STR = "move_left_pressed";     // NOLINT
-const std::string MOVE_LEFT_RELEASED_STR = "move_left_released";   // NOLINT
-const std::string MOVE_RIGHT_PRESSED_STR = "move_right_pressed";   // NOLINT
-const std::string MOVE_RIGHT_RELEASED_STR = "move_right_released"; // NOLINT
+const std::string MOVE_UP_PRESSED_STR = "move_up_pressed";         
+const std::string MOVE_UP_RELEASED_STR = "move_up_released";       
+const std::string MOVE_DOWN_PRESSED_STR = "move_down_pressed";     
+const std::string MOVE_DOWN_RELEASED_STR = "move_down_released";   
+const std::string MOVE_LEFT_PRESSED_STR = "move_left_pressed";     
+const std::string MOVE_LEFT_RELEASED_STR = "move_left_released";   
+const std::string MOVE_RIGHT_PRESSED_STR = "move_right_pressed";   
+const std::string MOVE_RIGHT_RELEASED_STR = "move_right_released"; 
 
 // Lobby commands
-const std::string CREATE_GAME_STR = "create_game"; // NOLINT
-const std::string JOIN_GAME_STR = "join_game";     // NOLINT
-const std::string GET_GAMES_STR = "get_games";     // NOLINT
-const std::string START_GAME_STR = "start_game";   // NOLINT
-const std::string LEAVE_GAME_STR = "leave_game";   // NOLINT
+const std::string CREATE_GAME_STR = "create_game"; 
+const std::string JOIN_GAME_STR = "join_game";     
+const std::string GET_GAMES_STR = "get_games";     
+const std::string START_GAME_STR = "start_game";   
+const std::string LEAVE_GAME_STR = "leave_game";   
 
 enum class MapId : uint8_t {
     LibertyCity = 0,
@@ -143,14 +143,14 @@ inline const char* const MAP_SPAWN_POINTS_PATHS[] = {
     "data/cities/vice_city_spawn_points.json"
 };
 
-#define COLLISION_FLOOR 0x0001     // 1
-#define COLLISION_BRIDGE 0x0002    // 2
-#define COLLISION_UNDER 0x0004     // 4
-#define SENSOR_START_BRIDGE 0x0008 // 8
-#define SENSOR_END_BRIDGE 0x0010   // 16
+#define COLLISION_FLOOR 0x0001     
+#define COLLISION_BRIDGE 0x0002    
+#define COLLISION_UNDER 0x0004    
+#define SENSOR_START_BRIDGE 0x0008 
+#define SENSOR_END_BRIDGE 0x0010   
 
-#define CAR_GROUND 0x0020 // 32
-#define CAR_BRIDGE 0x0040 // 64
+#define CAR_GROUND 0x0020 
+#define CAR_BRIDGE 0x0040 
 
 #define GREEN_CAR "green_car"
 #define RED_SQUARED_CAR "red_squared_car"
@@ -208,6 +208,7 @@ enum class CarUpgrade
 #define HANDLING_UPGRADE_MULTIPLIER 1.15f
 #define MAX_UPGRADES_PER_STAT 3
 #define PENALIZATION_TIME 2000
+
 // Campeonato: 3 rondas
 constexpr int TOTAL_ROUNDS = 3;
 

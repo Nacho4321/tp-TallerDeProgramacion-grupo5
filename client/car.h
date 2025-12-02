@@ -19,7 +19,7 @@ struct CarPosition
 class Car
 {
 public:
-    static constexpr int FLASH_DURATION = 6;  // ~100ms at 60fps
+    static constexpr int FLASH_DURATION = 6;
 
 private:
     CarPosition position;

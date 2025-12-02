@@ -27,10 +27,9 @@ struct PlayerPositionUpdate
 {
     int player_id;
     Position new_pos;
-    // Tipo de auto actual de este jugador (para que el cliente elija sprite); para NPCs puede ser "npc".
+
     std::string car_type;
-    // Up to N next checkpoints (in pixels) that the client can draw as guidance.
-    // Coordinates are in the same units as Position (pixels).
+
     std::vector<Position> next_checkpoints;
     
     // HP system
@@ -42,6 +41,7 @@ struct PlayerPositionUpdate
     uint8_t upgrade_acceleration = 0;
     uint8_t upgrade_handling = 0;
     uint8_t upgrade_durability = 0;
+    
     // Flag de frenazo 
     bool is_stopping = false;
 };
