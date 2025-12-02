@@ -77,6 +77,8 @@
         "csignal": "cpp",
         "valarray": "cpp",
         "ranges": "cpp",
-        "cerrno": "cpp"
+        "cerrno": "cpp",
+        "bitset": "cpp",
+        "regex": "cpp"
     }
 }

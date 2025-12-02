@@ -4,7 +4,7 @@
         {
             "label": "build",
             "type": "shell",
-            "command": "cmake --build . -j$(nproc)",
+            "command": "cmake --build build -j",
             "group": {
                 "kind": "build",
                 "isDefault": true

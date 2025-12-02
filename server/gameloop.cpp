@@ -18,6 +18,12 @@
 #include <fstream>
 #include <limits>
 
+//
+//
+// Refactor: Mapas y checkpoints
+//
+//
+
 void GameLoop::setup_checkpoints_from_file(const std::string &json_path)
 {
     std::vector<b2Vec2> checkpoints;
@@ -59,15 +65,16 @@ void GameLoop::setup_npc_config()
 void GameLoop::setup_world()
 {
     std::vector<MapLayout::ParkedCarData> parked_data;
+    std::vector<MapLayout::WaypointData> street_waypoints;
     setup_map_layout();
     load_current_round_checkpoints();
     setup_npc_config();
 
     uint8_t safe_map_id = (map_id < MAP_COUNT) ? map_id : 0;
     map_layout.extract_map_npc_data(MAP_JSON_PATHS[safe_map_id], street_waypoints, parked_data);
-    if (int(parked_data.size()) > 0)
+    if (!parked_data.empty() || !street_waypoints.empty())
     {
-        init_npcs(parked_data);
+        npc_manager.init(parked_data, street_waypoints);
     }
 }
 
@@ -96,6 +103,63 @@ void GameLoop::load_current_round_checkpoints()
     std::cout << "[GameLoop] Round " << current_round + 1 << " loaded checkpoints from: " << json_path << std::endl;
 }
 
+//
+//
+// Refactor: Logica del game loop
+//
+//
+
+void GameLoop::run()
+{
+    auto last_tick = std::chrono::steady_clock::now();
+    float acum = 0.0f;
+
+    setup_world();
+
+    while (should_keep_running())
+    {
+        try
+        {
+            // Falla segura: antes de procesar eventos, validar si el countdown terminó
+            // para evitar quedar bloqueados por procesamiento de eventos.
+            maybe_finish_starting_and_play();
+
+            event_loop.process_available_events(game_state);
+
+            auto now = std::chrono::steady_clock::now();
+            float dt = std::chrono::duration<float>(now - last_tick).count();
+            last_tick = now;
+            acum += dt;
+
+            if (game_state == GameState::PLAYING)
+            {
+                process_playing_state(acum);
+            }
+            else if (game_state == GameState::LOBBY)
+            {
+                process_lobby_state();
+            }
+            else if (game_state == GameState::STARTING)
+            {
+                process_starting_state();
+                // Falla segura: aunque por algún motivo no se ejecute el process,
+                // chequeamos igualmente la finalización del countdown en el loop.
+                maybe_finish_starting_and_play();
+            }
+        }
+        catch (const ClosedQueue &)
+        {
+            // Ignorar: alguna cola de cliente cerrada; ya se limpia en broadcast_positions
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << "[GameLoop] Unexpected exception: " << e.what() << std::endl;
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(16));
+    }
+}
+
 void GameLoop::process_playing_state(float &acum)
 {
 
@@ -115,7 +179,7 @@ void GameLoop::process_playing_state(float &acum)
         entry.second.collision_this_frame = false;
     }
 
-    update_npcs();
+    npc_manager.update();
     update_body_positions();
 
     while (acum >= FPS)
@@ -204,60 +268,108 @@ void GameLoop::process_starting_state()
     maybe_finish_starting_and_play();
 }
 
-void GameLoop::run()
+void GameLoop::check_race_completion()
 {
-    auto last_tick = std::chrono::steady_clock::now();
-    float acum = 0.0f;
+    // Asume que ya estamos bajo players_map_mutex lock (llamado desde process_pair o apply_collision_damage)
+    // IMPORTANTE: No podemos modificar Box2D aca (estamos en callback de contacto)
 
-    setup_world();
+    int finished_or_dead_count = 0;
+    int total_players = static_cast<int>(players.size());
 
-    while (should_keep_running())
+    for (const auto &[id, player_data] : players)
     {
-        try
+        // Contar jugadores que terminaron la carrera O murieron
+        if (player_data.race_finished || player_data.is_dead)
         {
-            // Falla segura: antes de procesar eventos, validar si el countdown terminó
-            // para evitar quedar bloqueados por procesamiento de eventos.
-            maybe_finish_starting_and_play();
+            finished_or_dead_count++;
+        }
+    }
 
-            event_loop.process_available_events(game_state);
+    // La carrera termina cuando TODOS los jugadores terminaron O murieron
+    bool all_done = (finished_or_dead_count == total_players && total_players > 0);
 
-            auto now = std::chrono::steady_clock::now();
-            float dt = std::chrono::duration<float>(now - last_tick).count();
-            last_tick = now;
-            acum += dt;
+    if (all_done)
+    {
+        std::cout << "\n======================================" << std::endl;
+        std::cout << "   ALL PLAYERS FINISHED OR DIED!" << std::endl;
+        std::cout << "   Preparing to return to lobby..." << std::endl;
+        std::cout << "======================================\n"
+                  << std::endl;
 
-            if (game_state == GameState::PLAYING)
+        pending_race_reset.store(true);
+    }
+}
+
+void GameLoop::perform_race_reset()
+{
+    // Evitar realizar operaciones pesadas (destroy/recreate bodies, reload checkpoints)
+    // bajo el lock del mapa de jugadores. Primero chequeamos el flag y salimos del lock.
+    bool do_reset = false;
+    {
+        std::lock_guard<std::mutex> lk(players_map_mutex);
+        if (should_reset_race())
+        {
+            // Limpiamos el flag acá para que no se vuelva a ejecutar en el mismo frame.
+            pending_race_reset.store(false);
+            do_reset = true;
+        }
+    }
+
+    if (!do_reset)
+        return;
+
+    broadcast_race_end_message();
+    advance_round_or_reset_to_lobby();
+}
+
+void GameLoop::advance_round_or_reset_to_lobby()
+{
+    // Nueva política: NO volver a LOBBY entre rondas.
+    // Avanzar de ronda (o reiniciar campeonato) y entrar directamente en STARTING (cuenta regresiva) automáticamente.
+    if (current_round < 2)
+    {
+        current_round++;
+        std::cout << "[GameLoop] Advancing to round " << (current_round + 1) << " of 3 (auto STARTING)" << std::endl;
+
+        // Preparar siguiente ronda: recargar checkpoints
+        load_current_round_checkpoints();
+
+        // Reposicionar jugadores a los spawns y limpiar estado de carrera
+        reset_all_players_to_lobby();
+
+        // Limpiar flags y pasar a STARTING
+        pending_race_reset.store(false);
+        std::cout << "[GameLoop] About to call transition_to_starting_state for round " << (current_round + 1) << std::endl;
+        transition_to_starting_state(10);
+    }
+    else
+    {
+        // Terminar campeonato: antes de reiniciar, enviar TOTAL_TIMES
+        ServerMessage totals;
+        totals.opcode = TOTAL_TIMES;
+        {
+            std::lock_guard<std::mutex> lk(players_map_mutex);
+            for (auto &entry : players)
             {
-                process_playing_state(acum);
-            }
-            else if (game_state == GameState::LOBBY)
-            {
-                process_lobby_state();
-            }
-            else if (game_state == GameState::STARTING)
-            {
-                process_starting_state();
-                // Falla segura: aunque por algún motivo no se ejecute el process,
-                // chequeamos igualmente la finalización del countdown en el loop.
-                maybe_finish_starting_and_play();
+                totals.total_times.push_back({static_cast<uint32_t>(entry.first), entry.second.total_time_ms});
             }
         }
-        catch (const ClosedQueue &)
-        {
-            // Ignorar: alguna cola de cliente cerrada; ya se limpia en broadcast_positions
-        }
-        catch (const std::exception &e)
-        {
-            std::cerr << "[GameLoop] Unexpected exception: " << e.what() << std::endl;
-        }
+        broadcast_positions(totals);
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(16));
+        // Reiniciar al round 1 y entrar a STARTING directamente
+        std::cout << "[GameLoop] Championship finished. Restarting at round 1 (auto STARTING)." << std::endl;
+        current_round = 0;
+        load_current_round_checkpoints();
+        reset_all_players_to_lobby();
+        pending_race_reset.store(false);
+        std::cout << "[GameLoop] About to call transition_to_starting_state for championship restart" << std::endl;
+        transition_to_starting_state(10);
     }
 }
 
 // Constructor para poder setear el contact listener del world
 GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id_param)
-    : players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), game_state(GameState::LOBBY), next_id(INITIAL_ID), map_id(map_id_param), map_layout(world), physics_config(CarPhysicsConfig::getInstance())
+    : players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), game_state(GameState::LOBBY), next_id(INITIAL_ID), map_id(map_id_param), map_layout(world), npc_manager(world), physics_config(CarPhysicsConfig::getInstance())
 {
     if (!physics_config.loadFromFile("config/car_physics.yaml"))
     {
@@ -281,6 +393,430 @@ GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id_param)
     contact_listener.set_owner(this);
     world.SetContactListener(&contact_listener);
 }
+
+void GameLoop::transition_to_lobby_state()
+{
+    game_state = GameState::LOBBY;
+    pending_race_reset.store(false);
+    std::cout << "[GameLoop] Race reset complete. Returning to LOBBY." << std::endl;
+}
+
+void GameLoop::transition_to_starting_state(int countdown_seconds)
+{
+    starting_active = true;
+    game_state = GameState::STARTING;
+    starting_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(countdown_seconds);
+    std::cout << "[GameLoop] STARTING: countdown " << countdown_seconds << "s before PLAYING" << std::endl;
+
+    // Notificar a los clientes el inicio de la cuenta regresiva
+    ServerMessage msg;
+    msg.opcode = STARTING_COUNTDOWN;
+    broadcast_positions(msg);
+}
+
+void GameLoop::maybe_finish_starting_and_play()
+{
+    if (!starting_active)
+    {
+        return;
+    }
+
+    auto now = std::chrono::steady_clock::now();
+    if (now >= starting_deadline)
+    {
+        starting_active = false;
+        std::cout << "[GameLoop] STARTING finished. Transitioning to PLAYING" << std::endl;
+        transition_to_playing_state();
+    }
+}
+
+void GameLoop::complete_player_race(PlayerData &player_data)
+{
+    auto lap_end_time = std::chrono::steady_clock::now();
+    auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(lap_end_time - player_data.lap_start_time).count();
+
+    player_data.race_finished = true;
+    player_data.disqualified = false;
+
+    // Guardar el tiempo de la ronda actual
+    int round_idx = player_data.rounds_completed;
+    uint32_t existing_penalization = 0;
+
+    if (round_idx >= 0 && round_idx < TOTAL_ROUNDS)
+    {
+        // Si ya hay penalizaciones acumuladas en esta ronda, preservarlas
+        existing_penalization = player_data.round_times_ms[round_idx];
+        uint32_t new_total_time = static_cast<uint32_t>(elapsed_ms) + existing_penalization;
+
+        player_data.round_times_ms[round_idx] = new_total_time;
+    }
+
+    // Incrementar ronda completada y acumular tiempo total
+    player_data.rounds_completed = std::min(player_data.rounds_completed + 1, TOTAL_ROUNDS);
+    player_data.total_time_ms += static_cast<uint32_t>(elapsed_ms) + existing_penalization;
+    player_data.god_mode = true;
+    check_race_completion();
+}
+
+void GameLoop::reset_players_for_race_start()
+{
+    for (auto &[id, player_data] : players)
+    {
+        if (!player_data.body)
+            continue;
+
+        player_data.body->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
+        player_data.body->SetAngularVelocity(0.0f);
+
+        // lap_start_time se setea en transition_to_playing_state() después del countdown
+        player_data.next_checkpoint = 0;
+        player_data.race_finished = false;
+        player_data.is_dead = false;
+        player_data.god_mode = false; // Reset god mode para nueva ronda
+        player_data.position.on_bridge = false;
+        player_data.position.direction_x = not_horizontal;
+        player_data.position.direction_y = not_vertical;
+
+        // Reset HP
+        const CarPhysics &car_physics = physics_config.getCarPhysics(player_data.car.car_name);
+        player_data.car.hp = car_physics.max_hp;
+
+        b2Vec2 current_pos = player_data.body->GetPosition();
+        float current_x_px = current_pos.x * SCALE;
+        float current_y_px = current_pos.y * SCALE;
+
+        std::cout << "[GameLoop] start_game: Player " << id
+                  << " at body_pos=(" << current_x_px << "," << current_y_px << ")"
+                  << " stored_pos=(" << player_data.position.new_X << "," << player_data.position.new_Y << ")"
+                  << " HP=" << player_data.car.hp
+                  << std::endl;
+    }
+}
+
+void GameLoop::transition_to_playing_state()
+{
+    game_state = GameState::PLAYING;
+    std::cout << "[GameLoop] Game started! Transitioning from LOBBY to PLAYING" << std::endl;
+    reset_accumulator.store(true);
+
+    auto race_start_time = std::chrono::steady_clock::now();
+    for (auto &[id, player_data] : players)
+    {
+        player_data.lap_start_time = race_start_time;
+    }
+    std::cout << "[GameLoop] Race timer started for all players" << std::endl;
+
+    broadcast_game_started();
+}
+
+void GameLoop::start_game()
+{
+    bool can_start = false;
+
+    // Scope limitado para el lock: solo para leer estado y modificar datos de jugadores
+    {
+        std::lock_guard<std::mutex> lk(players_map_mutex);
+
+        // Checkeo si se puede iniciar la carrera
+        if (game_state == GameState::LOBBY)
+        {
+            can_start = true;
+        }
+        else if (game_state == GameState::PLAYING)
+        {
+            // Durante PLAYING, solo permitir reiniciar si todos los jugadores están muertos
+            int total_players = static_cast<int>(players.size());
+            int dead_count = 0;
+
+            for (const auto &[id, player_data] : players)
+            {
+                if (player_data.is_dead)
+                {
+                    dead_count++;
+                }
+            }
+
+            if (dead_count == total_players && total_players > 0)
+            {
+                can_start = true;
+                std::cout << "[GameLoop] All players dead, restarting race..." << std::endl;
+            }
+        }
+
+        if (!can_start)
+        {
+            std::cout << "[GameLoop] Cannot start game in current state" << std::endl;
+            return;
+        }
+
+        // Al iniciar una carrera explícitamente, limpiar cualquier reset pendiente
+        // para evitar que perform_race_reset() dispare inmediatamente.
+        pending_race_reset.store(false);
+        // Asegurar que los checkpoints de la ronda actual estén cargados al iniciar
+        load_current_round_checkpoints();
+        reset_players_for_race_start();
+        npc_manager.reset_velocities();
+    } // <-- Lock se libera aquí
+
+    // Cambiar el estado FUERA del lock para evitar deadlock con el game loop
+    transition_to_starting_state(10);
+    started = true;
+}
+
+void GameLoop::reset_all_players_to_lobby()
+{
+    for (size_t i = 0; i < player_order.size(); ++i)
+    {
+        int player_id = player_order[i];
+        auto player_it = players.find(player_id);
+        if (player_it == players.end())
+            continue;
+
+        PlayerData &player_data = player_it->second;
+        const MapLayout::SpawnPointData &spawn = spawn_points[i];
+
+        safe_destroy_body(player_data.body);
+        Position new_pos{false, spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
+        player_data.body = create_player_body(spawn.x, spawn.y, new_pos, player_data.car.car_name);
+        player_data.position = new_pos;
+
+        player_data.next_checkpoint = 0;
+        player_data.race_finished = false;
+        player_data.is_dead = false;
+        player_data.god_mode = false; // Reset god mode para nueva ronda
+        player_data.lap_start_time = std::chrono::steady_clock::now();
+
+        // Reseteo HP
+        const CarPhysics &car_physics = physics_config.getCarPhysics(player_data.car.car_name);
+        player_data.car.hp = car_physics.max_hp;
+    }
+}
+
+bool GameLoop::should_reset_race() const
+{
+    return pending_race_reset.load();
+}
+
+//
+//
+// Refactor: Broadcasts y updates
+//
+//
+
+void GameLoop::broadcast_game_started()
+{
+    ServerMessage msg;
+    msg.opcode = GAME_STARTED;
+
+    for (auto &entry : players_messanger)
+    {
+        auto &queue = entry.second;
+        if (queue)
+        {
+            try
+            {
+                queue->push(msg);
+                std::cout << "[GameLoop] GAME_STARTED sent to player " << entry.first << std::endl;
+            }
+            catch (const ClosedQueue &)
+            {
+            }
+        }
+    }
+}
+
+void GameLoop::broadcast_positions(ServerMessage &msg)
+{
+    // Snapshot de destinatarios para evitar iterar el mapa mientras puede cambiar
+    std::vector<std::pair<int, std::shared_ptr<Queue<ServerMessage>>>> recipients;
+    {
+        std::lock_guard<std::mutex> lk(players_map_mutex);
+        recipients.reserve(players_messanger.size());
+        for (auto &entry : players_messanger)
+        {
+            recipients.emplace_back(entry.first, entry.second);
+        }
+    }
+
+    std::vector<int> to_remove;
+    for (auto &p : recipients)
+    {
+        int id = p.first;
+        auto &queue = p.second;
+        if (!queue)
+        {
+            to_remove.push_back(id);
+            continue;
+        }
+        try
+        {
+            queue->push(msg);
+        }
+        catch (const ClosedQueue &)
+        {
+            // El cliente cerró su outbox: marcar para remover
+            to_remove.push_back(id);
+        }
+    }
+    if (!to_remove.empty())
+    {
+        // Remover jugadores desconectados
+        std::lock_guard<std::mutex> lk(players_map_mutex);
+        for (int id : to_remove)
+        {
+            players_messanger.erase(id);
+            players.erase(id);
+        }
+    }
+}
+
+void GameLoop::broadcast_race_end_message()
+{
+    std::cout << "[GameLoop] Executing race reset..." << std::endl;
+    // Enviar tiempos de la carrera actual a los clientes
+    ServerMessage msg;
+    msg.opcode = RACE_TIMES;
+    {
+        std::lock_guard<std::mutex> lk(players_map_mutex);
+        uint8_t round_index = static_cast<uint8_t>(current_round);
+        for (auto &entry : players)
+        {
+            int pid = entry.first;
+            PlayerData &pd = entry.second;
+            uint32_t time_ms = 10u * 60u * 1000u;
+            bool dq = pd.disqualified || pd.is_dead;
+
+            int completed_round_idx = pd.rounds_completed - 1;
+            if (completed_round_idx >= 0 && completed_round_idx < TOTAL_ROUNDS)
+            {
+                time_ms = pd.round_times_ms[completed_round_idx];
+            }
+            msg.race_times.push_back({static_cast<uint32_t>(pid), time_ms, dq, round_index});
+        }
+    }
+    broadcast_positions(msg);
+}
+
+void GameLoop::add_player_to_broadcast(std::vector<PlayerPositionUpdate> &broadcast, int player_id, PlayerData &player_data)
+{
+    // Si el jugador está muerto y no tiene body, no lo agregamos al broadcast
+    // (el auto desaparece visualmente)
+    if (player_data.is_dead && !player_data.body)
+    {
+        return;
+    }
+
+    b2Body *body = player_data.body;
+    if (body)
+    {
+        b2Vec2 position = body->GetPosition();
+        // Actualizar posición básica
+        player_data.position.new_X = position.x * SCALE;
+        player_data.position.new_Y = position.y * SCALE;
+        player_data.position.angle = normalize_angle(body->GetAngle());
+
+        // IMPORTANTE: Actualizar el estado del puente ANTES de copiar la posición
+        update_bridge_state_for_player(player_data);
+    }
+
+    // Ahora crear el update con los datos correctos
+    PlayerPositionUpdate update;
+    update.player_id = player_id;
+    update.new_pos = player_data.position; // Ahora incluye on_bridge actualizado
+    update.car_type = player_data.car.car_name;
+    update.hp = player_data.car.hp;
+    update.collision_flag = player_data.collision_this_frame;
+    update.is_stopping = player_data.is_stopping;
+
+    // Enviar niveles de mejora
+    update.upgrade_speed = player_data.upgrades.speed;
+    update.upgrade_acceleration = player_data.upgrades.acceleration;
+    update.upgrade_handling = player_data.upgrades.handling;
+    update.upgrade_durability = player_data.upgrades.durability;
+
+    // Solo enviar checkpoints si el jugador no ha terminado la carrera
+    if (!player_data.race_finished && !checkpoint_centers.empty())
+    {
+        int total = static_cast<int>(checkpoint_centers.size());
+        for (int k = 0; k < CHECKPOINT_LOOKAHEAD; ++k)
+        {
+            int idx = player_data.next_checkpoint + k;
+
+            // Stop at the last checkpoint, don't wrap around
+            if (idx >= total)
+                break;
+
+            b2Vec2 checkpoint_center = checkpoint_centers[idx];
+            Position cp_pos{false, checkpoint_center.x * SCALE, checkpoint_center.y * SCALE, not_horizontal, not_vertical, 0.0f};
+            update.next_checkpoints.push_back(cp_pos);
+        }
+    }
+
+    broadcast.push_back(update);
+}
+
+void GameLoop::update_body_positions()
+{
+    // Velocidad del body (en metros/seg)
+    std::lock_guard<std::mutex> lk(players_map_mutex);
+    for (auto &[id, player_data] : players)
+    {
+        // Si el jugador está muerto, no aplicar fuerzas
+        if (player_data.is_dead)
+        {
+            continue;
+        }
+
+        // Si el jugador terminó la carrera, detenerlo completamente
+        if (player_data.race_finished)
+        {
+            if (player_data.body)
+            {
+                player_data.body->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
+                player_data.body->SetAngularVelocity(0.0f);
+            }
+            continue;
+        }
+
+        // Si el body está marcado para remover, NO lo destruyo acá (se hace en flush post-Step)
+        // Simplemente omito actualizar fuerzas/física para este jugador.
+        if (player_data.mark_body_for_removal)
+        {
+            continue; // se destruye en el flush dentro de process_playing_state
+        }
+        if (!player_data.body)
+            continue;
+        // Aplicar fricción/adhesión primero
+        update_friction_for_player(player_data);
+
+        // Aplicar fuerza de conducción / torque basado en la entrada
+        update_drive_for_player(player_data);
+    }
+}
+
+void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadcast)
+{
+    std::lock_guard<std::mutex> lk(players_map_mutex);
+
+    for (auto &[id, player_data] : players)
+    {
+        add_player_to_broadcast(broadcast, id, player_data);
+    }
+
+    // Actualizar estado del bridge para NPCs antes de agregar al broadcast
+    for (auto &npc : npc_manager.get_npcs())
+    {
+        update_bridge_state_for_npc(npc);
+    }
+
+    npc_manager.add_to_broadcast(broadcast);
+}
+
+//
+//
+// Refactor: Logica de colisiones y fisicas
+//
+//
 
 void GameLoop::CheckpointContactListener::BeginContact(b2Contact *contact)
 {
@@ -471,34 +1007,6 @@ bool GameLoop::is_valid_checkpoint_collision(b2Fixture *player_fixture, b2Fixtur
 
     out_checkpoint_index = it->second;
     return true;
-}
-
-void GameLoop::complete_player_race(PlayerData &player_data)
-{
-    auto lap_end_time = std::chrono::steady_clock::now();
-    auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(lap_end_time - player_data.lap_start_time).count();
-
-    player_data.race_finished = true;
-    player_data.disqualified = false;
-
-    // Guardar el tiempo de la ronda actual
-    int round_idx = player_data.rounds_completed;
-    uint32_t existing_penalization = 0;
-
-    if (round_idx >= 0 && round_idx < TOTAL_ROUNDS)
-    {
-        // Si ya hay penalizaciones acumuladas en esta ronda, preservarlas
-        existing_penalization = player_data.round_times_ms[round_idx];
-        uint32_t new_total_time = static_cast<uint32_t>(elapsed_ms) + existing_penalization;
-
-        player_data.round_times_ms[round_idx] = new_total_time;
-    }
-
-    // Incrementar ronda completada y acumular tiempo total
-    player_data.rounds_completed = std::min(player_data.rounds_completed + 1, TOTAL_ROUNDS);
-    player_data.total_time_ms += static_cast<uint32_t>(elapsed_ms) + existing_penalization;
-    player_data.god_mode = true;
-    check_race_completion();
 }
 
 void GameLoop::disqualify_player(PlayerData &player_data, int player_id)
@@ -774,22 +1282,6 @@ void GameLoop::apply_collision_damage(PlayerData &player_data, int player_id, fl
     }
 }
 
-bool GameLoop::can_add_player() const
-{
-    if (static_cast<int>(players.size()) >= static_cast<int>(spawn_points.size()))
-    {
-        std::cout << FULL_LOBBY_MSG << std::endl;
-        return false;
-    }
-    return true;
-}
-
-int GameLoop::add_player_to_order(int player_id)
-{
-    player_order.push_back(player_id);
-    return static_cast<int>(player_order.size()) - 1;
-}
-
 PlayerData GameLoop::create_default_player_data(int spawn_idx)
 {
     const MapLayout::SpawnPointData &spawn = spawn_points[spawn_idx];
@@ -846,13 +1338,6 @@ void GameLoop::cleanup_player_data(int client_id)
     players.erase(it);
 }
 
-void GameLoop::remove_from_player_order(int client_id)
-{
-    auto order_it = std::find(player_order.begin(), player_order.end(), client_id);
-    if (order_it != player_order.end())
-        player_order.erase(order_it);
-}
-
 void GameLoop::reposition_remaining_players()
 {
     std::cout << "[GameLoop] remove_player: reordering remaining " << player_order.size() << " players in lobby" << std::endl;
@@ -874,298 +1359,6 @@ void GameLoop::reposition_remaining_players()
         Position new_pos{false, spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
         player_data.body = create_player_body(spawn.x, spawn.y, new_pos, player_data.car.car_name);
         player_data.position = new_pos;
-    }
-}
-
-void GameLoop::remove_player(int client_id)
-{
-    std::lock_guard<std::mutex> lk(players_map_mutex);
-
-    cleanup_player_data(client_id);
-    remove_from_player_order(client_id);
-
-    std::cout << "[GameLoop] remove_player: client " << client_id << " removed" << std::endl;
-
-    if (game_state == GameState::LOBBY && !player_order.empty())
-        reposition_remaining_players();
-}
-
-void GameLoop::transition_to_playing_state()
-{
-    game_state = GameState::PLAYING;
-    std::cout << "[GameLoop] Game started! Transitioning from LOBBY to PLAYING" << std::endl;
-    reset_accumulator.store(true);
-    
-    auto race_start_time = std::chrono::steady_clock::now();
-    for (auto &[id, player_data] : players)
-    {
-        player_data.lap_start_time = race_start_time;
-    }
-    std::cout << "[GameLoop] Race timer started for all players" << std::endl;
-    
-    broadcast_game_started();
-}
-
-void GameLoop::broadcast_game_started()
-{
-    ServerMessage msg;
-    msg.opcode = GAME_STARTED;
-
-    for (auto &entry : players_messanger)
-    {
-        auto &queue = entry.second;
-        if (queue)
-        {
-            try
-            {
-                queue->push(msg);
-                std::cout << "[GameLoop] GAME_STARTED sent to player " << entry.first << std::endl;
-            }
-            catch (const ClosedQueue &)
-            {
-            }
-        }
-    }
-}
-
-void GameLoop::reset_players_for_race_start()
-{
-    for (auto &[id, player_data] : players)
-    {
-        if (!player_data.body)
-            continue;
-
-        player_data.body->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
-        player_data.body->SetAngularVelocity(0.0f);
-
-        // lap_start_time se setea en transition_to_playing_state() después del countdown
-        player_data.next_checkpoint = 0;
-        player_data.race_finished = false;
-        player_data.is_dead = false;
-        player_data.god_mode = false; // Reset god mode para nueva ronda
-        player_data.position.on_bridge = false;
-        player_data.position.direction_x = not_horizontal;
-        player_data.position.direction_y = not_vertical;
-
-        // Reset HP
-        const CarPhysics &car_physics = physics_config.getCarPhysics(player_data.car.car_name);
-        player_data.car.hp = car_physics.max_hp;
-
-        b2Vec2 current_pos = player_data.body->GetPosition();
-        float current_x_px = current_pos.x * SCALE;
-        float current_y_px = current_pos.y * SCALE;
-
-        std::cout << "[GameLoop] start_game: Player " << id
-                  << " at body_pos=(" << current_x_px << "," << current_y_px << ")"
-                  << " stored_pos=(" << player_data.position.new_X << "," << player_data.position.new_Y << ")"
-                  << " HP=" << player_data.car.hp
-                  << std::endl;
-    }
-}
-
-void GameLoop::reset_npcs_velocities()
-{
-    for (auto &npc : npcs)
-    {
-        if (!npc.body || npc.is_parked)
-            continue;
-        npc.body->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
-    }
-}
-
-void GameLoop::start_game()
-{
-    bool can_start = false;
-
-    // Scope limitado para el lock: solo para leer estado y modificar datos de jugadores
-    {
-        std::lock_guard<std::mutex> lk(players_map_mutex);
-
-        // Checkeo si se puede iniciar la carrera
-        if (game_state == GameState::LOBBY)
-        {
-            can_start = true;
-        }
-        else if (game_state == GameState::PLAYING)
-        {
-            // Durante PLAYING, solo permitir reiniciar si todos los jugadores están muertos
-            int total_players = static_cast<int>(players.size());
-            int dead_count = 0;
-
-            for (const auto &[id, player_data] : players)
-            {
-                if (player_data.is_dead)
-                {
-                    dead_count++;
-                }
-            }
-
-            if (dead_count == total_players && total_players > 0)
-            {
-                can_start = true;
-                std::cout << "[GameLoop] All players dead, restarting race..." << std::endl;
-            }
-        }
-
-        if (!can_start)
-        {
-            std::cout << "[GameLoop] Cannot start game in current state" << std::endl;
-            return;
-        }
-
-        // Al iniciar una carrera explícitamente, limpiar cualquier reset pendiente
-        // para evitar que perform_race_reset() dispare inmediatamente.
-        pending_race_reset.store(false);
-        // Asegurar que los checkpoints de la ronda actual estén cargados al iniciar
-        load_current_round_checkpoints();
-        reset_players_for_race_start();
-        reset_npcs_velocities();
-    } // <-- Lock se libera aquí
-
-    // Cambiar el estado FUERA del lock para evitar deadlock con el game loop
-    transition_to_starting_state(10);
-    started = true;
-}
-
-void GameLoop::broadcast_positions(ServerMessage &msg)
-{
-    // Snapshot de destinatarios para evitar iterar el mapa mientras puede cambiar
-    std::vector<std::pair<int, std::shared_ptr<Queue<ServerMessage>>>> recipients;
-    {
-        std::lock_guard<std::mutex> lk(players_map_mutex);
-        recipients.reserve(players_messanger.size());
-        for (auto &entry : players_messanger)
-        {
-            recipients.emplace_back(entry.first, entry.second);
-        }
-    }
-
-    std::vector<int> to_remove;
-    for (auto &p : recipients)
-    {
-        int id = p.first;
-        auto &queue = p.second;
-        if (!queue)
-        {
-            to_remove.push_back(id);
-            continue;
-        }
-        try
-        {
-            queue->push(msg);
-        }
-        catch (const ClosedQueue &)
-        {
-            // El cliente cerró su outbox: marcar para remover
-            to_remove.push_back(id);
-        }
-    }
-    if (!to_remove.empty())
-    {
-        // Remover jugadores desconectados
-        std::lock_guard<std::mutex> lk(players_map_mutex);
-        for (int id : to_remove)
-        {
-            players_messanger.erase(id);
-            players.erase(id);
-        }
-    }
-}
-
-bool GameLoop::should_reset_race() const
-{
-    return pending_race_reset.load();
-}
-
-void GameLoop::broadcast_race_end_message()
-{
-    std::cout << "[GameLoop] Executing race reset..." << std::endl;
-    // Enviar tiempos de la carrera actual a los clientes
-    ServerMessage msg;
-    msg.opcode = RACE_TIMES;
-    {
-        std::lock_guard<std::mutex> lk(players_map_mutex);
-        uint8_t round_index = static_cast<uint8_t>(current_round);
-        for (auto &entry : players)
-        {
-            int pid = entry.first;
-            PlayerData &pd = entry.second;
-            uint32_t time_ms = 10u * 60u * 1000u;
-            bool dq = pd.disqualified || pd.is_dead;
-
-            int completed_round_idx = pd.rounds_completed - 1;
-            if (completed_round_idx >= 0 && completed_round_idx < TOTAL_ROUNDS)
-            {
-                time_ms = pd.round_times_ms[completed_round_idx];
-            }
-            msg.race_times.push_back({static_cast<uint32_t>(pid), time_ms, dq, round_index});
-        }
-    }
-    broadcast_positions(msg);
-}
-
-void GameLoop::reset_all_players_to_lobby()
-{
-    for (size_t i = 0; i < player_order.size(); ++i)
-    {
-        int player_id = player_order[i];
-        auto player_it = players.find(player_id);
-        if (player_it == players.end())
-            continue;
-
-        PlayerData &player_data = player_it->second;
-        const MapLayout::SpawnPointData &spawn = spawn_points[i];
-
-        safe_destroy_body(player_data.body);
-        Position new_pos{false, spawn.x, spawn.y, not_horizontal, not_vertical, spawn.angle};
-        player_data.body = create_player_body(spawn.x, spawn.y, new_pos, player_data.car.car_name);
-        player_data.position = new_pos;
-
-        player_data.next_checkpoint = 0;
-        player_data.race_finished = false;
-        player_data.is_dead = false;
-        player_data.god_mode = false; // Reset god mode para nueva ronda
-        player_data.lap_start_time = std::chrono::steady_clock::now();
-
-        // Reseteo HP
-        const CarPhysics &car_physics = physics_config.getCarPhysics(player_data.car.car_name);
-        player_data.car.hp = car_physics.max_hp;
-    }
-}
-
-void GameLoop::transition_to_lobby_state()
-{
-    game_state = GameState::LOBBY;
-    pending_race_reset.store(false);
-    std::cout << "[GameLoop] Race reset complete. Returning to LOBBY." << std::endl;
-}
-
-void GameLoop::transition_to_starting_state(int countdown_seconds)
-{
-    starting_active = true;
-    game_state = GameState::STARTING;
-    starting_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(countdown_seconds);
-    std::cout << "[GameLoop] STARTING: countdown " << countdown_seconds << "s before PLAYING" << std::endl;
-
-    // Notificar a los clientes el inicio de la cuenta regresiva
-    ServerMessage msg;
-    msg.opcode = STARTING_COUNTDOWN;
-    broadcast_positions(msg);
-}
-
-void GameLoop::maybe_finish_starting_and_play()
-{
-    if (!starting_active)
-    {
-        return;
-    }
-
-    auto now = std::chrono::steady_clock::now();
-    if (now >= starting_deadline)
-    {
-        starting_active = false;
-        std::cout << "[GameLoop] STARTING finished. Transitioning to PLAYING" << std::endl;
-        transition_to_playing_state();
     }
 }
 
@@ -1209,440 +1402,11 @@ b2Body *GameLoop::create_player_body(float x_px, float y_px, Position &pos, cons
     return player_body;
 }
 
-void GameLoop::add_player_to_broadcast(std::vector<PlayerPositionUpdate> &broadcast, int player_id, PlayerData &player_data)
-{
-    // Si el jugador está muerto y no tiene body, no lo agregamos al broadcast
-    // (el auto desaparece visualmente)
-    if (player_data.is_dead && !player_data.body)
-    {
-        return;
-    }
-
-    b2Body *body = player_data.body;
-    if (body)
-    {
-        b2Vec2 position = body->GetPosition();
-        // Actualizar posición básica
-        player_data.position.new_X = position.x * SCALE;
-        player_data.position.new_Y = position.y * SCALE;
-        player_data.position.angle = normalize_angle(body->GetAngle());
-
-        // IMPORTANTE: Actualizar el estado del puente ANTES de copiar la posición
-        update_bridge_state_for_player(player_data);
-    }
-
-    // Ahora crear el update con los datos correctos
-    PlayerPositionUpdate update;
-    update.player_id = player_id;
-    update.new_pos = player_data.position; // Ahora incluye on_bridge actualizado
-    update.car_type = player_data.car.car_name;
-    update.hp = player_data.car.hp;
-    update.collision_flag = player_data.collision_this_frame;
-    update.is_stopping = player_data.is_stopping;
-
-    // Enviar niveles de mejora
-    update.upgrade_speed = player_data.upgrades.speed;
-    update.upgrade_acceleration = player_data.upgrades.acceleration;
-    update.upgrade_handling = player_data.upgrades.handling;
-    update.upgrade_durability = player_data.upgrades.durability;
-
-    // Solo enviar checkpoints si el jugador no ha terminado la carrera
-    if (!player_data.race_finished && !checkpoint_centers.empty())
-    {
-        int total = static_cast<int>(checkpoint_centers.size());
-        for (int k = 0; k < CHECKPOINT_LOOKAHEAD; ++k)
-        {
-            int idx = player_data.next_checkpoint + k;
-
-            // Stop at the last checkpoint, don't wrap around
-            if (idx >= total)
-                break;
-
-            b2Vec2 checkpoint_center = checkpoint_centers[idx];
-            Position cp_pos{false, checkpoint_center.x * SCALE, checkpoint_center.y * SCALE, not_horizontal, not_vertical, 0.0f};
-            update.next_checkpoints.push_back(cp_pos);
-        }
-    }
-
-    broadcast.push_back(update);
-}
-
-void GameLoop::add_npc_to_broadcast(std::vector<PlayerPositionUpdate> &broadcast, NPCData &npc)
-{
-    if (!npc.body)
-        return;
-
-    b2Vec2 position = npc.body->GetPosition();
-    Position pos{};
-    pos.new_X = position.x * SCALE;
-    pos.new_Y = position.y * SCALE;
-
-    b2Vec2 velocity = npc.body->GetLinearVelocity();
-    MovementDirectionX dx = not_horizontal;
-    MovementDirectionY dy = not_vertical;
-    if (velocity.x > NPC_DIRECTION_THRESHOLD)
-        dx = right;
-    else if (velocity.x < -NPC_DIRECTION_THRESHOLD)
-        dx = left;
-    if (velocity.y > NPC_DIRECTION_THRESHOLD)
-        dy = down;
-    else if (velocity.y < -NPC_DIRECTION_THRESHOLD)
-        dy = up;
-    pos.direction_x = dx;
-    pos.direction_y = dy;
-    pos.angle = normalize_angle(npc.body->GetAngle());
-    update_bridge_state_for_npc(npc);
-    pos.on_bridge = npc.on_bridge;
-    PlayerPositionUpdate update;
-    update.player_id = npc.npc_id; // id negativo para NPC
-    update.new_pos = pos;
-    update.car_type = "npc";
-    update.hp = 100.0f;
-    update.collision_flag = false;
-    broadcast.push_back(update);
-}
-
-void GameLoop::update_player_positions(std::vector<PlayerPositionUpdate> &broadcast)
-{
-    std::lock_guard<std::mutex> lk(players_map_mutex);
-
-    for (auto &[id, player_data] : players)
-    {
-        add_player_to_broadcast(broadcast, id, player_data);
-    }
-
-    for (auto &npc : npcs)
-    {
-        add_npc_to_broadcast(broadcast, npc);
-    }
-}
-
-void GameLoop::update_body_positions()
-{
-    // Velocidad del body (en metros/seg)
-    std::lock_guard<std::mutex> lk(players_map_mutex);
-    for (auto &[id, player_data] : players)
-    {
-        // Si el jugador está muerto, no aplicar fuerzas
-        if (player_data.is_dead)
-        {
-            continue;
-        }
-
-        // Si el jugador terminó la carrera, detenerlo completamente
-        if (player_data.race_finished)
-        {
-            if (player_data.body)
-            {
-                player_data.body->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
-                player_data.body->SetAngularVelocity(0.0f);
-            }
-            continue;
-        }
-
-        // Si el body está marcado para remover, NO lo destruyo acá (se hace en flush post-Step)
-        // Simplemente omito actualizar fuerzas/física para este jugador.
-        if (player_data.mark_body_for_removal)
-        {
-            continue; // se destruye en el flush dentro de process_playing_state
-        }
-        if (!player_data.body)
-            continue;
-        // Aplicar fricción/adhesión primero
-        update_friction_for_player(player_data);
-
-        // Aplicar fuerza de conducción / torque basado en la entrada
-        update_drive_for_player(player_data);
-    }
-}
-
-// ---------------- NPC Implementation ----------------
-
-b2Body *GameLoop::create_npc_body(float x_m, float y_m, bool is_static, float angle_rad)
-{
-    b2BodyDef bd;
-    bd.type = is_static ? b2_staticBody : b2_dynamicBody;
-    bd.position.Set(x_m, y_m);
-    bd.angle = angle_rad;
-    b2Body *npc_body = world.CreateBody(&bd);
-
-    float halfWidth = 22.0f / (2.0f * SCALE);
-    float halfHeight = 28.0f / (2.0f * SCALE);
-    b2PolygonShape shape;
-    shape.SetAsBox(halfWidth, halfHeight);
-    b2FixtureDef fd;
-    fd.shape = &shape;
-    fd.isSensor = false;
-    fd.density = 1.0f;
-    fd.friction = 0.3f;
-    fd.restitution = 0.0f;
-
-    fd.filter.categoryBits = CAR_GROUND;
-
-    fd.filter.maskBits =
-        COLLISION_FLOOR |     // Colisiones del suelo
-        CAR_GROUND |          // Otros jugadores en el suelo
-        SENSOR_START_BRIDGE | // Sensores de entrada
-        SENSOR_END_BRIDGE;    // Sensores de salida
-
-    npc_body->CreateFixture(&fd);
-    return npc_body;
-}
-
-void GameLoop::spawn_parked_npcs(const std::vector<MapLayout::ParkedCarData> &parked_data, int &next_negative_id)
-{
-    int parked_count = std::min(static_cast<int>(parked_data.size()), NPCConfig::getInstance().getMaxParked());
-
-    std::random_device rd_parked;
-    std::mt19937 gen_parked(rd_parked());
-
-    std::vector<size_t> parked_indices;
-    for (size_t i = 0; i < parked_data.size(); ++i)
-    {
-        parked_indices.push_back(i);
-    }
-    std::shuffle(parked_indices.begin(), parked_indices.end(), gen_parked);
-
-    for (int i = 0; i < parked_count; ++i)
-    {
-        const auto &parked = parked_data[parked_indices[i]];
-        float angle_rad = parked.horizontal ? b2_pi / 2.0f : 0.0f;
-        b2Body *npc_body = create_npc_body(parked.position.x, parked.position.y, true, angle_rad);
-
-        NPCData npc;
-        npc.body = npc_body;
-        npc.npc_id = next_negative_id--;
-        npc.current_waypoint = -1;
-        npc.target_waypoint = -1;
-        npc.speed_mps = 0.0f;
-        npc.is_parked = true;
-        npc.is_horizontal = parked.horizontal;
-        npc.on_bridge = false;
-
-        npcs.push_back(npc);
-    }
-
-    std::cout << "[GameLoop][NPC] Spawned " << parked_count << " parked NPCs (out of "
-              << parked_data.size() << " available positions)." << std::endl;
-}
-
-std::vector<int> GameLoop::get_valid_waypoints_away_from_parked(const std::vector<MapLayout::ParkedCarData> &parked_data)
-{
-    std::vector<int> candidate_waypoints;
-    candidate_waypoints.reserve(street_waypoints.size());
-
-    for (int idx = 0; idx < static_cast<int>(street_waypoints.size()); ++idx)
-    {
-        b2Vec2 wp_pos = street_waypoints[idx].position;
-        bool too_close = false;
-
-        for (const auto &parked_car : parked_data)
-        {
-            float distance = (wp_pos - parked_car.position).Length();
-            if (distance < MIN_DISTANCE_FROM_PARKED_M)
-            {
-                too_close = true;
-                break;
-            }
-        }
-
-        if (!too_close)
-            candidate_waypoints.push_back(idx);
-    }
-
-    if (candidate_waypoints.empty())
-    {
-        for (int idx = 0; idx < static_cast<int>(street_waypoints.size()); ++idx)
-            candidate_waypoints.push_back(idx);
-        std::cout << "[GameLoop][NPC] Warning: All waypoints filtered out by parked proximity; using full set." << std::endl;
-    }
-
-    return candidate_waypoints;
-}
-
-int GameLoop::select_closest_waypoint_connection(int start_waypoint_idx)
-{
-    const MapLayout::WaypointData &start_wp = street_waypoints[start_waypoint_idx];
-    b2Vec2 spawn_pos = start_wp.position;
-
-    if (start_wp.connections.empty())
-        return start_waypoint_idx;
-
-    float best_dist = std::numeric_limits<float>::max();
-    int closest_idx = start_waypoint_idx;
-
-    for (int candidate_idx : start_wp.connections)
-    {
-        if (candidate_idx < 0 || candidate_idx >= static_cast<int>(street_waypoints.size()))
-            continue;
-
-        b2Vec2 candidate_pos = street_waypoints[candidate_idx].position;
-        float distance = (candidate_pos - spawn_pos).Length();
-
-        if (distance < best_dist)
-        {
-            best_dist = distance;
-            closest_idx = candidate_idx;
-        }
-    }
-
-    return closest_idx;
-}
-
-float GameLoop::calculate_initial_npc_angle(const b2Vec2 &spawn_pos, const b2Vec2 &target_pos) const
-{
-    b2Vec2 direction = target_pos - spawn_pos;
-    float length = direction.Length();
-
-    if (length <= 0.0001f)
-        return 0.0f;
-
-    float movement_angle = std::atan2(direction.y, direction.x);
-    return movement_angle - b2_pi / 2.0f; // sprite orientado hacia arriba
-}
-
-GameLoop::NPCData GameLoop::create_moving_npc(int start_idx, int target_idx, float initial_angle, int &next_negative_id)
-{
-    b2Vec2 spawn_pos = street_waypoints[start_idx].position;
-    float speed_mps = NPCConfig::getInstance().getSpeedPxS() / SCALE;
-
-    b2Body *npc_body = create_npc_body(spawn_pos.x, spawn_pos.y, false, initial_angle);
-
-    NPCData npc;
-    npc.body = npc_body;
-    npc.npc_id = next_negative_id--;
-    npc.current_waypoint = start_idx;
-    npc.target_waypoint = target_idx;
-    npc.speed_mps = speed_mps;
-    npc.is_parked = false;
-    npc.is_horizontal = false;
-
-    return npc;
-}
-
-void GameLoop::spawn_moving_npcs(const std::vector<MapLayout::ParkedCarData> &parked_data, int &next_negative_id)
-{
-    if (street_waypoints.size() < 2)
-    {
-        std::cout << "[GameLoop][NPC] Not enough waypoints to spawn moving NPCs." << std::endl;
-        return;
-    }
-
-    std::vector<int> candidate_waypoints = get_valid_waypoints_away_from_parked(parked_data);
-    int moving_npcs_count = std::min(NPCConfig::getInstance().getMaxMoving(),
-                                     static_cast<int>(candidate_waypoints.size()));
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::shuffle(candidate_waypoints.begin(), candidate_waypoints.end(), gen);
-
-    for (int i = 0; i < moving_npcs_count; ++i)
-    {
-        int start_wp_idx = candidate_waypoints[i];
-        int target_wp_idx = select_closest_waypoint_connection(start_wp_idx);
-
-        float initial_angle = 0.0f;
-        if (target_wp_idx != start_wp_idx)
-        {
-            b2Vec2 spawn_pos = street_waypoints[start_wp_idx].position;
-            b2Vec2 target_pos = street_waypoints[target_wp_idx].position;
-            initial_angle = calculate_initial_npc_angle(spawn_pos, target_pos);
-        }
-
-        NPCData npc = create_moving_npc(start_wp_idx, target_wp_idx, initial_angle, next_negative_id);
-        npcs.push_back(npc);
-    }
-
-    std::cout << "[GameLoop][NPC] Moving NPC spawn candidates: " << candidate_waypoints.size()
-              << " chosen: " << moving_npcs_count << std::endl;
-    std::cout << "[GameLoop][NPC] Spawned " << moving_npcs_count << " moving NPCs." << std::endl;
-    std::cout << "[GameLoop][NPC] Total NPCs: " << npcs.size() << std::endl;
-}
-
-void GameLoop::init_npcs(const std::vector<MapLayout::ParkedCarData> &parked_data)
-{
-    std::lock_guard<std::mutex> lk(players_map_mutex);
-    int next_negative_id = -1;
-    spawn_parked_npcs(parked_data, next_negative_id);
-    spawn_moving_npcs(parked_data, next_negative_id);
-}
-
-bool GameLoop::should_select_new_waypoint(NPCData &npc, const b2Vec2 &target_pos)
-{
-    b2Vec2 pos = npc.body->GetPosition();
-    float dist = (target_pos - pos).Length();
-    return dist < NPC_ARRIVAL_THRESHOLD_M;
-}
-
-void GameLoop::select_next_waypoint(NPCData &npc, std::mt19937 &gen)
-{
-    npc.current_waypoint = npc.target_waypoint;
-    const MapLayout::WaypointData &current_wp = street_waypoints[npc.current_waypoint];
-
-    // Elegir aleatoriamente uno de los waypoints conectados
-    if (!current_wp.connections.empty())
-    {
-        std::uniform_int_distribution<size_t> conn_dist(0, current_wp.connections.size() - 1);
-        npc.target_waypoint = current_wp.connections[conn_dist(gen)];
-    }
-}
-
-void GameLoop::move_npc_towards_target(NPCData &npc, const b2Vec2 &target_pos)
-{
-    b2Body *body = npc.body;
-    b2Vec2 pos = body->GetPosition();
-    b2Vec2 to_target = target_pos - pos;
-    float dist = to_target.Length();
-
-    if (dist > 0.0001f)
-    {
-        b2Vec2 dir = (1.0f / dist) * to_target; // normalizar
-        b2Vec2 vel = npc.speed_mps * dir;
-        body->SetLinearVelocity(vel);
-
-        // Orientar el auto en la dirección del movimiento
-        float movement_angle = std::atan2(vel.y, vel.x);
-        float body_angle = movement_angle - b2_pi / 2.0f; // ajustar por sprite orientado hacia arriba
-        body->SetTransform(pos, body_angle);
-    }
-    else
-    {
-        body->SetLinearVelocity(b2Vec2(0, 0));
-    }
-}
-
-void GameLoop::update_npcs()
-{
-    std::lock_guard<std::mutex> lk(players_map_mutex);
-    if (street_waypoints.empty())
-        return;
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-
-    for (auto &npc : npcs)
-    {
-        b2Body *body = npc.body;
-        if (!body || npc.is_parked)
-            continue; // NPCs estacionados no se mueven
-
-        // Validar índices
-        if (npc.target_waypoint < 0 || npc.target_waypoint >= static_cast<int>(street_waypoints.size()))
-            continue;
-
-        b2Vec2 target_pos = street_waypoints[npc.target_waypoint].position;
-
-        // Si llegó al waypoint objetivo, elegir siguiente destino aleatorio
-        if (should_select_new_waypoint(npc, target_pos))
-        {
-            select_next_waypoint(npc, gen);
-            target_pos = street_waypoints[npc.target_waypoint].position;
-        }
-
-        // Moverse hacia el target
-        move_npc_towards_target(npc, target_pos);
-    }
-}
+//
+//
+// Refactor: multipartidas
+//
+//
 
 size_t GameLoop::get_player_count() const
 {
@@ -1655,104 +1419,47 @@ bool GameLoop::is_joinable() const
     return game_state == GameState::LOBBY;
 }
 
-void GameLoop::check_race_completion()
+bool GameLoop::can_add_player() const
 {
-    // Asume que ya estamos bajo players_map_mutex lock (llamado desde process_pair o apply_collision_damage)
-    // IMPORTANTE: No podemos modificar Box2D aca (estamos en callback de contacto)
-
-    int finished_or_dead_count = 0;
-    int total_players = static_cast<int>(players.size());
-
-    for (const auto &[id, player_data] : players)
+    if (static_cast<int>(players.size()) >= static_cast<int>(spawn_points.size()))
     {
-        // Contar jugadores que terminaron la carrera O murieron
-        if (player_data.race_finished || player_data.is_dead)
-        {
-            finished_or_dead_count++;
-        }
+        std::cout << FULL_LOBBY_MSG << std::endl;
+        return false;
     }
-
-    // La carrera termina cuando TODOS los jugadores terminaron O murieron
-    bool all_done = (finished_or_dead_count == total_players && total_players > 0);
-
-    if (all_done)
-    {
-        std::cout << "\n======================================" << std::endl;
-        std::cout << "   ALL PLAYERS FINISHED OR DIED!" << std::endl;
-        std::cout << "   Preparing to return to lobby..." << std::endl;
-        std::cout << "======================================\n"
-                  << std::endl;
-
-        pending_race_reset.store(true);
-    }
+    return true;
 }
 
-void GameLoop::perform_race_reset()
+int GameLoop::add_player_to_order(int player_id)
 {
-    // Evitar realizar operaciones pesadas (destroy/recreate bodies, reload checkpoints)
-    // bajo el lock del mapa de jugadores. Primero chequeamos el flag y salimos del lock.
-    bool do_reset = false;
-    {
-        std::lock_guard<std::mutex> lk(players_map_mutex);
-        if (should_reset_race())
-        {
-            // Limpiamos el flag acá para que no se vuelva a ejecutar en el mismo frame.
-            pending_race_reset.store(false);
-            do_reset = true;
-        }
-    }
-
-    if (!do_reset)
-        return;
-
-    broadcast_race_end_message();
-    advance_round_or_reset_to_lobby();
+    player_order.push_back(player_id);
+    return static_cast<int>(player_order.size()) - 1;
 }
 
-void GameLoop::advance_round_or_reset_to_lobby()
+void GameLoop::remove_from_player_order(int client_id)
 {
-    // Nueva política: NO volver a LOBBY entre rondas.
-    // Avanzar de ronda (o reiniciar campeonato) y entrar directamente en STARTING (cuenta regresiva) automáticamente.
-    if (current_round < 2)
-    {
-        current_round++;
-        std::cout << "[GameLoop] Advancing to round " << (current_round + 1) << " of 3 (auto STARTING)" << std::endl;
-
-        // Preparar siguiente ronda: recargar checkpoints
-        load_current_round_checkpoints();
-
-        // Reposicionar jugadores a los spawns y limpiar estado de carrera
-        reset_all_players_to_lobby();
-
-        // Limpiar flags y pasar a STARTING
-        pending_race_reset.store(false);
-        std::cout << "[GameLoop] About to call transition_to_starting_state for round " << (current_round + 1) << std::endl;
-        transition_to_starting_state(10);
-    }
-    else
-    {
-        // Terminar campeonato: antes de reiniciar, enviar TOTAL_TIMES
-        ServerMessage totals;
-        totals.opcode = TOTAL_TIMES;
-        {
-            std::lock_guard<std::mutex> lk(players_map_mutex);
-            for (auto &entry : players)
-            {
-                totals.total_times.push_back({static_cast<uint32_t>(entry.first), entry.second.total_time_ms});
-            }
-        }
-        broadcast_positions(totals);
-
-        // Reiniciar al round 1 y entrar a STARTING directamente
-        std::cout << "[GameLoop] Championship finished. Restarting at round 1 (auto STARTING)." << std::endl;
-        current_round = 0;
-        load_current_round_checkpoints();
-        reset_all_players_to_lobby();
-        pending_race_reset.store(false);
-        std::cout << "[GameLoop] About to call transition_to_starting_state for championship restart" << std::endl;
-        transition_to_starting_state(10);
-    }
+    auto order_it = std::find(player_order.begin(), player_order.end(), client_id);
+    if (order_it != player_order.end())
+        player_order.erase(order_it);
 }
+
+void GameLoop::remove_player(int client_id)
+{
+    std::lock_guard<std::mutex> lk(players_map_mutex);
+
+    cleanup_player_data(client_id);
+    remove_from_player_order(client_id);
+
+    std::cout << "[GameLoop] remove_player: client " << client_id << " removed" << std::endl;
+
+    if (game_state == GameState::LOBBY && !player_order.empty())
+        reposition_remaining_players();
+}
+
+//
+//
+// Refactor: implementación de puente
+//
+//
 
 bool GameLoop::update_bridge_state_for_player(PlayerData &player_data)
 {
