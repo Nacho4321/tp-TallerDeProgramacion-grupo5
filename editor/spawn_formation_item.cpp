@@ -10,25 +10,36 @@ SpawnFormationItem::SpawnFormationItem(QGraphicsItem* parent)
 }
 
 QRectF SpawnFormationItem::boundingRect() const {
-    float width = COL_SPACING + CAR_WIDTH + 40;
-    float height = ROW_SPACING * 3 + CAR_HEIGHT + 40;
-    return QRectF(-width / 2, -height / 2, width, height);
+    // Bounding rect fijo que cubre todas las rotaciones posibles
+    float maxSize = ROW_SPACING * 3 + CAR_HEIGHT + 50;
+    return QRectF(-maxSize / 2, -maxSize / 2, maxSize, maxSize);
 }
 
 QPointF SpawnFormationItem::getCarPosition(int carIndex) const {
-    int row = carIndex / 2;   
-    int col = carIndex % 2;   
+    // Layout base (orientación Up):
+    //   [0]  [1]
+    //   [2]  [3]
+    //   [4]  [5]
+    //   [6]  [7]
+    int row = carIndex / 2;
+    int col = carIndex % 2;
     
     float x = (col == 0) ? -COL_SPACING / 2 : COL_SPACING / 2;
     float y = (row - 1.5f) * ROW_SPACING;
     
-    float angleDegrees = static_cast<float>(currentOrientation);
-    float angleRadians = angleDegrees * M_PI / 180.0f;
-    
-    float rotatedX = x * cos(angleRadians) - y * sin(angleRadians);
-    float rotatedY = x * sin(angleRadians) + y * cos(angleRadians);
-    
-    return QPointF(rotatedX, rotatedY);
+    // Aplico rotación según orientación
+    switch (currentOrientation) {
+        case Orientation::Up:
+            return QPointF(x, y);
+        case Orientation::Right:
+            return QPointF(-y, x);
+        case Orientation::Down:
+            return QPointF(-x, -y);
+        case Orientation::Left:
+            return QPointF(y, -x);
+        default:
+            return QPointF(x, y);
+    }
 }
 
 void SpawnFormationItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
@@ -38,14 +49,21 @@ void SpawnFormationItem::paint(QPainter* painter, const QStyleOptionGraphicsItem
     
     painter->setRenderHint(QPainter::Antialiasing);
     
-    float angleDegrees = static_cast<float>(currentOrientation);
+    // Ángulo visual para rotar los rectángulos de los autos
+    float visualAngle = 0;
+    switch (currentOrientation) {
+        case Orientation::Up:    visualAngle = 0;   break;
+        case Orientation::Right: visualAngle = 90;  break;
+        case Orientation::Down:  visualAngle = 180; break;
+        case Orientation::Left:  visualAngle = 270; break;
+    }
     
     for (int i = 0; i < SPAWN_COUNT; i++) {
         QPointF carPos = getCarPosition(i);
         
         painter->save();
         painter->translate(carPos);
-        painter->rotate(angleDegrees);
+        painter->rotate(visualAngle);
         
         QRectF carRect(-CAR_WIDTH / 2, -CAR_HEIGHT / 2, CAR_WIDTH, CAR_HEIGHT);
         painter->setPen(QPen(QColor(0, 200, 200), 2));
@@ -72,6 +90,7 @@ void SpawnFormationItem::setOrientation(Orientation orientation) {
 }
 
 void SpawnFormationItem::rotateLeft() {
+    prepareGeometryChange();
     int angle = static_cast<int>(currentOrientation);
     angle = (angle + 270) % 360;
     currentOrientation = static_cast<Orientation>(angle);
@@ -79,6 +98,7 @@ void SpawnFormationItem::rotateLeft() {
 }
 
 void SpawnFormationItem::rotateRight() {
+    prepareGeometryChange();
     int angle = static_cast<int>(currentOrientation);
     angle = (angle + 90) % 360;
     currentOrientation = static_cast<Orientation>(angle);
@@ -88,7 +108,16 @@ void SpawnFormationItem::rotateRight() {
 std::vector<SpawnPointData> SpawnFormationItem::getSpawnPoints() const {
     std::vector<SpawnPointData> points;
     QPointF center = pos();
-    float angle = static_cast<float>(currentOrientation);
+    
+    // Ángulos en radianes
+    float angle;
+    switch (currentOrientation) {
+        case Orientation::Up:    angle = M_PI;       break;  // arriba
+        case Orientation::Right: angle = -M_PI / 2;  break;  // derecha
+        case Orientation::Down:  angle = 0.0f;       break;  // abajo
+        case Orientation::Left:  angle = M_PI / 2;   break;  // izquierda
+        default:                 angle = M_PI;       break;
+    }
     
     for (int i = 0; i < SPAWN_COUNT; i++) {
         QPointF carPos = getCarPosition(i);
@@ -121,16 +150,23 @@ void SpawnFormationItem::loadFromSpawnPoints(const std::vector<SpawnPointData>& 
     float centerY = totalY / spawnPoints.size();
     setPos(centerX, centerY);
     
+    // Interpreto el ángulo en radianes
     float angle = spawnPoints[0].angle;
     
-    if (angle >= 315 || angle < 45) {
-        currentOrientation = Orientation::Up;
-    } else if (angle >= 45 && angle < 135) {
-        currentOrientation = Orientation::Right;
-    } else if (angle >= 135 && angle < 225) {
+    // Normalizo a [-π, π]
+    while (angle > M_PI) angle -= 2 * M_PI;
+    while (angle < -M_PI) angle += 2 * M_PI;
+    
+    // Determino la orientación según el ángulo
+    // π = arriba, -π/2 = derecha, 0 = abajo, π/2 = izquierda
+    if (angle > -M_PI/4 && angle <= M_PI/4) {
         currentOrientation = Orientation::Down;
-    } else {
+    } else if (angle > M_PI/4 && angle <= 3*M_PI/4) {
         currentOrientation = Orientation::Left;
+    } else if (angle > 3*M_PI/4 || angle <= -3*M_PI/4) {
+        currentOrientation = Orientation::Up;
+    } else {
+        currentOrientation = Orientation::Right;
     }
     
     update();
