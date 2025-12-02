@@ -179,14 +179,6 @@ void GameLoop::process_lobby_state()
     {
         entry.second.collision_this_frame = false;
     }
-
-    std::vector<PlayerPositionUpdate> broadcast;
-    update_player_positions(broadcast);
-
-    ServerMessage msg;
-    msg.opcode = UPDATE_POSITIONS;
-    msg.positions = broadcast;
-    broadcast_positions(msg);
 }
 
 void GameLoop::process_starting_state()
@@ -903,7 +895,14 @@ void GameLoop::transition_to_playing_state()
     game_state = GameState::PLAYING;
     std::cout << "[GameLoop] Game started! Transitioning from LOBBY to PLAYING" << std::endl;
     reset_accumulator.store(true);
-
+    
+    auto race_start_time = std::chrono::steady_clock::now();
+    for (auto &[id, player_data] : players)
+    {
+        player_data.lap_start_time = race_start_time;
+    }
+    std::cout << "[GameLoop] Race timer started for all players" << std::endl;
+    
     broadcast_game_started();
 }
 
@@ -931,8 +930,6 @@ void GameLoop::broadcast_game_started()
 
 void GameLoop::reset_players_for_race_start()
 {
-    auto race_start_time = std::chrono::steady_clock::now();
-
     for (auto &[id, player_data] : players)
     {
         if (!player_data.body)
@@ -941,7 +938,7 @@ void GameLoop::reset_players_for_race_start()
         player_data.body->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
         player_data.body->SetAngularVelocity(0.0f);
 
-        player_data.lap_start_time = race_start_time;
+        // lap_start_time se setea en transition_to_playing_state() después del countdown
         player_data.next_checkpoint = 0;
         player_data.race_finished = false;
         player_data.is_dead = false;
@@ -962,7 +959,6 @@ void GameLoop::reset_players_for_race_start()
                   << " at body_pos=(" << current_x_px << "," << current_y_px << ")"
                   << " stored_pos=(" << player_data.position.new_X << "," << player_data.position.new_Y << ")"
                   << " HP=" << player_data.car.hp
-                  << " - race timer started"
                   << std::endl;
     }
 }
