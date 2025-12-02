@@ -72,7 +72,6 @@ std::string InputHandler::receive()
                 {
                     awaiting_join_id = false;
                     join_id_buffer.clear();
-                    std::cout << "[Input] JOIN cancelado" << std::endl;
                     continue;
                 }
 
@@ -130,14 +129,12 @@ std::string InputHandler::receive()
                 {
                     audioManager->decreaseMasterVolume();
                 }
-                return ""; // Don't send to server
+                return "";
             }
             if (key == SDLK_j)
             {
-                // Activar modo para ingresar id de JOIN GAME
                 awaiting_join_id = true;
                 join_id_buffer.clear();
-                std::cout << "[Input] Ingresá el id de partida y presioná Enter..." << std::endl;
                 return ""; // No enviar nada aún
             }
 

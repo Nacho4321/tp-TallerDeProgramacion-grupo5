@@ -31,7 +31,6 @@ std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage &msg
     }
     
     uint8_t opcode = cmd_it->second;
-    logClientEncode(opcode, msg);
 
     // Header común: opcode + player_id + game_id
     buffer.push_back(opcode);
@@ -47,37 +46,6 @@ std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage &msg
     return buffer;
 }
 
-// Este hay q borrarlo despues
-void Protocol::logClientEncode(uint8_t opcode, const ClientMessage& msg) {
-    switch (opcode) {
-        case CREATE_GAME:
-            std::cout << "[Protocol(Client)] Encoding CREATE_GAME name='" << msg.game_name 
-                      << "' p=" << msg.player_id << " g=" << msg.game_id << std::endl;
-            break;
-        case JOIN_GAME:
-            std::cout << "[Protocol(Client)] Encoding JOIN_GAME p=" << msg.player_id 
-                      << " g=" << msg.game_id << std::endl;
-            break;
-        case GET_GAMES:
-            std::cout << "[Protocol(Client)] Encoding GET_GAMES" << std::endl;
-            break;
-        case START_GAME:
-            std::cout << "[Protocol(Client)] Encoding START_GAME" << std::endl;
-            break;
-        case UPGRADE_CAR:
-            std::cout << "[Protocol(Client)] Encoding UPGRADE_CAR type=" 
-                      << static_cast<int>(msg.upgrade_type) << std::endl;
-            break;
-        case CHEAT_CMD:
-            std::cout << "[Protocol(Client)] Encoding CHEAT_CMD type=" 
-                      << static_cast<int>(msg.cheat_type) << std::endl;
-            break;
-        default:
-            break;  // Sin logging para otros opcodes (movimiento, etc.)
-    }
-}
-
-// Helpers de encode, ClientMessage
 
 void Protocol::encodeCreateGame(const ClientMessage& msg) {
     insertString(msg.game_name);

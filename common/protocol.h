@@ -110,7 +110,6 @@ private:
     void encodeChangeCar(const ClientMessage& msg);
     void encodeUpgrade(const ClientMessage& msg);
     void encodeCheat(const ClientMessage& msg);
-    void logClientEncode(uint8_t opcode, const ClientMessage& msg);
 
     // Helpers de receive
     ClientMessage receiveUpPressed();

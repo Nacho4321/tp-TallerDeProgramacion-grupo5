@@ -53,13 +53,8 @@ bool GameClientHandler::create_game_blocking(uint32_t& out_game_id, uint32_t& ou
     try {
         ServerMessage resp = join_results.pop(); // bloquea hasta respuesta
         if (resp.opcode != GAME_JOINED) {
-            std::cout << "[Handler] Ignorando mensaje no-GAME_JOINED durante create (opcode=" << int(resp.opcode) << ")" << std::endl;
             return false;
         }
-        std::cout << "[Handler] Respuesta recibida: game_id=" << resp.game_id 
-                  << " player_id=" << resp.player_id 
-                  << " map_id=" << int(resp.map_id)
-                  << " success=" << resp.success << std::endl;
         if (resp.success) {
             // Actualizamos sender con IDs asignados
             sender.set_game_id(static_cast<int32_t>(resp.game_id));
@@ -83,7 +78,6 @@ bool GameClientHandler::join_game_blocking(int32_t game_id_to_join, uint32_t& ou
     try {
         ServerMessage resp = join_results.pop();
         if (resp.opcode != GAME_JOINED) {
-            std::cout << "[Handler] Ignorando mensaje no-GAME_JOINED durante join (opcode=" << int(resp.opcode) << ")" << std::endl;
             return false;
         }
         if (resp.success) {

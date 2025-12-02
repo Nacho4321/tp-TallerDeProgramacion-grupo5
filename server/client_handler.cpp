@@ -12,9 +12,7 @@ ClientHandler::ClientHandler(Socket &&p, MessageHandler &msg_admin)
       sender(protocol, *outbox),
       client_id(next_id++),  // Auto-asigna ID
       receiver(protocol, client_id, msg_admin, outbox)  // Pasar outbox a receiver
-{
-    std::cout << "[ClientHandler] Cliente creado con ID: " << client_id << std::endl;
-}
+{}
 
 ClientHandler::~ClientHandler() = default;
 

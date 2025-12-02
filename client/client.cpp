@@ -95,13 +95,11 @@ void Client::start()
             connected = false;
             return;
         }
-        std::cout << "[Client] AUTOJOIN mode: Joining game " << auto_join_game_id << std::endl;
         uint32_t pid = 0;
         uint8_t mapId = 0;
         bool ok = active_handler_->join_game_blocking(auto_join_game_id, pid, mapId);
         if (ok)
         {
-            std::cout << "[Client] Joined game. game_id=" << auto_join_game_id << " player_id=" << pid << std::endl;
             my_game_id = static_cast<uint32_t>(auto_join_game_id);
             playerTracker.setPlayerId(static_cast<int32_t>(pid));
             playerTracker.setOriginalPlayerId(static_cast<int32_t>(pid));
@@ -128,13 +126,11 @@ void Client::start()
         {
             if (input == CREATE_GAME_STR)
             {
-                std::cout << "[Client] Creating game..." << std::endl;
                 uint32_t gid = 0, pid = 0;
                 uint8_t mapId = 0;
                 bool ok = active_handler_->create_game_blocking(gid, pid, mapId);
                 if (ok)
                 {
-                    std::cout << "[Client] Game created. game_id=" << gid << " player_id=" << pid << std::endl;
                     my_game_id = gid;
                     playerTracker.setPlayerId(static_cast<int32_t>(pid));
                     playerTracker.setOriginalPlayerId(static_cast<int32_t>(pid));
@@ -153,13 +149,11 @@ void Client::start()
                     try
                     {
                         int gid = std::stoi(game_id_str);
-                        std::cout << "[Client] Joining game " << gid << "..." << std::endl;
                         uint32_t pid = 0;
                         uint8_t mapId = 0;
                         bool ok = active_handler_->join_game_blocking(gid, pid, mapId);
                         if (ok)
                         {
-                            std::cout << "[Client] Joined game successfully. game_id=" << gid << " player_id=" << pid << std::endl;
                             my_game_id = static_cast<uint32_t>(gid);
                             playerTracker.setPlayerId(static_cast<int32_t>(pid));
                             playerTracker.setOriginalPlayerId(static_cast<int32_t>(pid));
@@ -215,7 +209,6 @@ void Client::start()
 
         if (stateManager.shouldShowResults())
         {
-            // Volver a playerId original en caso de estar en spectator mode
             playerTracker.setPlayerId(playerTracker.getOriginalPlayerId());
 
             uint8_t upgrade_speed = 0;

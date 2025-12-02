@@ -43,12 +43,8 @@ bool CarPhysicsConfig::loadFromFile(const std::string &path)
                 loadCarPhysicsFromYAML(car_physics, &it->second);
 
                 car_configs[car_name] = car_physics;
-                std::cout << "[CarPhysicsConfig] Loaded config for car type: " << car_name << std::endl;
             }
         }
-
-        std::cout << "[CarPhysicsConfig] Successfully loaded " << car_configs.size()
-                  << " car configurations from " << path << std::endl;
         return true;
     }
     catch (const YAML::Exception &e)
@@ -65,7 +61,6 @@ bool CarPhysicsConfig::loadFromFile(const std::string &path)
 
 bool CarPhysicsConfig::reload()
 {
-    std::cout << "[CarPhysicsConfig] Reloading config from " << config_path << std::endl;
     car_configs.clear();
     return loadFromFile(config_path);
 }
