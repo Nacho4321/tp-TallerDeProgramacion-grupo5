@@ -1,18 +1,18 @@
-[] FIN DEL JUEGO
+[X] FIN DEL JUEGO
 [] Refactorizar gameloop
 [] Limpieza de prints
 [] Limpieza de comentarios
-[] Patron dispatch
-[] Cheats
+[] Patron dispatch 
+[X] Cheats
 [] Docu (player y programador)
 [] Video
 [] Instalador
-[] Eleccion de mapas
+[X] Eleccion de mapas
 [] Editor (mapas)
 [] Refactorizar client
-[] Sonido de frenado
-[] Editor (spawnpoints)
-[] SDL de taller
-[] Logica en .h
+[X] Sonido de frenado
+[X] Editor (spawnpoints)
+[X] SDL de taller
+[X] Logica en .h
 [] Seleccion de autos (stats)
-[] Sacar broadcast en lobby
+[X] Sacar broadcast en lobby

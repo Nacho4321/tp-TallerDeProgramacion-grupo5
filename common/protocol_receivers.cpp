@@ -84,19 +84,8 @@ ClientMessage Protocol::receiveCreateGame()
     msg.cmd = CREATE_GAME_STR;
     readClientIds(msg);
     // Leer nombre
-    readBuffer.resize(sizeof(uint16_t));
-    if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0)
-        return msg; // nombre vacío si falla
-    size_t idx = 0;
-    uint16_t len = exportUint16(readBuffer, idx);
-    if (len > 0)
-    {
-        std::vector<uint8_t> nameBuf(len);
-        if (skt.recvall(nameBuf.data(), nameBuf.size()) > 0)
-        {
-            msg.game_name.assign(reinterpret_cast<char *>(nameBuf.data()), nameBuf.size());
-        }
-    }
+    readString(msg.game_name);
+    // Leer map_id
     uint8_t map_id_buf = 0;
     if (skt.recvall(&map_id_buf, 1) > 0)
     {
@@ -142,21 +131,10 @@ ClientMessage Protocol::receiveChangeCar()
     ClientMessage msg;
     msg.cmd = CHANGE_CAR_STR;
     readClientIds(msg);
-    // Leer car_type length + string
-    readBuffer.resize(sizeof(uint16_t));
-    if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0)
-        return msg;
-    size_t idx = 0;
-    uint16_t len = exportUint16(readBuffer, idx);
-    if (len > 0)
-    {
-        std::vector<uint8_t> typeBuf(len);
-        if (skt.recvall(typeBuf.data(), typeBuf.size()) > 0)
-        {
-            msg.car_type.assign(reinterpret_cast<char *>(typeBuf.data()), typeBuf.size());
-            // Reconstruir cmd completo para que llegue como evento legible: "change_car <tipo>"
-            msg.cmd = std::string(CHANGE_CAR_STR) + " " + msg.car_type;
-        }
+    // Leer car_type
+    if (readString(msg.car_type) && !msg.car_type.empty()) {
+        // Reconstruir cmd completo para que llegue como evento legible: "change_car <tipo>"
+        msg.cmd = std::string(CHANGE_CAR_STR) + " " + msg.car_type;
     }
     return msg;
 }
@@ -203,124 +181,114 @@ ClientMessage Protocol::receiveCheat()
     return msg;
 }
 
+// Helpers de receive para receivePositionsUpdate
+
+bool Protocol::readPosition(Position& pos) {
+    // on_bridge (1) + direction_x (1) + direction_y (1) + X (4) + Y (4) + angle (4) = 15 bytes
+    readBuffer.resize(sizeof(uint8_t) + 2 * sizeof(int8_t) + 3 * sizeof(float));
+    if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0)
+        return false;
+
+    size_t idx = 0;
+    pos.on_bridge = (readBuffer[idx++] != 0);
+    pos.direction_x = static_cast<MovementDirectionX>(static_cast<int8_t>(readBuffer[idx++]));
+    pos.direction_y = static_cast<MovementDirectionY>(static_cast<int8_t>(readBuffer[idx++]));
+    pos.new_X = exportFloat(readBuffer, idx);
+    pos.new_Y = exportFloat(readBuffer, idx);
+    pos.angle = exportFloat(readBuffer, idx);
+    return true;
+}
+
+bool Protocol::readString(std::string& str) {
+    readBuffer.resize(sizeof(uint16_t));
+    if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0)
+        return false;
+    
+    size_t idx = 0;
+    uint16_t len = exportUint16(readBuffer, idx);
+    
+    if (len > 0) {
+        std::vector<uint8_t> strBuf(len);
+        if (skt.recvall(strBuf.data(), strBuf.size()) <= 0)
+            return false;
+        str.assign(reinterpret_cast<char*>(strBuf.data()), strBuf.size());
+    }
+    return true;
+}
+
+bool Protocol::readPlayerPositionUpdate(PlayerPositionUpdate& update) {
+    // player_id (4 bytes)
+    readBuffer.resize(sizeof(int32_t));
+    if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0)
+        return false;
+    size_t idx = 0;
+    update.player_id = exportInt(readBuffer, idx);
+
+    // Posición principal
+    if (!readPosition(update.new_pos))
+        return false;
+
+    // Checkpoints
+    uint8_t next_count = 0;
+    if (skt.recvall(&next_count, sizeof(next_count)) <= 0)
+        return false;
+
+    for (uint8_t k = 0; k < next_count; ++k) {
+        Position cp{};
+        if (!readPosition(cp))
+            return false;
+        update.next_checkpoints.push_back(cp);
+    }
+
+    // Car type
+    if (!readString(update.car_type))
+        return false;
+
+    // HP
+    readBuffer.resize(sizeof(float));
+    if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0)
+        return false;
+    idx = 0;
+    update.hp = exportFloat(readBuffer, idx);
+
+    // Collision flag
+    uint8_t collision_byte;
+    if (skt.recvall(&collision_byte, sizeof(collision_byte)) <= 0)
+        return false;
+    update.collision_flag = (collision_byte != 0);
+
+    // Upgrades (4 bytes)
+    uint8_t upgrade_bytes[4];
+    if (skt.recvall(upgrade_bytes, sizeof(upgrade_bytes)) <= 0)
+        return false;
+    update.upgrade_speed = upgrade_bytes[0];
+    update.upgrade_acceleration = upgrade_bytes[1];
+    update.upgrade_handling = upgrade_bytes[2];
+    update.upgrade_durability = upgrade_bytes[3];
+
+    // Is stopping
+    uint8_t stopping_byte;
+    if (skt.recvall(&stopping_byte, sizeof(stopping_byte)) <= 0)
+        return false;
+    update.is_stopping = (stopping_byte != 0);
+
+    return true;
+}
+
+
 ServerMessage Protocol::receivePositionsUpdate()
 {
     ServerMessage msg;
     msg.opcode = UPDATE_POSITIONS;
 
-    // Leer cantidad de posiciones
     uint8_t count;
     if (skt.recvall(&count, sizeof(count)) <= 0)
         return msg;
 
-    // Leer cada posición
-    for (int i = 0; i < count; i++)
-    {
+    for (int i = 0; i < count; i++) {
         PlayerPositionUpdate update;
-
-        // player_id (int32) + on_bridge (uint8) + direction_x (int8) + direction_y (int8) + new_X (float) + new_Y (float) + angle (float)
-        readBuffer.resize(sizeof(int32_t) + sizeof(uint8_t) + 2 * sizeof(int8_t) + 3 * sizeof(float));
-        if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0)
+        if (!readPlayerPositionUpdate(update))
             return msg;
-
-        size_t idx = 0;
-        update.player_id = exportInt(readBuffer, idx);
-
-        uint8_t on_bridge_byte;
-        std::memcpy(&on_bridge_byte, readBuffer.data() + idx, sizeof(uint8_t));
-        idx += sizeof(uint8_t);
-        update.new_pos.on_bridge = (on_bridge_byte != 0);
-
-        int8_t dir_x, dir_y;
-        std::memcpy(&dir_x, readBuffer.data() + idx, sizeof(int8_t));
-        idx += sizeof(int8_t);
-        std::memcpy(&dir_y, readBuffer.data() + idx, sizeof(int8_t));
-        idx += sizeof(int8_t);
-        update.new_pos.direction_x = static_cast<MovementDirectionX>(dir_x);
-        update.new_pos.direction_y = static_cast<MovementDirectionY>(dir_y);
-
-        update.new_pos.new_X = exportFloat(readBuffer, idx);
-        update.new_pos.new_Y = exportFloat(readBuffer, idx);
-        update.new_pos.angle = exportFloat(readBuffer, idx);
-
-        // Leer cantidad de checkpoints
-        uint8_t next_count = 0;
-        if (skt.recvall(&next_count, sizeof(next_count)) <= 0)
-            return msg;
-
-        for (uint8_t k = 0; k < next_count; ++k)
-        {
-            readBuffer.resize(sizeof(uint8_t) + 2 * sizeof(int8_t) + 3 * sizeof(float));
-            if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0)
-                return msg;
-
-            size_t idx_cp = 0;
-            Position cp{};
-
-            uint8_t cp_on_bridge_byte;
-            std::memcpy(&cp_on_bridge_byte, readBuffer.data() + idx_cp, sizeof(uint8_t));
-            idx_cp += sizeof(uint8_t);
-            cp.on_bridge = (cp_on_bridge_byte != 0);
-
-            int8_t cp_dir_x, cp_dir_y;
-            std::memcpy(&cp_dir_x, readBuffer.data() + idx_cp, sizeof(int8_t));
-            idx_cp += sizeof(int8_t);
-            std::memcpy(&cp_dir_y, readBuffer.data() + idx_cp, sizeof(int8_t));
-            idx_cp += sizeof(int8_t);
-            cp.direction_x = static_cast<MovementDirectionX>(cp_dir_x);
-            cp.direction_y = static_cast<MovementDirectionY>(cp_dir_y);
-
-            cp.new_X = exportFloat(readBuffer, idx_cp);
-            cp.new_Y = exportFloat(readBuffer, idx_cp);
-            cp.angle = exportFloat(readBuffer, idx_cp);
-
-            update.next_checkpoints.push_back(cp);
-        }
-
-        // Leer car_type
-        readBuffer.resize(sizeof(uint16_t));
-        if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0)
-            return msg;
-
-        size_t idx_len = 0;
-        uint16_t carLen = exportUint16(readBuffer, idx_len);
-
-        if (carLen > 0)
-        {
-            std::vector<uint8_t> carBuf(carLen);
-            if (skt.recvall(carBuf.data(), carBuf.size()) <= 0)
-                return msg;
-            update.car_type.assign(reinterpret_cast<char *>(carBuf.data()), carBuf.size());
-        }
-
-        // Leer HP
-        readBuffer.resize(sizeof(float));
-        if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0)
-            return msg;
-        size_t idx_hp = 0;
-        update.hp = exportFloat(readBuffer, idx_hp);
-
-        // Leer collision flag
-        uint8_t collision_byte;
-        if (skt.recvall(&collision_byte, sizeof(collision_byte)) <= 0)
-            return msg;
-        update.collision_flag = (collision_byte != 0);
-
-        // Leer niveles de mejora
-        uint8_t upgrade_bytes[4];
-        if (skt.recvall(upgrade_bytes, sizeof(upgrade_bytes)) <= 0)
-            return msg;
-        update.upgrade_speed = upgrade_bytes[0];
-        update.upgrade_acceleration = upgrade_bytes[1];
-        update.upgrade_handling = upgrade_bytes[2];
-        update.upgrade_durability = upgrade_bytes[3];
-
-        // Leer is_stopping (frenazo)
-        uint8_t stopping_byte;
-        if (skt.recvall(&stopping_byte, sizeof(stopping_byte)) <= 0)
-            return msg;
-        update.is_stopping = (stopping_byte != 0);
-        
         msg.positions.push_back(update);
     }
 
