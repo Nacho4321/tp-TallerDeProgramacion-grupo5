@@ -1,11 +1,11 @@
 #include "client_handler.h"
-#include "message_handler.h"
+#include "lobby_handler.h"
 
 // Inicialización del contador estático
 int ClientHandler::next_id = 0;
 
 // ---------------- ClientHandler ----------------
-ClientHandler::ClientHandler(Socket &&p, MessageHandler &msg_admin) 
+ClientHandler::ClientHandler(Socket &&p, LobbyHandler &msg_admin) 
     : protocol(std::move(p)),
       outbox(std::make_shared<Queue<ServerMessage>>(100)), // bounded queue tamaño 100
       message_handler(msg_admin),

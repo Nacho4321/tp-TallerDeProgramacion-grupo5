@@ -8,10 +8,10 @@ target_sources(taller_server
     main.cpp
     server.cpp
     game_monitor.cpp
-    message_handler.cpp
+    lobby_handler.cpp
     gameloop.cpp
     eventloop.cpp
-    eventDispatcher.cpp
+    game_event_handler.cpp
     car_physics_config.cpp
     npc_config.cpp
     event.cpp
@@ -24,11 +24,11 @@ target_sources(taller_server
     client_receiver.h
     server.h
     game_monitor.h
-    message_handler.h
+    lobby_handler.h
     gameloop.h
     eventloop.h
     event.h
-    eventDispatcher.h
+    game_event_handler.h
     car_physics_config.h
     npc_config.h
     PlayerData.h

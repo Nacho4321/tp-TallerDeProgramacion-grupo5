@@ -7,22 +7,22 @@
 #include "../common/constants.h"
 
 #include "../server/acceptor.h"
-#include "../server/message_handler.h"
+#include "../server/lobby_handler.h"
 #include "../server/game_monitor.h"
 #include "../common/messages.h"
 #include "../common/queue.h"
 
 static const char *TEST_PORT = "50100"; // usa un puerto distinto de los tests anteriores
 
-// MessageHandler mock para tests que pushea a una cola
-class TestMessageHandler : public MessageHandler {
+// LobbyHandler mock para tests que pushea a una cola
+class TestLobbyHandler : public LobbyHandler {
 private:
     Queue<ClientHandlerMessage> *test_inbox;
     std::vector<std::shared_ptr<Queue<ServerMessage>>> saved_outboxes;  // Para tests de broadcast
 public:
-    TestMessageHandler(GameMonitor &games_mon,
+    TestLobbyHandler(GameMonitor &games_mon,
                     Queue<ClientHandlerMessage> *inbox_for_test = nullptr)
-        : MessageHandler(games_mon), test_inbox(inbox_for_test) {}
+        : LobbyHandler(games_mon), test_inbox(inbox_for_test) {}
     
     void handle_message(ClientHandlerMessage &message) override {
         if (test_inbox) {
@@ -32,7 +32,7 @@ public:
             }
             test_inbox->push(message);
         }
-        // No llamar a MessageHandler::handle_message para los tests simples
+        // No llamar a LobbyHandler::handle_message para los tests simples
     }
     
     std::shared_ptr<Queue<ServerMessage>> get_outbox(size_t index) {
@@ -50,7 +50,7 @@ TEST(AcceptorIntegrationTest, ClientConnectsAndSendsMessage)
 {
     Queue<ClientHandlerMessage> inbox;
     GameMonitor games_monitor;
-    TestMessageHandler message_handler(games_monitor, &inbox);
+    TestLobbyHandler message_handler(games_monitor, &inbox);
 
     std::thread server_thread([&]() {
         Acceptor acceptor(TEST_PORT, message_handler);
@@ -93,7 +93,7 @@ TEST(AcceptorIntegrationTest, BroadcastMessageToClient)
 {
     Queue<ClientHandlerMessage> inbox;
     GameMonitor games_monitor;
-    TestMessageHandler message_handler(games_monitor, &inbox);
+    TestLobbyHandler message_handler(games_monitor, &inbox);
 
     std::thread server_thread2([&]() {
         Acceptor acceptor(TEST_PORT, message_handler);
@@ -134,7 +134,7 @@ TEST(AcceptorIntegrationTest, BroadcastMessageToClient)
 
 
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        auto outbox = message_handler.get_outbox(0);  // Obtener desde TestMessageHandler  
+        auto outbox = message_handler.get_outbox(0);  // Obtener desde TestLobbyHandler  
         if (outbox) {
             outbox->push(msg);
         }
@@ -185,7 +185,7 @@ TEST(AcceptorIntegrationTest, BroadcastToMultipleClients)
 {
     Queue<ClientHandlerMessage> inbox;
     GameMonitor games_monitor;
-    TestMessageHandler message_handler(games_monitor, &inbox);
+    TestLobbyHandler message_handler(games_monitor, &inbox);
 
     std::thread server_thread3([&]() {
         Acceptor acceptor(TEST_PORT, message_handler);
@@ -225,8 +225,8 @@ TEST(AcceptorIntegrationTest, BroadcastToMultipleClients)
         msg2_broadcast.positions.push_back(update2b);
 
 
-        auto outbox0 = message_handler.get_outbox(0);  // Desde TestMessageHandler
-        auto outbox1 = message_handler.get_outbox(1);  // Desde TestMessageHandler
+        auto outbox0 = message_handler.get_outbox(0);  // Desde TestLobbyHandler
+        auto outbox1 = message_handler.get_outbox(1);  // Desde TestLobbyHandler
         if (outbox0) {
             outbox0->push(msg2_broadcast);
         }

@@ -1,5 +1,4 @@
 [X] FIN DEL JUEGO
-[X] FIN DEL JUEGO
 [] Refactorizar gameloop
 [] Limpieza de prints
 [] Limpieza de comentarios

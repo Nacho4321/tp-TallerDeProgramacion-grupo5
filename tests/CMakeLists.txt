@@ -10,7 +10,7 @@ target_sources(taller_tests
     ${CMAKE_SOURCE_DIR}/server/client_handler.cpp
     ${CMAKE_SOURCE_DIR}/server/client_sender.cpp
     ${CMAKE_SOURCE_DIR}/server/client_receiver.cpp
-    ${CMAKE_SOURCE_DIR}/server/message_handler.cpp
+    ${CMAKE_SOURCE_DIR}/server/lobby_handler.cpp
     ${CMAKE_SOURCE_DIR}/server/game_monitor.cpp
     ${CMAKE_SOURCE_DIR}/client/game_client_receiver.cpp
     ${CMAKE_SOURCE_DIR}/client/game_client_sender.cpp
@@ -22,7 +22,8 @@ target_sources(taller_tests
     ${CMAKE_SOURCE_DIR}/server/npc_config.cpp
     ${CMAKE_SOURCE_DIR}/server/eventloop.cpp
     ${CMAKE_SOURCE_DIR}/server/car_physics_config.cpp
-    ${CMAKE_SOURCE_DIR}/server/eventDispatcher.cpp
+    ${CMAKE_SOURCE_DIR}/server/game_event_handler.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop/npc/npc_manager.cpp
 
     PUBLIC
     # .h files

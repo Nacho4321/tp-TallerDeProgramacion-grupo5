@@ -1,5 +1,5 @@
-#ifndef MESSAGE_HANDLER_H
-#define MESSAGE_HANDLER_H
+#ifndef LOBBY_HANDLER_H
+#define LOBBY_HANDLER_H
 #include "client_handler.h"
 #include "../common/queue.h"
 #include <unordered_map>
@@ -7,7 +7,7 @@
 #include <functional>
 #include "game_monitor.h"
 
-class MessageHandler
+class LobbyHandler
 {
 private:
     GameMonitor &games_monitor;
@@ -21,9 +21,9 @@ private:
     void leave_game(ClientHandlerMessage &message);
 
 public:
-    explicit MessageHandler(GameMonitor &games_mon);
+    explicit LobbyHandler(GameMonitor &games_mon);
     
-    virtual ~MessageHandler() = default;
+    virtual ~LobbyHandler() = default;
     
     // Procesa un mensaje del cliente 
     virtual void handle_message(ClientHandlerMessage &message);
