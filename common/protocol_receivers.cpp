@@ -268,6 +268,11 @@ ServerMessage Protocol::receivePositionsUpdate()
         update.upgrade_handling = upgrade_bytes[2];
         update.upgrade_durability = upgrade_bytes[3];
 
+        // Leer is_stopping (frenazo)
+        uint8_t stopping_byte;
+        if (skt.recvall(&stopping_byte, sizeof(stopping_byte)) <= 0)
+            return msg;
+        update.is_stopping = (stopping_byte != 0);
         msg.positions.push_back(update);
     }
 

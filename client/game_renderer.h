@@ -71,14 +71,11 @@ private:
     void updateOrCreateCars(
         const std::map<int, std::pair<CarPosition, int>> &positions,
         const std::map<int, bool> &collisionFlags,
-        const std::set<int> &nearest4,
         const CarPosition &mainPos);
 
     void cleanupRemovedCars(
         const std::map<int, std::pair<CarPosition, int>> &positions,
         const CarPosition &mainPos);
-
-    void updateEngineStates(const std::set<int> &nearest4);
 
 public:
     std::unique_ptr<Car> mainCar;
@@ -108,6 +105,7 @@ public:
                      const std::vector<ServerMessage::PlayerTotalTime>& totalTimes,
                      int32_t mainPlayerId);
     void hideResults();
+    void winSound();
 
     AudioManager* getAudioManager() { return audioManager.get(); }
 };

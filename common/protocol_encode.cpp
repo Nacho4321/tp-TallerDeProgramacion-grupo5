@@ -129,6 +129,8 @@ std::vector<std::uint8_t> Protocol::encodeServerMessage(ServerMessage &out)
             buffer.push_back(pos_update.upgrade_acceleration);
             buffer.push_back(pos_update.upgrade_handling);
             buffer.push_back(pos_update.upgrade_durability);
+            // Enviar is_stopping (frenazo)
+            buffer.push_back(pos_update.is_stopping ? 1 : 0);
         }
         return buffer;
     }

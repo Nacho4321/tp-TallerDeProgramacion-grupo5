@@ -42,6 +42,8 @@ struct PlayerPositionUpdate
     uint8_t upgrade_acceleration = 0;
     uint8_t upgrade_handling = 0;
     uint8_t upgrade_durability = 0;
+    // Flag de frenazo 
+    bool is_stopping = false;
 };
 
 // Mensaje unificado del servidor: puede ser una actualización de posiciones
