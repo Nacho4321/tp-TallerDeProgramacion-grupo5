@@ -2,6 +2,7 @@
 #include "../../npc_config.h"
 #include "../gameloop_constants.h"
 #include "../../../common/constants.h"
+#include "install_paths.h"
 
 SetupManager::SetupManager(
     uint8_t map_id,
@@ -44,7 +45,7 @@ void SetupManager::setup_world(int current_round)
 void SetupManager::setup_npc_config()
 {
     auto &npc_cfg = NPCConfig::getInstance();
-    npc_cfg.loadFromFile("config/npc.yaml");
+    npc_cfg.loadFromFile(std::string(CONFIG_DIR) + "/npc.yaml");
 }
 
 void SetupManager::setup_map_layout()
