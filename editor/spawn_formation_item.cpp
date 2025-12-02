@@ -10,24 +10,17 @@ SpawnFormationItem::SpawnFormationItem(QGraphicsItem* parent)
 }
 
 QRectF SpawnFormationItem::boundingRect() const {
-    // Bounding rect fijo que cubre todas las rotaciones posibles
     float maxSize = ROW_SPACING * 3 + CAR_HEIGHT + 50;
     return QRectF(-maxSize / 2, -maxSize / 2, maxSize, maxSize);
 }
 
 QPointF SpawnFormationItem::getCarPosition(int carIndex) const {
-    // Layout base (orientación Up):
-    //   [0]  [1]
-    //   [2]  [3]
-    //   [4]  [5]
-    //   [6]  [7]
     int row = carIndex / 2;
     int col = carIndex % 2;
     
     float x = (col == 0) ? -COL_SPACING / 2 : COL_SPACING / 2;
     float y = (row - 1.5f) * ROW_SPACING;
     
-    // Aplico rotación según orientación
     switch (currentOrientation) {
         case Orientation::Up:
             return QPointF(x, y);
@@ -49,7 +42,6 @@ void SpawnFormationItem::paint(QPainter* painter, const QStyleOptionGraphicsItem
     
     painter->setRenderHint(QPainter::Antialiasing);
     
-    // Ángulo visual para rotar los rectángulos de los autos
     float visualAngle = 0;
     switch (currentOrientation) {
         case Orientation::Up:    visualAngle = 0;   break;
@@ -109,13 +101,12 @@ std::vector<SpawnPointData> SpawnFormationItem::getSpawnPoints() const {
     std::vector<SpawnPointData> points;
     QPointF center = pos();
     
-    // Ángulos en radianes
     float angle;
     switch (currentOrientation) {
-        case Orientation::Up:    angle = M_PI;       break;  // arriba
-        case Orientation::Right: angle = -M_PI / 2;  break;  // derecha
-        case Orientation::Down:  angle = 0.0f;       break;  // abajo
-        case Orientation::Left:  angle = M_PI / 2;   break;  // izquierda
+        case Orientation::Up:    angle = M_PI;       break; 
+        case Orientation::Right: angle = -M_PI / 2;  break;  
+        case Orientation::Down:  angle = 0.0f;       break; 
+        case Orientation::Left:  angle = M_PI / 2;   break;  
         default:                 angle = M_PI;       break;
     }
     
@@ -150,15 +141,12 @@ void SpawnFormationItem::loadFromSpawnPoints(const std::vector<SpawnPointData>& 
     float centerY = totalY / spawnPoints.size();
     setPos(centerX, centerY);
     
-    // Interpreto el ángulo en radianes
     float angle = spawnPoints[0].angle;
     
-    // Normalizo a [-π, π]
+
     while (angle > M_PI) angle -= 2 * M_PI;
     while (angle < -M_PI) angle += 2 * M_PI;
-    
-    // Determino la orientación según el ángulo
-    // π = arriba, -π/2 = derecha, 0 = abajo, π/2 = izquierda
+
     if (angle > -M_PI/4 && angle <= M_PI/4) {
         currentOrientation = Orientation::Down;
     } else if (angle > M_PI/4 && angle <= 3*M_PI/4) {
