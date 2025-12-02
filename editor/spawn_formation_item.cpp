@@ -135,3 +135,7 @@ void SpawnFormationItem::loadFromSpawnPoints(const std::vector<SpawnPointData>& 
     
     update();
 }
+
+Orientation SpawnFormationItem::getOrientation() const {
+    return currentOrientation;
+}

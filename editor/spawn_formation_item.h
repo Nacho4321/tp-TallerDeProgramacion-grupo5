@@ -5,7 +5,9 @@
 #include <QPainter>
 #include <vector>
 
-enum class Orientation { Up = 0, Right = 90, Down = 180, Left = 270 };
+enum class Orientation { 
+    Up = 0, Right = 90, Down = 180, Left = 270 
+};
 
 struct SpawnPointData {
     int id;
@@ -28,7 +30,7 @@ public:
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
     
     void setOrientation(Orientation orientation);
-    Orientation getOrientation() const { return currentOrientation; }
+    Orientation getOrientation() const;
     
     void rotateLeft();
     void rotateRight();
