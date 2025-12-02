@@ -23,6 +23,7 @@ private:
     
     uint32_t gameId_;
     uint32_t playerId_;
+    uint8_t mapId_;
     
     bool connected_;
     bool started_;
@@ -46,7 +47,7 @@ public:
     void send(const std::string& msg);
     bool tryReceive(ServerMessage& out);
     
-    bool createGame(const std::string& gameName, uint32_t& outGameId, uint32_t& outPlayerId);
+    bool createGame(const std::string& gameName, uint32_t& outGameId, uint32_t& outPlayerId, uint8_t mapId = 0);
     bool joinGame(uint32_t gameId, uint32_t& outPlayerId);
     bool startGame();
     bool checkGameStarted();
@@ -61,6 +62,7 @@ public:
     std::string getPort() const;
     uint32_t getGameId() const;
     uint32_t getPlayerId() const;
+    uint8_t getMapId() const;
 
     GameClientHandler* getHandler() { return handler_.get(); }
 };

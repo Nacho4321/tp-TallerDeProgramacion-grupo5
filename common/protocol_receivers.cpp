@@ -97,6 +97,11 @@ ClientMessage Protocol::receiveCreateGame()
             msg.game_name.assign(reinterpret_cast<char *>(nameBuf.data()), nameBuf.size());
         }
     }
+    uint8_t map_id_buf = 0;
+    if (skt.recvall(&map_id_buf, 1) > 0)
+    {
+        msg.map_id = map_id_buf;
+    }
     return msg;
 }
 
@@ -326,13 +331,14 @@ GameJoinedResponse Protocol::receiveGameJoinedResponse()
 {
     GameJoinedResponse resp;
 
-    // Leer game_id (uint32) + player_id (uint32) + success (uint8)
-    readBuffer.resize(sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint8_t));
+    // Leer game_id (uint32) + player_id (uint32) + success (uint8) + map_id (uint8)
+    readBuffer.resize(sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint8_t));
     if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0)
     {
         resp.success = false;
         resp.game_id = 0;
         resp.player_id = 0;
+        resp.map_id = 0;
         return resp;
     }
 
@@ -341,7 +347,9 @@ GameJoinedResponse Protocol::receiveGameJoinedResponse()
     resp.player_id = exportUint32(readBuffer, idx);
     uint8_t success_byte;
     std::memcpy(&success_byte, readBuffer.data() + idx, sizeof(uint8_t));
+    idx += sizeof(uint8_t);
     resp.success = (success_byte != 0);
+    resp.map_id = readBuffer[idx];
 
     return resp;
 }
@@ -358,13 +366,15 @@ ServerMessage Protocol::receiveGamesList()
     uint32_t count = exportUint32(readBuffer, idx);
     for (uint32_t i = 0; i < count; ++i)
     {
-        readBuffer.resize(sizeof(uint32_t) * 2 + sizeof(uint16_t));
+        // game_id (4) + player_count (4) + map_id (1) + nameLen (2) = 11 bytes
+        readBuffer.resize(sizeof(uint32_t) * 2 + sizeof(uint8_t) + sizeof(uint16_t));
         if (skt.recvall(readBuffer.data(), readBuffer.size()) <= 0)
             return msg;
         size_t j = 0;
         ServerMessage::GameSummary summary{};
         summary.game_id = exportUint32(readBuffer, j);
         summary.player_count = exportUint32(readBuffer, j);
+        summary.map_id = readBuffer[j++];
         uint16_t nameLen = exportUint16(readBuffer, j);
         if (nameLen > 0)
         {

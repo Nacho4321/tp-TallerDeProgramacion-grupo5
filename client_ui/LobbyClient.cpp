@@ -39,13 +39,13 @@ std::vector<ServerMessage::GameSummary> LobbyClient::listGames() {
 }
 
 
-bool LobbyClient::createGame(const std::string& gameName, uint32_t& outGameId, uint32_t& outPlayerId) {
+bool LobbyClient::createGame(const std::string& gameName, uint32_t& outGameId, uint32_t& outPlayerId, uint8_t mapId) {
     if (!connection_ || !connection_->isConnected()) {
         std::cerr << "[LobbyClient] No conectado, no se puede crear partida" << std::endl;
         return false;
     }
     
-    return connection_->createGame(gameName, outGameId, outPlayerId);
+    return connection_->createGame(gameName, outGameId, outPlayerId, mapId);
 }
 
 

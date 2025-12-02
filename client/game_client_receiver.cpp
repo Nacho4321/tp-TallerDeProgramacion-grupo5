@@ -17,7 +17,12 @@ void GameClientReceiver::run() {
                 break;  // EOF o desconexión o paquete inválido
             }
             if (opcode == GAME_JOINED) {
-                ServerMessage m; m.opcode = GAME_JOINED; m.game_id = joinResp.game_id; m.player_id = joinResp.player_id; m.success = joinResp.success;
+                ServerMessage m; 
+                m.opcode = GAME_JOINED; 
+                m.game_id = joinResp.game_id; 
+                m.player_id = joinResp.player_id; 
+                m.success = joinResp.success;
+                m.map_id = joinResp.map_id;
                 join_results.push(std::move(m));
             } else if (opcode == UPDATE_POSITIONS) {
                 if (!positionsMsg.positions.empty()) {

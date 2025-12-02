@@ -44,8 +44,8 @@ public:
 
     // Lobby helpers que bloquean hasta recibir GAME_JOINED del servidor
     // Devuelven true si success==true en la respuesta; en caso afirmativo actualizan IDs internos
-    bool create_game_blocking(uint32_t& out_game_id, uint32_t& out_player_id, const std::string& game_name = "");
-    bool join_game_blocking(int32_t game_id_to_join, uint32_t& out_player_id);
+    bool create_game_blocking(uint32_t& out_game_id, uint32_t& out_player_id, uint8_t& out_map_id, const std::string& game_name = "", uint8_t map_id = 0);
+    bool join_game_blocking(int32_t game_id_to_join, uint32_t& out_player_id, uint8_t& out_map_id);
     
     // Solicita lista de partidas y bloquea hasta recibir GAMES_LIST
     std::vector<ServerMessage::GameSummary> get_games_blocking();

@@ -53,7 +53,8 @@ void MessageHandler::init_dispatch()
 
 void MessageHandler::create_game(ClientHandlerMessage &message)
 {
-    std::cout << "[MessageHandler] Cliente " << message.client_id << " solicita crear partida" << std::endl;
+    std::cout << "[MessageHandler] Cliente " << message.client_id << " solicita crear partida" 
+              << " (map_id=" << int(message.msg.map_id) << ")" << std::endl;
     
     // Obtener outbox del mensaje
     auto client_queue = message.outbox;
@@ -62,7 +63,7 @@ void MessageHandler::create_game(ClientHandlerMessage &message)
         return;
     }
     
-    int game_id = games_monitor.add_game(message.client_id, client_queue, message.msg.game_name);
+    int game_id = games_monitor.add_game(message.client_id, client_queue, message.msg.game_name, message.msg.map_id);
     
     // Enviar respuesta al cliente con los IDs asignados
     ServerMessage response;
@@ -70,9 +71,11 @@ void MessageHandler::create_game(ClientHandlerMessage &message)
     response.game_id = static_cast<uint32_t>(game_id);
     response.player_id = static_cast<uint32_t>(message.client_id);
     response.success = true;
+    response.map_id = message.msg.map_id; 
     
     std::cout << "[MessageHandler] Enviando respuesta: game_id=" << game_id 
-              << " player_id=" << message.client_id << std::endl;
+              << " player_id=" << message.client_id 
+              << " map_id=" << int(response.map_id) << std::endl;
     
     try {
         std::cout << "[MessageHandler] Pushing GameJoined (ServerMessage) al outbox del cliente " << message.client_id << std::endl;
@@ -105,12 +108,14 @@ void MessageHandler::join_game(ClientHandlerMessage &message)
         response.game_id = static_cast<uint32_t>(message.msg.game_id);
         response.player_id = static_cast<uint32_t>(message.client_id);
         response.success = true;
+        response.map_id = games_monitor.get_game_map_id(message.msg.game_id);
     } catch (...) {
         // Fallo al unirse (juego no existe u otro error)
         response.opcode = GAME_JOINED;
         response.game_id = 0;
         response.player_id = 0;
         response.success = false;
+        response.map_id = 0;
     }
     
     try {
