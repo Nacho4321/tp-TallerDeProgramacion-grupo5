@@ -23,8 +23,8 @@
 #include "gameloop/race/race_manager.h"
 #include "gameloop/world/world_manager.h"
 #include "gameloop/player/player_manager.h"
+#include "gameloop/state/game_state_manager.h"
 #define INITIAL_ID 1
-#include "game_state.h"
 
 class GameLoop : public Thread
 {
@@ -36,15 +36,8 @@ private:
     std::shared_ptr<Queue<Event>> event_queue;
     EventLoop event_loop;
     bool started;
-    GameState game_state; // Estado actual del juego (lobby o jugando)
-    // Cuenta regresiva antes de iniciar la carrera
-    std::chrono::steady_clock::time_point starting_deadline{};
-    bool starting_active{false};
+    GameStateManager state_manager;
     int next_id;
-
-    // Contador de tiempo de ronda (10 minutos de timeout)
-    std::chrono::steady_clock::time_point round_start_time{};
-    bool round_timeout_checked{false};
 
     // Spawn points para hasta 8 jugadores (en píxeles)
     struct SpawnPoint
@@ -84,8 +77,6 @@ private:
 
     // ---------------- NPC Support ----------------
     NPCManager npc_manager;
-    std::atomic<bool> reset_accumulator{false};  // flag para resetear acumulador de física al iniciar
-    std::atomic<bool> pending_race_reset{false}; // flag para resetear la carrera fuera del callback de Box2D
 
     CarPhysicsConfig &physics_config;
     PlayerManager player_manager;
@@ -112,15 +103,11 @@ private:
 
 
     // start_game helpers
-    void transition_to_playing_state();
-    void reset_npcs_velocities();
+    void on_playing_started();
     void broadcast_game_started();
-    void transition_to_starting_state(int countdown_seconds);
-    void maybe_finish_starting_and_play();
 
     // perform_race_reset helpers
     void broadcast_race_end_message();
-    void transition_to_lobby_state();
 
 public:
     explicit GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id = 0);

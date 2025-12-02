@@ -74,6 +74,16 @@ void GameLoop::run()
     auto last_tick = std::chrono::steady_clock::now();
     float acum = 0.0f;
 
+    // Setup callbacks for state transitions
+    state_manager.set_on_starting_callback([this]() {
+        ServerMessage msg;
+        msg.opcode = STARTING_COUNTDOWN;
+        broadcast_positions(msg);
+    });
+    state_manager.set_on_playing_callback([this]() {
+        on_playing_started();
+    });
+
     setup_world();
 
     while (should_keep_running())
@@ -82,29 +92,29 @@ void GameLoop::run()
         {
             // Falla segura: antes de procesar eventos, validar si el countdown terminó
             // para evitar quedar bloqueados por procesamiento de eventos.
-            maybe_finish_starting_and_play();
+            state_manager.check_and_finish_starting();
 
-            event_loop.process_available_events(game_state);
+            event_loop.process_available_events(state_manager.get_state());
 
             auto now = std::chrono::steady_clock::now();
             float dt = std::chrono::duration<float>(now - last_tick).count();
             last_tick = now;
             acum += dt;
 
-            if (game_state == GameState::PLAYING)
+            if (state_manager.is_playing())
             {
                 process_playing_state(acum);
             }
-            else if (game_state == GameState::LOBBY)
+            else if (state_manager.get_state() == GameState::LOBBY)
             {
                 process_lobby_state();
             }
-            else if (game_state == GameState::STARTING)
+            else if (state_manager.is_starting())
             {
                 process_starting_state();
                 // Falla segura: aunque por algún motivo no se ejecute el process,
                 // chequeamos igualmente la finalización del countdown en el loop.
-                maybe_finish_starting_and_play();
+                state_manager.check_and_finish_starting();
             }
         }
         catch (const ClosedQueue &)
@@ -126,13 +136,12 @@ void GameLoop::process_playing_state(float &acum)
     if (players.empty())
         return;
 
-    if (reset_accumulator.load())
+    if (state_manager.should_reset_accumulator())
     {
         acum = 0.0f;
-        reset_accumulator.store(false);
         std::cout << "[GameLoop] Physics accumulator reset on start." << std::endl;
     }
-    RaceManager::check_round_timeout(players, game_state, round_timeout_checked, round_start_time, pending_race_reset);
+    RaceManager::check_round_timeout(players, state_manager.get_state(), state_manager.get_round_timeout_checked(), state_manager.get_round_start_time(), state_manager.get_pending_race_reset());
 
     // Reset collision flags at the start of each frame
     for (auto &entry : players)
@@ -157,7 +166,7 @@ void GameLoop::process_playing_state(float &acum)
             // Procesar cheat de completar ronda pendiente
             if (player_data.pending_race_complete && !player_data.race_finished)
             {
-                RaceManager::complete_player_race(player_data, pending_race_reset, players);
+                RaceManager::complete_player_race(player_data, state_manager.get_pending_race_reset(), players);
                 player_data.pending_race_complete = false;
             }
 
@@ -165,7 +174,7 @@ void GameLoop::process_playing_state(float &acum)
             if (player_data.pending_disqualification && !player_data.is_dead)
             {
                 CollisionHandler::disqualify_player(player_data);
-                RaceManager::check_race_completion(players, pending_race_reset);
+                RaceManager::check_race_completion(players, state_manager.get_pending_race_reset());
                 player_data.pending_disqualification = false;
             }
 
@@ -241,7 +250,7 @@ void GameLoop::process_starting_state()
     broadcast_positions(msg);
 
     // Checkeamos si la cuenta regresiva terminó
-    maybe_finish_starting_and_play();
+    state_manager.check_and_finish_starting();
 }
 
 void GameLoop::perform_race_reset()
@@ -251,10 +260,10 @@ void GameLoop::perform_race_reset()
     bool do_reset = false;
     {
         std::lock_guard<std::mutex> lk(players_map_mutex);
-        if (RaceManager::should_reset_race(pending_race_reset))
+        if (RaceManager::should_reset_race(state_manager.get_pending_race_reset()))
         {
             // Limpiamos el flag acá para que no se vuelva a ejecutar en el mismo frame.
-            pending_race_reset.store(false);
+            state_manager.get_pending_race_reset().store(false);
             do_reset = true;
         }
     }
@@ -282,9 +291,9 @@ void GameLoop::advance_round_or_reset_to_lobby()
         player_manager.reset_all_players_to_lobby(spawn_points);
 
         // Limpiar flags y pasar a STARTING
-        pending_race_reset.store(false);
-        std::cout << "[GameLoop] About to call transition_to_starting_state for round " << (current_round + 1) << std::endl;
-        transition_to_starting_state(10);
+        state_manager.get_pending_race_reset().store(false);
+        std::cout << "[GameLoop] About to call transition_to_starting for round " << (current_round + 1) << std::endl;
+        state_manager.transition_to_starting(10);
     }
     else
     {
@@ -305,15 +314,15 @@ void GameLoop::advance_round_or_reset_to_lobby()
         current_round = 0;
         load_current_round_checkpoints();
         player_manager.reset_all_players_to_lobby(spawn_points);
-        pending_race_reset.store(false);
-        std::cout << "[GameLoop] About to call transition_to_starting_state for championship restart" << std::endl;
-        transition_to_starting_state(10);
+        state_manager.get_pending_race_reset().store(false);
+        std::cout << "[GameLoop] About to call transition_to_starting for championship restart" << std::endl;
+        state_manager.transition_to_starting(10);
     }
 }
 
 // Constructor para poder setear el contact listener del world
 GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id_param)
-    : world_manager(CarPhysicsConfig::getInstance()), players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), game_state(GameState::LOBBY), next_id(INITIAL_ID), map_id(map_id_param), map_layout(world_manager.get_world()), npc_manager(world_manager.get_world()), physics_config(CarPhysicsConfig::getInstance()), player_manager(players_map_mutex, players, players_messanger, player_order, world_manager, physics_config)
+    : world_manager(CarPhysicsConfig::getInstance()), players_map_mutex(), players(), players_messanger(), event_queue(events), event_loop(players_map_mutex, players, event_queue), started(false), state_manager(), next_id(INITIAL_ID), map_id(map_id_param), map_layout(world_manager.get_world()), npc_manager(world_manager.get_world()), physics_config(CarPhysicsConfig::getInstance()), player_manager(players_map_mutex, players, players_messanger, player_order, world_manager, physics_config)
 {
     if (!physics_config.loadFromFile("config/car_physics.yaml"))
     {
@@ -339,59 +348,14 @@ GameLoop::GameLoop(std::shared_ptr<Queue<Event>> events, uint8_t map_id_param)
     });
 }
 
-void GameLoop::transition_to_lobby_state()
+void GameLoop::on_playing_started()
 {
-    game_state = GameState::LOBBY;
-    pending_race_reset.store(false);
-    std::cout << "[GameLoop] Race reset complete. Returning to LOBBY." << std::endl;
-}
-
-void GameLoop::transition_to_starting_state(int countdown_seconds)
-{
-    starting_active = true;
-    game_state = GameState::STARTING;
-    starting_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(countdown_seconds);
-    std::cout << "[GameLoop] STARTING: countdown " << countdown_seconds << "s before PLAYING" << std::endl;
-
-    // Notificar a los clientes el inicio de la cuenta regresiva
-    ServerMessage msg;
-    msg.opcode = STARTING_COUNTDOWN;
-    broadcast_positions(msg);
-}
-
-void GameLoop::maybe_finish_starting_and_play()
-{
-    if (!starting_active)
-    {
-        return;
-    }
-
-    auto now = std::chrono::steady_clock::now();
-    if (now >= starting_deadline)
-    {
-        starting_active = false;
-        std::cout << "[GameLoop] STARTING finished. Transitioning to PLAYING" << std::endl;
-        transition_to_playing_state();
-    }
-}
-
-void GameLoop::transition_to_playing_state()
-{
-    game_state = GameState::PLAYING;
-    std::cout << "[GameLoop] Game started! Transitioning from LOBBY to PLAYING" << std::endl;
-    reset_accumulator.store(true);
-
     auto race_start_time = std::chrono::steady_clock::now();
     for (auto &[id, player_data] : players)
     {
         player_data.lap_start_time = race_start_time;
     }
-
-    // Iniciar contador de 10 minutos para la ronda
-    round_start_time = race_start_time;
-    round_timeout_checked = false;
     std::cout << "[GameLoop] Race timer started for all players" << std::endl;
-
     broadcast_game_started();
 }
 
@@ -404,11 +368,11 @@ void GameLoop::start_game()
         std::lock_guard<std::mutex> lk(players_map_mutex);
 
         // Checkeo si se puede iniciar la carrera
-        if (game_state == GameState::LOBBY)
+        if (state_manager.get_state() == GameState::LOBBY)
         {
             can_start = true;
         }
-        else if (game_state == GameState::PLAYING)
+        else if (state_manager.is_playing())
         {
             // Durante PLAYING, solo permitir reiniciar si todos los jugadores están muertos
             int total_players = static_cast<int>(players.size());
@@ -437,7 +401,7 @@ void GameLoop::start_game()
 
         // Al iniciar una carrera explícitamente, limpiar cualquier reset pendiente
         // para evitar que perform_race_reset() dispare inmediatamente.
-        pending_race_reset.store(false);
+        state_manager.get_pending_race_reset().store(false);
         // Asegurar que los checkpoints de la ronda actual estén cargados al iniciar
         load_current_round_checkpoints();
         RaceManager::reset_players_for_race_start(players, physics_config);
@@ -445,7 +409,7 @@ void GameLoop::start_game()
     } // <-- Lock se libera aquí
 
     // Cambiar el estado FUERA del lock para evitar deadlock con el game loop
-    transition_to_starting_state(10);
+    state_manager.transition_to_starting(10);
     started = true;
 }
 
@@ -570,7 +534,7 @@ void GameLoop::process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpoin
     
     if (completed_lap)
     {
-        RaceManager::complete_player_race(player_data, pending_race_reset, players);
+        RaceManager::complete_player_race(player_data, state_manager.get_pending_race_reset(), players);
     }
 }
 
@@ -583,10 +547,10 @@ void GameLoop::handle_begin_contact(b2Fixture *fixture_a, b2Fixture *fixture_b)
     process_pair(fixture_b, fixture_a);
 
     // Checkeo colisiones entre autos
-    bool any_death = CollisionHandler::handle_car_collision(fixture_a, fixture_b, players, game_state);
+    bool any_death = CollisionHandler::handle_car_collision(fixture_a, fixture_b, players, state_manager.get_state());
     if (any_death)
     {
-        RaceManager::check_race_completion(players, pending_race_reset);
+        RaceManager::check_race_completion(players, state_manager.get_pending_race_reset());
     }
 }
 
@@ -608,7 +572,7 @@ bool GameLoop::has_player(int client_id) const
 
 bool GameLoop::is_joinable() const
 {
-    return game_state == GameState::LOBBY;
+    return state_manager.is_joinable();
 }
 
 void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_outbox)
@@ -618,5 +582,5 @@ void GameLoop::add_player(int id, std::shared_ptr<Queue<ServerMessage>> player_o
 
 void GameLoop::remove_player(int client_id)
 {
-    player_manager.remove_player(client_id, game_state, spawn_points);
+    player_manager.remove_player(client_id, state_manager.get_state(), spawn_points);
 }
