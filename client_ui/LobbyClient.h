@@ -21,7 +21,7 @@ public:
     
     std::vector<ServerMessage::GameSummary> listGames();
     
-    bool createGame(const std::string& gameName, uint32_t& outGameId, uint32_t& outPlayerId);
+    bool createGame(const std::string& gameName, uint32_t& outGameId, uint32_t& outPlayerId, uint8_t mapId = 0);
     bool joinGame(uint32_t gameId, uint32_t& outPlayerId);
     bool startGame();
     void leaveGame();

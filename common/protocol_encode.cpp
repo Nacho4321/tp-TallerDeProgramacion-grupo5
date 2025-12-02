@@ -59,13 +59,13 @@ std::vector<std::uint8_t> Protocol::encodeClientMessage(const ClientMessage &msg
     // Siempre incluimos player_id y game_id (8 bytes)
     insertUint32(static_cast<uint32_t>(msg.player_id));
     insertUint32(static_cast<uint32_t>(msg.game_id));
-    // Payload adicional para CREATE_GAME: nombre de la partida
     if (opcode == CREATE_GAME)
     {
         uint16_t len = static_cast<uint16_t>(msg.game_name.size());
         insertUint16(len);
         for (char c : msg.game_name)
             buffer.push_back(static_cast<uint8_t>(c));
+        buffer.push_back(msg.map_id);
     }
     else if (opcode == CHANGE_CAR)
     {
@@ -160,6 +160,7 @@ std::vector<std::uint8_t> Protocol::encodeServerMessage(ServerMessage &out)
         insertUint32(out.game_id);
         insertUint32(out.player_id);
         buffer.push_back(out.success ? 1 : 0);
+        buffer.push_back(out.map_id);
         return buffer;
     }
     else if (out.opcode == GAMES_LIST)
@@ -170,6 +171,7 @@ std::vector<std::uint8_t> Protocol::encodeServerMessage(ServerMessage &out)
         {
             insertUint32(g.game_id);
             insertUint32(g.player_count);
+            buffer.push_back(g.map_id);
             uint16_t len = static_cast<uint16_t>(g.name.size());
             insertUint16(len);
             for (char c : g.name)

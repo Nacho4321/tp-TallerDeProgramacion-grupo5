@@ -1,11 +1,11 @@
 #include "game_monitor.h"
 
 GameMonitor::GameMonitor()
-    : games(), games_queues(), game_names(), games_mutex(), next_id(STARTING_ID)
+    : games(), games_queues(), game_names(), game_maps(), games_mutex(), next_id(STARTING_ID)
 {
 }
 
-int GameMonitor::add_game(int client_id, std::shared_ptr<Queue<ServerMessage>> player_outbox, const std::string& name)
+int GameMonitor::add_game(int client_id, std::shared_ptr<Queue<ServerMessage>> player_outbox, const std::string& name, uint8_t map_id)
 {
     std::lock_guard<std::mutex> lock(games_mutex);  // Un solo lock
 
@@ -23,8 +23,10 @@ int GameMonitor::add_game(int client_id, std::shared_ptr<Queue<ServerMessage>> p
 
     games[game_id] = std::move(new_game);
     game_names[game_id] = name.empty() ? (std::string{"Game "} + std::to_string(game_id)) : name;
+    game_maps[game_id] = map_id;
 
-    std::cout << "GameMonitor: juego " << game_id << " creado para cliente " << client_id << std::endl;
+    std::cout << "GameMonitor: juego " << game_id << " creado para cliente " << client_id 
+              << " (map_id=" << int(map_id) << ")" << std::endl;
     
     return game_id;
 }
@@ -41,7 +43,12 @@ std::vector<ServerMessage::GameSummary> GameMonitor::list_games() {
         }
         
         uint32_t count = static_cast<uint32_t>(loopPtr->get_player_count());
-        ServerMessage::GameSummary summary{static_cast<uint32_t>(gid), game_names[gid], count};
+        uint8_t map_id = 0;
+        auto map_it = game_maps.find(gid);
+        if (map_it != game_maps.end()) {
+            map_id = map_it->second;
+        }
+        ServerMessage::GameSummary summary{static_cast<uint32_t>(gid), game_names[gid], count, map_id};
         result.push_back(std::move(summary));
     }
     return result;
@@ -80,6 +87,15 @@ GameLoop* GameMonitor::get_game(int game_id) {
         return nullptr;
     }
     return it->second.get();
+}
+
+uint8_t GameMonitor::get_game_map_id(int game_id) {
+    std::lock_guard<std::mutex> lock(games_mutex);
+    auto it = game_maps.find(game_id);
+    if (it != game_maps.end()) {
+        return it->second;
+    }
+    return 0; 
 }
 
 GameMonitor::~GameMonitor()

@@ -1,0 +1,18 @@
+{ "compressionlevel":-1,
+ "height":20,
+ "infinite":false,
+ "layers":[
+        {
+         "id":2,
+         "image":"Game Boy _ GBC - Grand Theft Auto - Backgrounds - San Andreas.png",
+         "imageheight":4672,
+         "imagewidth":4640,
+         "name":"MAPA1",
+         "opacity":1,
+         "type":"imagelayer",
+         "visible":true,
+         "x":0,
+         "y":0
+        }
+    ]
+}
