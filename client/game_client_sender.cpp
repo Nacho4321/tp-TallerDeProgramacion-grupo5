@@ -38,14 +38,28 @@ void GameClientSender::run() {
                 // Normalizar el comando a solo "join_game" para el mapeo de opcode
                 client_msg.cmd = JOIN_GAME_STR;
             }
-            // Parse create_game <nombre>
+            // Parse create_game <nombre>|<map_id>
             if (client_msg.cmd.rfind(CREATE_GAME_STR, 0) == 0) {
                 size_t sp = client_msg.cmd.find(' ');
                 if (sp != std::string::npos && sp + 1 < client_msg.cmd.size()) {
-                    client_msg.game_name = client_msg.cmd.substr(sp + 1);
+                    std::string payload = client_msg.cmd.substr(sp + 1);
+                    // Buscar separador | para extraer map_id
+                    size_t pipe_pos = payload.find('|');
+                    if (pipe_pos != std::string::npos) {
+                        client_msg.game_name = payload.substr(0, pipe_pos);
+                        try {
+                            client_msg.map_id = static_cast<uint8_t>(std::stoi(payload.substr(pipe_pos + 1)));
+                        } catch (...) {
+                            client_msg.map_id = 0; // Default: Liberty City
+                        }
+                    } else {
+                        client_msg.game_name = payload;
+                        client_msg.map_id = 0;
+                    }
                     client_msg.cmd = CREATE_GAME_STR; // normalizar
                 } else {
                     client_msg.game_name = ""; // nombre vacío => server asigna por defecto
+                    client_msg.map_id = 0;
                 }
             }
             // Parse change_car <tipo>

@@ -747,7 +747,7 @@ PlayerData GameLoop::create_default_player_data(int spawn_idx)
     PlayerData player_data;
     player_data.body = create_player_body(spawn.x, spawn.y, pos, GREEN_CAR);
     player_data.state = MOVE_UP_RELEASED_STR;
-    player_data.car = CarInfo{GREEN_CAR, DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP};
+    player_data.car = CarInfo{GREEN_CAR, DEFAULT_CAR_SPEED_PX_S, DEFAULT_CAR_ACCEL_PX_S2, DEFAULT_CAR_HP, 1.0f, 1.0f};
     player_data.position = pos;
     player_data.next_checkpoint = 0;
     player_data.laps_completed = 0;

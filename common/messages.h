@@ -16,6 +16,7 @@ struct GameJoinedResponse
     uint32_t game_id;
     uint32_t player_id;
     bool success; // true si se unió correctamente, false si hubo error
+    uint8_t map_id = 0;  // Mapa de la partida
 };
 
 // ============================================
@@ -60,6 +61,7 @@ struct ServerMessage
     uint32_t game_id = 0;
     uint32_t player_id = 0;
     bool success = false;
+    uint8_t map_id = 0;  // Mapa de la partida (enviado en GAME_JOINED)
 
     // Payload para listado de partidas (GAMES_LIST)
     struct GameSummary
@@ -67,6 +69,7 @@ struct ServerMessage
         uint32_t game_id;
         std::string name;
         uint32_t player_count;
+        uint8_t map_id = 0;
     };
     std::vector<GameSummary> games; // sólo usado si opcode == GAMES_LIST
 
@@ -100,5 +103,7 @@ struct ClientMessage
     std::string game_name;
     // Tipo de auto solicitado en un cambio de auto (solo si cmd comienza con CHANGE_CAR_STR)
     std::string car_type;
+    // ID del mapa seleccionado (para create_game)
+    uint8_t map_id = 0;  // 0 = LibertyCity por defecto
 };
 #endif

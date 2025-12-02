@@ -3,9 +3,11 @@
 #include "GameLobbyWindow.h"
 #include "GameLauncher.h"
 #include "CarSelectionDialog.h"
+#include "../common/constants.h"
 
 #include <QMessageBox>
 #include <QApplication>
+#include <QPixmap>
 #include <iostream>
 
 NewGameWindow::NewGameWindow(std::shared_ptr<LobbyClient> lobby, QWidget* parent)
@@ -15,6 +17,7 @@ NewGameWindow::NewGameWindow(std::shared_ptr<LobbyClient> lobby, QWidget* parent
     ,gameStarted_(false)
     ,gameId_(0)
     ,playerId_(0)
+    ,currentMapIndex_(0)
 {
     ui->setupUi(this);
     ui->gameNameLineEdit->setText("Name...");
@@ -24,6 +27,10 @@ NewGameWindow::NewGameWindow(std::shared_ptr<LobbyClient> lobby, QWidget* parent
 
     connect(ui->createButton, &QPushButton::clicked, this, &NewGameWindow::onCreate);
     connect(ui->cancelButton, &QPushButton::clicked, this, &NewGameWindow::onBack);
+    connect(ui->prevMapButton, &QPushButton::clicked, this, &NewGameWindow::onPrevMap);
+    connect(ui->nextMapButton, &QPushButton::clicked, this, &NewGameWindow::onNextMap);
+    
+    updateMapDisplay();
 }
 
 NewGameWindow::~NewGameWindow() { 
@@ -52,7 +59,8 @@ void NewGameWindow::onCreate() {
     
     uint32_t outGameId = 0;
     uint32_t outPlayerId = 0;
-    bool success = lobbyClient_->createGame(gameName.toStdString(), outGameId, outPlayerId);
+    uint8_t mapId = static_cast<uint8_t>(currentMapIndex_);
+    bool success = lobbyClient_->createGame(gameName.toStdString(), outGameId, outPlayerId, mapId);
     
     if (!success) {
         QMessageBox::warning(this, "Error", "Failed to create game. Please try again.");
@@ -95,6 +103,45 @@ void NewGameWindow::onCreate() {
 
 void NewGameWindow::onBack() { 
     reject(); 
+}
+
+void NewGameWindow::onPrevMap() {
+    currentMapIndex_--;
+    if (currentMapIndex_ < 0) {
+        currentMapIndex_ = MAP_COUNT - 1;
+    }
+    updateMapDisplay();
+}
+
+void NewGameWindow::onNextMap() {
+    currentMapIndex_++;
+    if (currentMapIndex_ >= MAP_COUNT) {
+        currentMapIndex_ = 0;
+    }
+    updateMapDisplay();
+}
+
+void NewGameWindow::updateMapDisplay() {
+    if (currentMapIndex_ < 0 || currentMapIndex_ >= MAP_COUNT) {
+        return;
+    }
+    
+    // Actualizar el nombre del mapa
+    ui->mapNameLabel->setText(QString::fromUtf8(MAP_NAMES[currentMapIndex_]));
+    
+    // Intentar cargar la imagen del mapa
+    QString imagePath = QString::fromUtf8(MAP_BACKGROUND_PATHS[currentMapIndex_]);
+    QPixmap pixmap(imagePath);
+    
+    if (!pixmap.isNull()) {
+        pixmap = pixmap.scaled(ui->mapImageLabel->size(), 
+                               Qt::KeepAspectRatio, 
+                               Qt::SmoothTransformation);
+        ui->mapImageLabel->setPixmap(pixmap);
+    } else {
+        // Placeholder si no hay imagen
+        ui->mapImageLabel->setText(QString("[ %1 ]").arg(MAP_NAMES[currentMapIndex_]));
+    }
 }
 
 bool NewGameWindow::wasGameStarted() const {

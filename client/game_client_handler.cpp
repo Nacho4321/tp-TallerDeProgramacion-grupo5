@@ -39,18 +39,18 @@ void GameClientHandler::set_game_id(int32_t id) {
     sender.set_game_id(id);
 }
 
-bool GameClientHandler::create_game_blocking(uint32_t& out_game_id, uint32_t& out_player_id, const std::string& game_name) {
+bool GameClientHandler::create_game_blocking(uint32_t& out_game_id, uint32_t& out_player_id, uint8_t& out_map_id, const std::string& game_name, uint8_t map_id) {
     // Reset IDs to -1 before solicitar creación
     sender.set_game_id(-1);
     sender.set_player_id(-1);
     
     if (game_name.empty()) {
-        send("create_game");
+        send("create_game |" + std::to_string(map_id));
     } else {
-        send("create_game " + game_name);
+        send("create_game " + game_name + "|" + std::to_string(map_id));
     }
     
-    std::cout << "[Handler] CREATE_GAME enviado, esperando respuesta..." << std::endl;
+    std::cout << "[Handler] CREATE_GAME enviado (map_id=" << int(map_id) << "), esperando respuesta..." << std::endl;
     try {
         ServerMessage resp = join_results.pop(); // bloquea hasta respuesta
         if (resp.opcode != GAME_JOINED) {
@@ -59,6 +59,7 @@ bool GameClientHandler::create_game_blocking(uint32_t& out_game_id, uint32_t& ou
         }
         std::cout << "[Handler] Respuesta recibida: game_id=" << resp.game_id 
                   << " player_id=" << resp.player_id 
+                  << " map_id=" << int(resp.map_id)
                   << " success=" << resp.success << std::endl;
         if (resp.success) {
             // Actualizamos sender con IDs asignados
@@ -66,6 +67,7 @@ bool GameClientHandler::create_game_blocking(uint32_t& out_game_id, uint32_t& ou
             sender.set_player_id(static_cast<int32_t>(resp.player_id));
             out_game_id = resp.game_id;
             out_player_id = resp.player_id;
+            out_map_id = resp.map_id;
             return true;
         }
         return false;
@@ -75,7 +77,7 @@ bool GameClientHandler::create_game_blocking(uint32_t& out_game_id, uint32_t& ou
     }
 }
 
-bool GameClientHandler::join_game_blocking(int32_t game_id_to_join, uint32_t& out_player_id) {
+bool GameClientHandler::join_game_blocking(int32_t game_id_to_join, uint32_t& out_player_id, uint8_t& out_map_id) {
     // Seteamos game_id deseado antes de enviar join
     sender.set_game_id(game_id_to_join);
     send("join_game");
@@ -90,6 +92,7 @@ bool GameClientHandler::join_game_blocking(int32_t game_id_to_join, uint32_t& ou
             sender.set_game_id(static_cast<int32_t>(resp.game_id));
             sender.set_player_id(static_cast<int32_t>(resp.player_id));
             out_player_id = resp.player_id;
+            out_map_id = resp.map_id;
             return true;
         }
         return false;

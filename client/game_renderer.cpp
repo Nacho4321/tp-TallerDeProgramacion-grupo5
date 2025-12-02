@@ -6,11 +6,6 @@
 #include <cmath>
 #include <algorithm>
 
-static std::unordered_map<int, std::string> mapsDataPaths = {
-    {LIBERTY_CITY_MAP_ID, "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Liberty City.png"},
-    {SAN_ANDREAS_MAP_ID, "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - San Andreas.png"},
-    {VICE_CITY_MAP_ID, "data/cities/Game Boy _ GBC - Grand Theft Auto - Backgrounds - Vice City.png"}};
-
 static std::string CarDataPath = "data/cars/Mobile - Grand Theft Auto 4 - Miscellaneous - Cars.png";
 static std::string ExplosionDataPath = "data/cars/explosion_pixelfied.png";
 
@@ -31,7 +26,7 @@ GameRenderer::GameRenderer(const char *windowTitle, int windowWidth, int windowH
           SDL2pp::Surface surface(ExplosionDataPath);
           surface.SetColorKey(true, SDL_MapRGB(surface.Get()->format, 0xFF, 0xFF, 0xFF));
           return surface; }()),
-      backgroundTexture(renderer, Surface(mapsDataPaths.at(mapId))),
+      backgroundTexture(renderer, Surface(MAP_BACKGROUND_PATHS[mapId])),
       camera(LOGICAL_SCREEN_WIDTH, LOGICAL_SCREEN_HEIGHT, backgroundTexture.GetWidth(), backgroundTexture.GetHeight()),
       minimap(backgroundTexture.GetWidth(), backgroundTexture.GetHeight()),
       logicalWidth(LOGICAL_SCREEN_WIDTH),

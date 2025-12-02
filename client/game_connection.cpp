@@ -8,6 +8,7 @@ GameConnection::GameConnection()
     , port_("")
     , gameId_(0)
     , playerId_(0)
+    , mapId_(0)
     , connected_(false)
     , started_(false)
 {}
@@ -23,11 +24,13 @@ GameConnection::GameConnection(GameConnection&& other) noexcept
     , port_(std::move(other.port_))
     , gameId_(other.gameId_)
     , playerId_(other.playerId_)
+    , mapId_(other.mapId_)
     , connected_(other.connected_)
     , started_(other.started_)
 {
     other.gameId_ = 0;
     other.playerId_ = 0;
+    other.mapId_ = 0;
     other.connected_ = false;
     other.started_ = false;
 }
@@ -42,11 +45,13 @@ GameConnection& GameConnection::operator=(GameConnection&& other) noexcept {
         port_ = std::move(other.port_);
         gameId_ = other.gameId_;
         playerId_ = other.playerId_;
+        mapId_ = other.mapId_;
         connected_ = other.connected_;
         started_ = other.started_;
 
         other.gameId_ = 0;
         other.playerId_ = 0;
+        other.mapId_ = 0;
         other.connected_ = false;
         other.started_ = false;
     }
@@ -66,6 +71,7 @@ bool GameConnection::connect(const std::string& host, const std::string& port) {
         started_ = false;
         gameId_ = 0;
         playerId_ = 0;
+        mapId_ = 0;
         
         return true;
         
@@ -128,19 +134,22 @@ bool GameConnection::tryReceive(ServerMessage& out) {
     return false;
 }
 
-bool GameConnection::createGame(const std::string& gameName, uint32_t& outGameId, uint32_t& outPlayerId) {
+bool GameConnection::createGame(const std::string& gameName, uint32_t& outGameId, uint32_t& outPlayerId, uint8_t mapId) {
     if (!connected_ || !handler_ || !started_) {
         std::cerr << "[GameConnection] No conectado o no iniciado" << std::endl;
         return false;
     }
     
     try {
-        bool success = handler_->create_game_blocking(outGameId, outPlayerId, gameName);
+        uint8_t outMapId = 0;
+        bool success = handler_->create_game_blocking(outGameId, outPlayerId, outMapId, gameName, mapId);
         if (success) {
             gameId_ = outGameId;
             playerId_ = outPlayerId;
+            mapId_ = outMapId;
             std::cout << "[GameConnection] Partida creada: game_id=" << gameId_ 
-                      << " player_id=" << playerId_ << std::endl;
+                      << " player_id=" << playerId_ 
+                      << " map_id=" << int(mapId_) << std::endl;
         }
         return success;
         
@@ -157,12 +166,15 @@ bool GameConnection::joinGame(uint32_t gameId, uint32_t& outPlayerId) {
     }
     
     try {
-        bool success = handler_->join_game_blocking(static_cast<int32_t>(gameId), outPlayerId);
+        uint8_t outMapId = 0;
+        bool success = handler_->join_game_blocking(static_cast<int32_t>(gameId), outPlayerId, outMapId);
         if (success) {
             gameId_ = gameId;
             playerId_ = outPlayerId;
+            mapId_ = outMapId;
             std::cout << "[GameConnection] Unido a partida: game_id=" << gameId_ 
-                      << " player_id=" << playerId_ << std::endl;
+                      << " player_id=" << playerId_ 
+                      << " map_id=" << int(mapId_) << std::endl;
         }
         return success;
         
@@ -258,4 +270,8 @@ uint32_t GameConnection::getGameId() const {
 
 uint32_t GameConnection::getPlayerId() const {
     return playerId_;
+}
+
+uint8_t GameConnection::getMapId() const {
+    return mapId_;
 }

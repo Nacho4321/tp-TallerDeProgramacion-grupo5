@@ -22,7 +22,7 @@ Client::Client(const char *address, const char *port, StartMode mode, int join_g
       active_handler_(nullptr),
       connected(true),
       handler(),
-      game_renderer("Game Renderer", LOGICAL_SCREEN_WIDTH, LOGICAL_SCREEN_HEIGHT, LIBERTY_CITY_MAP_ID, "data/cities/liberty_city.json"),
+      game_renderer("Game Renderer", LOGICAL_SCREEN_WIDTH, LOGICAL_SCREEN_HEIGHT, static_cast<int>(MapId::LibertyCity), "data/cities/liberty_city.json"),
       start_mode(mode),
       auto_join_game_id(join_game_id),
       auto_create_game_name(game_name)
@@ -39,7 +39,9 @@ Client::Client(std::unique_ptr<GameConnection> connection)
       active_handler_(nullptr),
       connected(true),
       handler(),
-      game_renderer("Game Renderer", LOGICAL_SCREEN_WIDTH, LOGICAL_SCREEN_HEIGHT, 1, "data/cities/liberty_city.json"),
+      game_renderer("Game Renderer", LOGICAL_SCREEN_WIDTH, LOGICAL_SCREEN_HEIGHT, 
+                    connection_ ? (connection_->getMapId() + 1) : 1,  // MapId enum (0,1,2) -> LIBERTY/SAN/VICE (1,2,3)
+                    connection_ ? MAP_JSON_PATHS[connection_->getMapId()] : "data/cities/liberty_city.json"),
       start_mode(StartMode::FROM_LOBBY),
       auto_join_game_id(-1),
       auto_create_game_name("")
@@ -49,6 +51,8 @@ Client::Client(std::unique_ptr<GameConnection> connection)
     my_game_id = connection_->getGameId();
     my_player_id = static_cast<int32_t>(connection_->getPlayerId());
     original_player_id = my_player_id;
+    
+    std::cout << "[Client] Iniciado desde lobby con map_id=" << int(connection_->getMapId()) << std::endl;
     
     handler.setAudioManager(game_renderer.getAudioManager());
 }
@@ -70,7 +74,8 @@ void Client::start()
     // Ejecutar acción automática según el modo de inicio
     if (start_mode == StartMode::AUTO_CREATE) {
         uint32_t gid = 0, pid = 0;
-        bool ok = active_handler_->create_game_blocking(gid, pid, auto_create_game_name);
+        uint8_t mapId = 0;
+        bool ok = active_handler_->create_game_blocking(gid, pid, mapId, auto_create_game_name);
         if (ok)
         {
             my_game_id = gid;
@@ -94,7 +99,8 @@ void Client::start()
         }
         std::cout << "[Client] AUTOJOIN mode: Joining game " << auto_join_game_id << std::endl;
         uint32_t pid = 0;
-        bool ok = active_handler_->join_game_blocking(auto_join_game_id, pid);
+        uint8_t mapId = 0;
+        bool ok = active_handler_->join_game_blocking(auto_join_game_id, pid, mapId);
         if (ok)
         {
             std::cout << "[Client] Joined game. game_id=" << auto_join_game_id << " player_id=" << pid << std::endl;
@@ -123,7 +129,8 @@ void Client::start()
             {
                 std::cout << "[Client] Creating game..." << std::endl;
                 uint32_t gid = 0, pid = 0;
-                bool ok = active_handler_->create_game_blocking(gid, pid);
+                uint8_t mapId = 0;
+                bool ok = active_handler_->create_game_blocking(gid, pid, mapId);
                 if (ok)
                 {
                     std::cout << "[Client] Game created. game_id=" << gid << " player_id=" << pid << std::endl;
@@ -149,7 +156,8 @@ void Client::start()
                         int gid = std::stoi(game_id_str);
                         std::cout << "[Client] Joining game " << gid << "..." << std::endl;
                         uint32_t pid = 0;
-                        bool ok = active_handler_->join_game_blocking(gid, pid);
+                        uint8_t mapId = 0;
+                        bool ok = active_handler_->join_game_blocking(gid, pid, mapId);
                         if (ok)
                         {
                             std::cout << "[Client] Joined game successfully. game_id=" << gid << " player_id=" << pid << std::endl;

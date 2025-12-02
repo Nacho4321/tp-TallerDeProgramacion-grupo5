@@ -215,7 +215,7 @@ void EventDispatcher::upgrade_speed(Event &event)
     if (it->second.upgrades.speed >= MAX_UPGRADE_LEVEL)
         return;
     
-    const CarPhysics &phys = CarPhysicsConfig::getInstance().getCarPhysics(it->second.car.car_name);
+    (void)CarPhysicsConfig::getInstance().getCarPhysics(it->second.car.car_name);
     it->second.car.speed *= SPEED_UPGRADE_MULTIPLIER;
     it->second.upgrades.speed++;
     
