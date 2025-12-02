@@ -18,6 +18,7 @@
 #include "gameloop/npc/npc_manager.h"
 #include "gameloop/bridge/bridge_handler.h"
 #include "gameloop/checkpoint/checkpoint_handler.h"
+#include "gameloop/physics/physics_handler.h"
 #define INITIAL_ID 1
 #include "game_state.h"
 
@@ -107,7 +108,7 @@ private:
     int find_player_by_body(b2Body *body);
     void process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpointFix);
     void complete_player_race(PlayerData &player_data);
-    void disqualify_player(PlayerData &player_data, int player_id);
+    void disqualify_player(PlayerData &player_data);
 
     // Car collision damage system
     void handle_car_collision(b2Fixture *fixture_a, b2Fixture *fixture_b);
@@ -124,16 +125,7 @@ private:
     void process_starting_state();
 
     // Utility helpers
-    float normalize_angle(double angle) const;
     void safe_destroy_body(b2Body *&body);
-
-    b2Vec2 get_lateral_velocity(b2Body *body) const;
-    b2Vec2 get_forward_velocity(b2Body *body) const;
-    void update_friction_for_player(class PlayerData &player_data);
-    void update_drive_for_player(class PlayerData &player_data);
-    float calculate_desired_speed(bool want_up, bool want_down, const CarPhysics &car_physics) const;
-    void apply_forward_drive_force(b2Body *body, float desired_speed, const CarPhysics &car_physics);
-    void apply_steering_torque(b2Body *body, bool want_left, bool want_right, float torque);
 
     // Verifica si todos los jugadores terminaron la carrera (solo marca flag)
     void check_race_completion();

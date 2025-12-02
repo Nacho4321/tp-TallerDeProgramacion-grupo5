@@ -19,6 +19,7 @@ target_sources(taller_server
     gameloop/npc/npc_manager.cpp
     gameloop/bridge/bridge_handler.cpp
     gameloop/checkpoint/checkpoint_handler.cpp
+    gameloop/physics/physics_handler.cpp
     PUBLIC
     # .h files
     acceptor.h
@@ -40,4 +41,5 @@ target_sources(taller_server
     gameloop/npc/npc_data.h
     gameloop/bridge/bridge_handler.h
     gameloop/checkpoint/checkpoint_handler.h
+    gameloop/physics/physics_handler.h
     )

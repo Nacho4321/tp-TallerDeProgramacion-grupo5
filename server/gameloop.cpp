@@ -164,7 +164,7 @@ void GameLoop::process_playing_state(float &acum)
             // Procesar cheat de descalificación pendiente
             if (player_data.pending_disqualification && !player_data.is_dead)
             {
-                disqualify_player(player_data, id);
+                disqualify_player(player_data);
                 player_data.pending_disqualification = false;
             }
 
@@ -720,7 +720,7 @@ void GameLoop::add_player_to_broadcast(std::vector<PlayerPositionUpdate> &broadc
         // Actualizar posición básica
         player_data.position.new_X = position.x * SCALE;
         player_data.position.new_Y = position.y * SCALE;
-        player_data.position.angle = normalize_angle(body->GetAngle());
+        player_data.position.angle = PhysicsHandler::normalize_angle(body->GetAngle());
 
         // IMPORTANTE: Actualizar el estado del puente ANTES de copiar la posición
         BridgeHandler::update_bridge_state(player_data);
@@ -794,10 +794,10 @@ void GameLoop::update_body_positions()
         if (!player_data.body)
             continue;
         // Aplicar fricción/adhesión primero
-        update_friction_for_player(player_data);
+        PhysicsHandler::update_friction_for_player(player_data, physics_config);
 
         // Aplicar fuerza de conducción / torque basado en la entrada
-        update_drive_for_player(player_data);
+        PhysicsHandler::update_drive_for_player(player_data, physics_config);
     }
 }
 
@@ -849,15 +849,6 @@ int GameLoop::find_player_by_body(b2Body *body)
     return -1;
 }
 
-float GameLoop::normalize_angle(double angle) const
-{
-    while (angle < 0.0)
-        angle += 2.0 * M_PI;
-    while (angle >= 2.0 * M_PI)
-        angle -= 2.0 * M_PI;
-    return static_cast<float>(angle);
-}
-
 void GameLoop::safe_destroy_body(b2Body *&body)
 {
     if (!body)
@@ -882,122 +873,7 @@ void GameLoop::safe_destroy_body(b2Body *&body)
     }
 }
 
-b2Vec2 GameLoop::get_lateral_velocity(b2Body *body) const
-{
-    b2Vec2 currentRightNormal = body->GetWorldVector(b2Vec2(RIGHT_VECTOR_X, RIGHT_VECTOR_Y));
-    return b2Dot(currentRightNormal, body->GetLinearVelocity()) * currentRightNormal;
-}
-
-b2Vec2 GameLoop::get_forward_velocity(b2Body *body) const
-{
-    b2Vec2 currentForwardNormal = body->GetWorldVector(b2Vec2(FORWARD_VECTOR_X, FORWARD_VECTOR_Y));
-    return b2Dot(currentForwardNormal, body->GetLinearVelocity()) * currentForwardNormal;
-}
-
-void GameLoop::update_friction_for_player(PlayerData &player_data)
-{
-    b2Body *body = player_data.body;
-    if (!body)
-        return;
-
-    const CarPhysics &car_physics = physics_config.getCarPhysics(player_data.car.car_name);
-
-    // impulso lateral para reducir el deslizamiento lateral (limitado para permitir derrapes)
-    b2Vec2 impulse = body->GetMass() * -get_lateral_velocity(body);
-    float ilen = impulse.Length();
-    float maxImpulse = car_physics.max_lateral_impulse * body->GetMass();
-    if (ilen > maxImpulse)
-        impulse *= maxImpulse / ilen;
-    body->ApplyLinearImpulse(impulse, body->GetWorldCenter(), true);
-
-    // matar un poco la velocidad angular para evitar giros descontrolados
-    body->ApplyAngularImpulse(car_physics.angular_friction * body->GetInertia() * -body->GetAngularVelocity(), true);
-
-    b2Vec2 forwardDir = body->GetWorldVector(b2Vec2(0, 1));
-    float currentForwardSpeed = b2Dot(body->GetLinearVelocity(), forwardDir);
-    b2Vec2 dragForce = body->GetMass() * car_physics.forward_drag_coefficient * currentForwardSpeed * forwardDir;
-    body->ApplyForce(dragForce, body->GetWorldCenter(), true);
-}
-
-float GameLoop::calculate_desired_speed(bool want_up, bool want_down, const CarPhysics &car_physics) const
-{
-    if (want_up)
-        return car_physics.max_speed / SCALE;
-    if (want_down)
-        return -car_physics.max_speed * car_physics.backward_speed_multiplier / SCALE;
-    return 0.0f;
-}
-
-void GameLoop::apply_forward_drive_force(b2Body *body, float desired_speed, const CarPhysics &car_physics)
-{
-    b2Vec2 forwardNormal = body->GetWorldVector(b2Vec2(FORWARD_VECTOR_X, FORWARD_VECTOR_Y));
-    float current_speed = b2Dot(body->GetLinearVelocity(), forwardNormal);
-
-    float max_accel_m = car_physics.max_acceleration / SCALE;
-    if (desired_speed < 0.0f)
-    {
-        max_accel_m *= car_physics.backward_speed_multiplier;
-    }
-    float accel_command = (desired_speed - current_speed) * car_physics.speed_controller_gain;
-
-    if (accel_command > max_accel_m)
-        accel_command = max_accel_m;
-    else if (accel_command < -max_accel_m)
-        accel_command = -max_accel_m;
-
-    float desired_force = body->GetMass() * accel_command;
-    body->ApplyForce(desired_force * forwardNormal, body->GetWorldCenter(), true);
-}
-
-void GameLoop::apply_steering_torque(b2Body *body, bool want_left, bool want_right, float torque)
-{
-    if (want_left)
-        body->ApplyTorque(-torque, true);
-    else if (want_right)
-        body->ApplyTorque(torque, true);
-}
-
-void GameLoop::update_drive_for_player(PlayerData &player_data)
-{
-    b2Body *body = player_data.body;
-    if (!body)
-        return;
-
-    CarPhysics car_physics = physics_config.getCarPhysics(player_data.car.car_name);
-    // Sobreescribir con valores upgradeados del player
-    car_physics.max_speed = player_data.car.speed;
-    car_physics.max_acceleration = player_data.car.acceleration;
-    car_physics.torque = player_data.car.handling;
-
-    bool want_up = (player_data.position.direction_y == up);
-    bool want_down = (player_data.position.direction_y == down);
-    bool want_left = (player_data.position.direction_x == left);
-    bool want_right = (player_data.position.direction_x == right);
-
-    // Detectar frenazo
-    player_data.is_stopping = false;
-    if (want_down)
-    {
-        b2Vec2 forwardNormal = body->GetWorldVector(b2Vec2(FORWARD_VECTOR_X, FORWARD_VECTOR_Y));
-        float current_speed = b2Dot(body->GetLinearVelocity(), forwardNormal);
-        float threshold = 1.0f; // habria q ver el threshold
-        if (current_speed > threshold)
-        {
-            player_data.is_stopping = true;
-            std::cout << "[FRENAZO] Player " << " frenazo Velocidad: " << current_speed << std::endl;
-        }
-    }
-
-    if (want_up || want_down)
-    {
-        float desired_speed = calculate_desired_speed(want_up, want_down, car_physics);
-        apply_forward_drive_force(body, desired_speed, car_physics);
-    }
-
-    apply_steering_torque(body, want_left, want_right, car_physics.torque);
-}
-
-void GameLoop::disqualify_player(PlayerData &player_data, int player_id)
+void GameLoop::disqualify_player(PlayerData &player_data)
 {
     // Marcar como muerto y descalificado
     player_data.car.hp = 0.0f;
@@ -1203,7 +1079,6 @@ void GameLoop::apply_collision_damage(PlayerData &player_data, int player_id, fl
 {
     if (player_data.is_dead)
     {
-        std::cout << "[Collision] Player already dead, skipping damage" << std::endl;
         return;
     }
 
@@ -1219,15 +1094,6 @@ void GameLoop::apply_collision_damage(PlayerData &player_data, int player_id, fl
     // TODO: Por ahi meter el 0.5 al YAML o hacerlo una constante global
     if (damage < 0.5f)
     {
-        std::cout << "[Collision] Impact too weak (" << impact_velocity
-                  << " m/s), damage=" << damage << " < 0.5, skipping" << std::endl;
-        return;
-    }
-
-    // God mode: no recibe daño
-    if (player_data.god_mode)
-    {
-        std::cout << "[Collision] Player has GOD MODE - damage ignored (" << damage << ")" << std::endl;
         return;
     }
 
@@ -1235,23 +1101,9 @@ void GameLoop::apply_collision_damage(PlayerData &player_data, int player_id, fl
 
     player_data.collision_this_frame = true;
 
-    if (frontal_multiplier > 1.5f)
-    {
-        std::cout << "[Collision] **FRONTAL HEAD-ON CRASH** Player car '" << car_name
-                  << "' took " << damage << " damage (impact: " << impact_velocity
-                  << " m/s, frontal multiplier: " << frontal_multiplier
-                  << "). HP remaining: " << player_data.car.hp << std::endl;
-    }
-    else
-    {
-        std::cout << "[Collision] Player car '" << car_name
-                  << "' took " << damage << " damage (impact: " << impact_velocity
-                  << " m/s). HP remaining: " << player_data.car.hp << std::endl;
-    }
-
     if (player_data.car.hp <= 0.0f)
     {
-        disqualify_player(player_data, player_id);
+        disqualify_player(player_data);
     }
 }
 
