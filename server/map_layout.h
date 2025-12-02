@@ -3,10 +3,20 @@
 #include <box2d/box2d.h>
 #include <vector>
 #include <string>
+#include <unordered_map>
+#include "../common/constants.h"
 class MapLayout
 {
 private:
     b2World &world;
+    std::unordered_map<std::string, uint8_t> collisions_byte_map = {
+        {LAYER_COLLISIONS_STR,
+         COLLISION_FLOOR},
+        {LAYER_COLLISIONS_BRIDGE_STR,
+         COLLISION_BRIDGE},
+        {LAYER_END_BRIDGE_STR, SENSOR_END_BRIDGE},
+        {LAYER_COLLISIONS_UNDER_STR, COLLISION_UNDER},
+        {LAYER_START_BRIDGE_STR, SENSOR_START_BRIDGE}};
 
     void create_walls();
     void create_polygon_layout(const std::vector<b2Vec2> &vertices, uint16_t category);
@@ -38,9 +48,9 @@ public:
     // Soporta campos opcionales: "units" (pixels|meters), "raw" (bool), "apply_offset" (bool)
     struct SpawnPointData
     {
-        float x;        // En pixeles (después de aplicar conversiones)
-        float y;        // En pixeles
-        float angle;    // En radianes
+        float x;     // En pixeles (después de aplicar conversiones)
+        float y;     // En pixeles
+        float angle; // En radianes
     };
     void extract_spawn_points(const std::string &jsonPath, std::vector<SpawnPointData> &out);
 

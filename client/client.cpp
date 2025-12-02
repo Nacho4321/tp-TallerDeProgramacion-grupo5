@@ -1,4 +1,7 @@
 #include "client.h"
+#include "game_state_tracker.h"
+#include "player_state_tracker.h"
+#include "position_update_handler.h"
 #include "../common/constants.h"
 #include <iostream>
 #include <string>
@@ -45,10 +48,11 @@ Client::Client(std::unique_ptr<GameConnection> connection)
       auto_create_game_name("")
 {
     active_handler_ = connection_->getHandler();
-    
+
     my_game_id = connection_->getGameId();
-    my_player_id = static_cast<int32_t>(connection_->getPlayerId());
-    original_player_id = my_player_id;
+    int32_t player_id = static_cast<int32_t>(connection_->getPlayerId());
+    playerTracker.setPlayerId(player_id);
+    playerTracker.setOriginalPlayerId(player_id);
     handler.setAudioManager(game_renderer.getAudioManager());
 }
 
@@ -73,8 +77,8 @@ void Client::start()
         if (ok)
         {
             my_game_id = gid;
-            my_player_id = static_cast<int32_t>(pid);
-            original_player_id = my_player_id;
+            playerTracker.setPlayerId(static_cast<int32_t>(pid));
+            playerTracker.setOriginalPlayerId(static_cast<int32_t>(pid));
         }
         else
         {
@@ -99,8 +103,8 @@ void Client::start()
         {
             std::cout << "[Client] Joined game. game_id=" << auto_join_game_id << " player_id=" << pid << std::endl;
             my_game_id = static_cast<uint32_t>(auto_join_game_id);
-            my_player_id = static_cast<int32_t>(pid);
-            original_player_id = my_player_id;
+            playerTracker.setPlayerId(static_cast<int32_t>(pid));
+            playerTracker.setOriginalPlayerId(static_cast<int32_t>(pid));
         }
         else
         {
@@ -110,7 +114,8 @@ void Client::start()
         }
     }
 
-    bool game_ended = false;
+    GameStateTracker stateManager;
+    PositionUpdateHandler positionHandler;
 
     while (connected)
     {
@@ -130,10 +135,9 @@ void Client::start()
                 if (ok)
                 {
                     std::cout << "[Client] Game created. game_id=" << gid << " player_id=" << pid << std::endl;
-                    // Guardar mis IDs actuales
                     my_game_id = gid;
-                    my_player_id = static_cast<int32_t>(pid);
-                    original_player_id = my_player_id;
+                    playerTracker.setPlayerId(static_cast<int32_t>(pid));
+                    playerTracker.setOriginalPlayerId(static_cast<int32_t>(pid));
                 }
                 else
                 {
@@ -142,7 +146,6 @@ void Client::start()
             }
             else if (input.rfind(JOIN_GAME_STR, 0) == 0)
             {
-                // formato: JOIN GAME <id>
                 size_t last_space = input.find_last_of(' ');
                 if (last_space != std::string::npos && last_space + 1 < input.size())
                 {
@@ -157,10 +160,9 @@ void Client::start()
                         if (ok)
                         {
                             std::cout << "[Client] Joined game successfully. game_id=" << gid << " player_id=" << pid << std::endl;
-                            // Guardar mis IDs actuales
                             my_game_id = static_cast<uint32_t>(gid);
-                            my_player_id = static_cast<int32_t>(pid);
-                            original_player_id = my_player_id;
+                            playerTracker.setPlayerId(static_cast<int32_t>(pid));
+                            playerTracker.setOriginalPlayerId(static_cast<int32_t>(pid));
                         }
                         else
                         {
@@ -184,56 +186,37 @@ void Client::start()
             }
         }
 
+        stateManager.resetFrameState();
+
         ServerMessage message;
         ServerMessage latest_message;
         bool got_message = false;
         uint8_t latest_opcode = 0;
-        bool saw_starting_countdown = false;
-        bool saw_race_times = false;
-        bool saw_total_times = false;
-        ServerMessage last_race_times_msg;
-        ServerMessage last_total_times_msg;
 
         while (active_handler_->try_receive(message))
         {
-            if (message.opcode == GAME_STARTED){
-                if (game_ended && (message.opcode == GAME_STARTED)){
-                    connected = false;
-                    return;
-                }
+            if (stateManager.shouldExitGame(message.opcode))
+            {
+                connected = false;
+                return;
             }
 
-            if (message.opcode == STARTING_COUNTDOWN)
-            {
-                saw_starting_countdown = true;
-            }
-            else if (message.opcode == RACE_TIMES)
-            {
-                saw_race_times = true;
-                last_race_times_msg = message;
-            }
-            else if (message.opcode == TOTAL_TIMES)
-            {
-                saw_total_times = true;
-                last_total_times_msg = message;
-                game_ended = true;
-            }
+            stateManager.onMessage(message);
 
             latest_message = message;
             got_message = true;
             latest_opcode = latest_message.opcode;
         }
 
-        // Aviso simple de inicio de countdown
-        if (got_message && (latest_opcode == STARTING_COUNTDOWN || saw_starting_countdown))
+        if (stateManager.shouldTriggerCountdown(got_message, latest_opcode))
         {
-            std::cout << "[Client] STARTING countdown begun (10s)." << std::endl;
             game_renderer.startCountDown();
         }
 
-        if (saw_race_times || saw_total_times)
+        if (stateManager.shouldShowResults())
         {
-            my_player_id = original_player_id;
+            // Volver a playerId original en caso de estar en spectator mode
+            playerTracker.setPlayerId(playerTracker.getOriginalPlayerId());
 
             uint8_t upgrade_speed = 0;
             uint8_t upgrade_acceleration = 0;
@@ -242,7 +225,7 @@ void Client::start()
 
             if (latest_message.opcode == UPDATE_POSITIONS) {
                 for (const auto& pos : latest_message.positions) {
-                    if (pos.player_id == original_player_id) {
+                    if (pos.player_id == playerTracker.getOriginalPlayerId()) {
                         upgrade_speed = pos.upgrade_speed;
                         upgrade_acceleration = pos.upgrade_acceleration;
                         upgrade_handling = pos.upgrade_handling;
@@ -254,9 +237,9 @@ void Client::start()
 
             game_renderer.winSound();
             game_renderer.showResults(
-                saw_race_times ? last_race_times_msg.race_times : std::vector<ServerMessage::PlayerRaceTime>(),
-                saw_total_times ? last_total_times_msg.total_times : std::vector<ServerMessage::PlayerTotalTime>(),
-                original_player_id,
+                stateManager.hasSawRaceTimes() ? stateManager.getLastRaceTimesMsg().race_times : std::vector<ServerMessage::PlayerRaceTime>(),
+                stateManager.hasSawTotalTimes() ? stateManager.getLastTotalTimesMsg().total_times : std::vector<ServerMessage::PlayerTotalTime>(),
+                playerTracker.getOriginalPlayerId(),
                 upgrade_speed,
                 upgrade_acceleration,
                 upgrade_handling,
@@ -266,110 +249,56 @@ void Client::start()
 
         if (got_message && latest_message.opcode == UPDATE_POSITIONS && !latest_message.positions.empty())
         {
-            // Elegir como "auto principal" el correspondiente a mi player_id (si lo tengo asignado)
-            size_t idx_main = 0;
-            bool player_found = false;
+            auto playerInfo = playerTracker.findPlayerInPositions(latest_message);
+            size_t idx_main = playerInfo.idx_main;
+            bool player_found = playerInfo.player_found;
 
-            if (my_player_id >= 0)
+            auto deathState = playerTracker.checkDeathState(
+                player_found,
+                game_renderer.mainCar != nullptr,
+                game_renderer.mainCar && game_renderer.mainCar->isExploding(),
+                game_renderer.mainCar && game_renderer.mainCar->isExplosionComplete()
+            );
+
+            if (deathState == PlayerStateTracker::DeathState::NEEDS_EXPLOSION)
             {
-                for (size_t i = 0; i < latest_message.positions.size(); ++i)
-                {
-                    if (latest_message.positions[i].player_id == my_player_id)
-                    {
-                        idx_main = i;
-                        player_found = true;
-                        break;
-                    }
-                }
+                game_renderer.triggerPlayerDeath();
             }
-            else
+            else if (deathState == PlayerStateTracker::DeathState::TRANSITION_COMPLETE)
             {
+                idx_main = 0;
                 player_found = true;
+                game_renderer.completePlayerDeathTransition();
+                playerTracker.switchToSpectatorMode();
             }
 
-            if (!player_found && my_player_id >= 0)
-            {
-                if (game_renderer.mainCar && !game_renderer.mainCar->isExploding())
-                {
-                    game_renderer.mainCar->startExplosion();
+            auto frame = positionHandler.processUpdate(
+                latest_message,
+                idx_main,
+                player_found,
+                playerTracker.getOriginalPlayerId(),
+                car_type_map,
+                game_renderer.mainCar
+            );
 
-                    CarPosition deathPos = game_renderer.mainCar->getPosition();
-                    game_renderer.getAudioManager()->playExplosionSound(
-                        deathPos.x, deathPos.y, deathPos.x, deathPos.y);
-                    game_renderer.getAudioManager()->stopCarEngine(-1);
-                }
+            game_renderer.updateResultsUpgrades(
+                frame.upgradeSpeed,
+                frame.upgradeAcceleration,
+                frame.upgradeHandling,
+                frame.upgradeDurability
+            );
 
-                if (game_renderer.mainCar && game_renderer.mainCar->isExplosionComplete())
-                {
-                    idx_main = 0;
-                    player_found = true;
-                    game_renderer.mainCar->stopExplosion();
-                    my_player_id = SPECTATOR_MODE;  
-                }
-            }
-
-            CarPosition mainCarPosition;
-            int mainTypeId = 0;
-            std::vector<Position> next_cps;
-            bool mainCarCollisionFlag = false;
-            bool mainCarIsStopping = false;
-            float mainCarHP = 100.0f;
-
-            if (player_found)
-            {
-                const PlayerPositionUpdate &main_pos = latest_message.positions[idx_main];
-                double angle = main_pos.new_pos.angle;
-                mainCarPosition = CarPosition{
-                    main_pos.new_pos.new_X,
-                    main_pos.new_pos.new_Y,
-                    float(-std::sin(angle)),
-                    float(std::cos(angle)),
-                    main_pos.new_pos.on_bridge};
-                auto it = car_type_map.find(main_pos.car_type);
-                mainTypeId = (it != car_type_map.end()) ? it->second : 0;
-                next_cps = main_pos.next_checkpoints;
-                mainCarCollisionFlag = main_pos.collision_flag;
-                mainCarIsStopping = main_pos.is_stopping;
-                mainCarHP = main_pos.hp;
-
-                game_renderer.updateResultsUpgrades(
-                    main_pos.upgrade_speed,
-                    main_pos.upgrade_acceleration,
-                    main_pos.upgrade_handling,
-                    main_pos.upgrade_durability
-                );
-            }
-            else if (game_renderer.mainCar)
-            {
-                mainCarPosition = game_renderer.mainCar->getPosition();
-            }
-
-            std::map<int, std::pair<CarPosition, int>> otherCars;
-            std::map<int, bool> otherCarsCollisionFlags;
-            std::map<int, bool> otherCarsIsStoppingFlags;
-
-            for (size_t i = 0; i < latest_message.positions.size(); ++i)
-            {
-                const PlayerPositionUpdate &pos = latest_message.positions[i];
-
-                if (pos.player_id == original_player_id)
-                    continue;
-
-                double ang = pos.new_pos.angle;
-                CarPosition cp{
-                    pos.new_pos.new_X,
-                    pos.new_pos.new_Y,
-                    float(-std::sin(ang)),
-                    float(std::cos(ang)),
-                    pos.new_pos.on_bridge};
-                auto other_it = car_type_map.find(pos.car_type);
-                int other_type_id = (other_it != car_type_map.end()) ? other_it->second : 0;
-                otherCars[pos.player_id] = std::make_pair(cp, other_type_id);
-                otherCarsCollisionFlags[pos.player_id] = pos.collision_flag;
-                otherCarsIsStoppingFlags[pos.player_id] = pos.is_stopping;
-            }
-
-            game_renderer.render(mainCarPosition, mainTypeId, otherCars, next_cps, mainCarCollisionFlag, mainCarIsStopping, mainCarHP, otherCarsCollisionFlags, otherCarsIsStoppingFlags);
+            game_renderer.render(
+                frame.mainCarPosition,
+                frame.mainTypeId,
+                frame.otherCars,
+                frame.next_cps,
+                frame.mainCarCollisionFlag,
+                frame.mainCarIsStopping,
+                frame.mainCarHP,
+                frame.otherCarsCollisionFlags,
+                frame.otherCarsIsStoppingFlags
+            );
         }
 
         SDL_Delay(16);

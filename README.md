@@ -1,45 +1,99 @@
-# Ejemplo de CMAKE para el TP Final
+# Need for Speed - Taller de Programación I
 
-**Importante:** el primer commit de este repositorio tiene el setup
-básico para el TP Final que incluye la instalación de la lib de Google
-Tests, `SDL2` y `SDL2pp` (el wrapper de C++).
+Juego de carreras multijugador inspirado en Need for Speed, desarrollado en C++ utilizando SDL2 para el cliente gráfico y Qt6 para la interfaz de lobby.
 
-El resto de los commits son a modo de ejemplo de como se pueden
-agregar mas código fuente al proyecto.
+## Índice
 
-Este ejemplo **no** incluye instalarse otras libs que son dependencias
-tanto de `SDL2` como de `SDL2pp` (pero si estan documentadas en el
-`CMakeFile` para Xubuntu 24.04).
+- [Dependencias](#dependencias)
+- [Instalación](#instalación)
+- [Ejecución](#ejecución)
+- [Instrucciones de Juego](#instrucciones-de-juego)
 
-Este repo **no** incluye tampoco un instalador.
+---
 
-**Se deben agregar las librerias necesarias y el instalador.**
+## Dependencias
 
-También el ejemplo usa una estructura de carpetas muy simple:
+El proyecto requiere las siguientes dependencias:
 
-```
-client/
-server/
-editor/
-common/
-```
+- **Qt6** (qt6-base-dev, qt6-base-dev-tools, qt6-tools-dev, qt6-tools-dev-tools)
+- **SDL2** con sus extensiones:
+  - SDL2_image
+  - SDL2_mixer  
+  - SDL2_ttf
 
-Bien se puede mejorar (cambiando el cmakefile) agregando mas
-sub-carpetas.
+### Instalación
 
-Asi tambien **deben** ser cambiados los *targets* del cmake (`taller_client`,
-`taller_server`, ...) por nombres mas acordes al TP que se este
-haciendo.
 
-Tambien, por default solo se compila una version *debug* sin
-optimizar. Si se quiere compilar binarios optimizados
-(lo que cmake llama *release*) se puede, solo hay modificar
-cmake.
+---
 
-Aprender del ejemplo para saber como extenderlo!
+## Ejecución
 
-**Importante:** este repositorio **no** incluye pre-commits hooks,
-ni scripts adicionales (como correr valgrind).
 
-**Eso esta a cargo de los estudiantes,** tal como fue mostrado
-en los tps individuales, recaps y hands-on.
+---
+
+### Descripción del Juego
+
+**Need for Speed - FIUBA** es un juego de carreras multijugador para hasta **8 jugadores simultáneos**. Los jugadores compiten en carreras de **3 rondas** en diferentes mapas de ciudades.
+
+### Creación y Unión a Partidas
+
+#### Crear una Partida
+
+1. Ejecutar el cliente (`taller_client_ui`)
+2. Conectarse al servidor ingresando la IP y puerto
+3. Seleccionar **"Create Game"**
+4. Ingresar el nombre de la partida
+5. Seleccionar el mapa deseado (Liberty City, San Andreas o Vice City)
+6. Presionar **"Create Game"** para crear la partida
+7. Compartir el código de partida con los demás jugadores
+8. Seleccionar el auto deseado
+9. Presionar **"Start Game"** cuando todos los jugadores estén listos
+
+#### Unirse a una Partida
+
+1. Ejecutar el cliente (`taller_client_ui`)
+2. Conectarse al servidor ingresando la IP y puerto
+3. Seleccionar **"Join Game"** o **"Create Game"**
+4. Ingresar o crear la partida
+5. Seleccionar el auto deseado
+6. Esperar a que el creador inicie la partida
+
+### Sistema de Juego
+
+- **Carreras de 3 rondas:** Cada partida consiste en 3 rondas completas al circuito
+- **Entre rondas:** Hay un período de **10 segundos** entre cada ronda donde los jugadores pueden mejorar su auto
+- **Sistema de mejoras:** Las mejoras del auto tienen un costo en forma de **penalización de tiempo**
+- **Ganador:** Gana el jugador con el **menor tiempo total** acumulado (tiempo de carrera + penalizaciones)
+
+---
+
+## Instrucciones de Juego
+
+### Controles de Movimiento
+
+| Tecla | Acción |
+|-------|--------|
+| `↑` | Acelerar |
+| `↓` | Frenar / Reversa |
+| `←` | Girar a la izquierda |
+| `→` | Girar a la derecha |
+
+### Mejoras del Auto (durante los 10 segundos entre rondas)
+
+| Tecla | Mejora |
+|-------|--------|
+| `1` | Mejora de velocidad máxima |
+| `2` | Mejora de aceleración |
+| `3` | Mejora de manejo |
+| `4` | Mejora de turbo |
+
+> **Nota:** Cada mejora aplicada añade una penalización de tiempo al total del jugador.
+
+### Controles de Audio
+
+| Tecla | Acción |
+|-------|--------|
+| `W` | Subir volumen |
+| `S` | Bajar volumen |
+
+---

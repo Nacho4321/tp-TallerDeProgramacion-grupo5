@@ -195,7 +195,7 @@ enum class CarUpgrade
 #define CHECKPOINTS_STR "checkpoints"
 #define WAYPOINTS_STR "waypoints"
 #define PARKED_CARS_STR "parked_cars"
-#define HORIZONTAL_STR "value"
+#define HORIZONTAL_STR "horizontal"
 #define LAYER_COLLISIONS_STR "Collisions"
 #define LAYER_COLLISIONS_BRIDGE_STR "Collisions_Bridge"
 #define LAYER_END_BRIDGE_STR "End_Bridge"

@@ -6,6 +6,7 @@
 #include "game_client_handler.h"
 #include "game_connection.h"
 #include "game_renderer.h"
+#include "player_state_tracker.h"
 #include <SDL2pp/SDL2pp.hh>
 #include <unordered_map>
 #include <string>
@@ -29,7 +30,6 @@ private:
     std::unique_ptr<Protocol> owned_protocol_;
     std::unique_ptr<GameClientHandler> owned_handler_;
     
-    // puntero al handler activo
     GameClientHandler* active_handler_;
     
     bool connected;
@@ -43,19 +43,15 @@ private:
         {RED_JEEP_CAR, 4},
         {PURPLE_TRUCK, 5},
         {LIMOUSINE_CAR, 6}};
+        
     GameRenderer game_renderer;
+    PlayerStateTracker playerTracker;  
 
-    // IDs asignados por el servidor para identificar mi partida/jugador actuales
-    uint32_t my_game_id = 0;   // 0 => no asignado aún
-    int32_t my_player_id = -1; // -1 => no asignado aún
-    int32_t original_player_id = -1; 
+    uint32_t my_game_id = 0;   // 0 => no asignado aún 
 
-    // Configuración de inicio
     StartMode start_mode;
     int auto_join_game_id;
     std::string auto_create_game_name;
-
-    int SPECTATOR_MODE = -1;
     
     // Helper para inicializar conexion como antes
     void initLegacyConnection(const char* address, const char* port);

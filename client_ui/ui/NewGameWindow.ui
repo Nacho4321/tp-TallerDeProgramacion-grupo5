@@ -249,14 +249,14 @@ QPushButton#cancelButton:hover {
       <widget class="QLabel" name="mapImageLabel">
        <property name="minimumSize">
         <size>
-         <width>120</width>
-         <height>80</height>
+         <width>180</width>
+         <height>160</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>120</width>
-         <height>80</height>
+         <width>180</width>
+         <height>120</height>
         </size>
        </property>
        <property name="text">
@@ -297,23 +297,6 @@ QPushButton#cancelButton:hover {
       </widget>
      </item>
     </layout>
-   </item>
-   <item>
-    <widget class="QLabel" name="mapNameLabel">
-     <property name="text">
-      <string>Liberty City</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-     <property name="font">
-      <font>
-       <pointsize>10</pointsize>
-       <weight>75</weight>
-       <bold>true</bold>
-      </font>
-     </property>
-    </widget>
    </item>
    <item>
     <spacer name="verticalSpacer">

@@ -16,6 +16,7 @@ target_sources(taller_server
     npc_config.cpp
     event.cpp
     map_layout.cpp
+    gameloop/npc/npc_manager.cpp
     PUBLIC
     # .h files
     acceptor.h
@@ -33,4 +34,6 @@ target_sources(taller_server
     npc_config.h
     PlayerData.h
     map_layout.h
+    gameloop/npc/npc_manager.h
+    gameloop/npc/npc_data.h
     )

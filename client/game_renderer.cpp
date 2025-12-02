@@ -434,6 +434,45 @@ void GameRenderer::updateResultsUpgrades(uint8_t upgrade_speed,
 void GameRenderer::startCountDown()
 {
     resultsScreen->startCountdown(10);
+    resetAllExplosions();
+}
+
+void GameRenderer::resetAllExplosions()
+{
+    if (mainCar && mainCar->isExploding())
+    {
+        mainCar->stopExplosion();
+    }
+
+    for (auto& [id, car] : otherCars)
+    {
+        if (car.isExploding())
+        {
+            car.stopExplosion();
+        }
+    }
+}
+
+void GameRenderer::triggerPlayerDeath()
+{
+    if (mainCar)
+    {
+        mainCar->startExplosion();
+        CarPosition deathPos = mainCar->getPosition();
+        if (audioManager)
+        {
+            audioManager->playExplosionSound(deathPos.x, deathPos.y, deathPos.x, deathPos.y);
+            audioManager->stopCarEngine(-1);
+        }
+    }
+}
+
+void GameRenderer::completePlayerDeathTransition()
+{
+    if (mainCar)
+    {
+        mainCar->stopExplosion();
+    }
 }
 
 void GameRenderer::winSound()

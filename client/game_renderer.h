@@ -106,6 +106,9 @@ public:
     }
 
     void startCountDown();
+    void resetAllExplosions();
+    void triggerPlayerDeath();
+    void completePlayerDeathTransition();
     void showResults(const std::vector<ServerMessage::PlayerRaceTime>& raceTimes,
                      const std::vector<ServerMessage::PlayerTotalTime>& totalTimes,
                      int32_t mainPlayerId,
