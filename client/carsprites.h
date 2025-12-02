@@ -146,4 +146,11 @@ inline const std::array<SDL_Rect, 16> EXPLOSION_SPRITES = {{
 
 inline const int NUM_EXPLOSION_SPRITES = EXPLOSION_SPRITES.size();
 
+inline const std::array<SDL_Rect, 16> TALLER_SPRITES = {{
+    { 240,   23, 253, 231},  // acceleration
+    { 531,   14, 246, 243},  // speed
+    { 245,  296, 250, 237},  // handling
+    { 527,  307, 244, 218}  // health
+}};
+
 #endif

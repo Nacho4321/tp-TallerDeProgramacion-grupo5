@@ -407,14 +407,28 @@ void GameRenderer::renderUpperLayer()
 
 void GameRenderer::showResults(const std::vector<ServerMessage::PlayerRaceTime>& raceTimes,
                                 const std::vector<ServerMessage::PlayerTotalTime>& totalTimes,
-                                int32_t mainPlayerId)
+                                int32_t mainPlayerId,
+                                uint8_t upgrade_speed,
+                                uint8_t upgrade_acceleration,
+                                uint8_t upgrade_handling,
+                                uint8_t upgrade_durability)
 {
-    resultsScreen->show(raceTimes, totalTimes, mainPlayerId);
+    resultsScreen->show(raceTimes, totalTimes, mainPlayerId, upgrade_speed, upgrade_acceleration, upgrade_handling, upgrade_durability);
 }
 
 void GameRenderer::hideResults()
 {
     resultsScreen->hide();
+}
+
+void GameRenderer::updateResultsUpgrades(uint8_t upgrade_speed,
+                                          uint8_t upgrade_acceleration,
+                                          uint8_t upgrade_handling,
+                                          uint8_t upgrade_durability)
+{
+    if (resultsScreen) {
+        resultsScreen->updateUpgrades(upgrade_speed, upgrade_acceleration, upgrade_handling, upgrade_durability);
+    }
 }
 
 void GameRenderer::startCountDown()

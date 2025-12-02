@@ -108,9 +108,18 @@ public:
     void startCountDown();
     void showResults(const std::vector<ServerMessage::PlayerRaceTime>& raceTimes,
                      const std::vector<ServerMessage::PlayerTotalTime>& totalTimes,
-                     int32_t mainPlayerId);
+                     int32_t mainPlayerId,
+                     uint8_t upgrade_speed,
+                     uint8_t upgrade_acceleration,
+                     uint8_t upgrade_handling,
+                     uint8_t upgrade_durability);
     void hideResults();
     void winSound();
+
+    void updateResultsUpgrades(uint8_t upgrade_speed,
+                               uint8_t upgrade_acceleration,
+                               uint8_t upgrade_handling,
+                               uint8_t upgrade_durability);
 
     AudioManager* getAudioManager() { return audioManager.get(); }
 };

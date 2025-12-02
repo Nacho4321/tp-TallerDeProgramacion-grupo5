@@ -6,7 +6,6 @@
 #include <SDL2/SDL.h>
 #include <map>
 
-// helper para crear conexion como antes
 void Client::initLegacyConnection(const char* address, const char* port) {
     Socket sock(address, port);
     owned_protocol_ = std::make_unique<Protocol>(std::move(sock));
@@ -31,7 +30,6 @@ Client::Client(const char *address, const char *port, StartMode mode, int join_g
     handler.setAudioManager(game_renderer.getAudioManager());
 }
 
-// nuevo constructor desde lobby (QT)
 Client::Client(std::unique_ptr<GameConnection> connection)
     : connection_(std::move(connection)),
       owned_protocol_(nullptr),
@@ -68,7 +66,6 @@ Client::~Client()
 
 void Client::start()
 {
-    // Ejecutar acción automática según el modo de inicio
     if (start_mode == StartMode::AUTO_CREATE) {
         uint32_t gid = 0, pid = 0;
         uint8_t mapId = 0;
@@ -181,7 +178,6 @@ void Client::start()
             else
             {
                 // comandos de movimiento u otros
-                std::cout << "[Client] Sending: " << input << std::endl;
                 active_handler_->send(input);
             }
         }
@@ -228,14 +224,34 @@ void Client::start()
 
         if (saw_race_times || saw_total_times)
         {
-            std::cout << my_player_id << original_player_id << std::endl;
             my_player_id = original_player_id;
-            
+
+            uint8_t upgrade_speed = 0;
+            uint8_t upgrade_acceleration = 0;
+            uint8_t upgrade_handling = 0;
+            uint8_t upgrade_durability = 0;
+
+            if (latest_message.opcode == UPDATE_POSITIONS) {
+                for (const auto& pos : latest_message.positions) {
+                    if (pos.player_id == original_player_id) {
+                        upgrade_speed = pos.upgrade_speed;
+                        upgrade_acceleration = pos.upgrade_acceleration;
+                        upgrade_handling = pos.upgrade_handling;
+                        upgrade_durability = pos.upgrade_durability;
+                        break;
+                    }
+                }
+            }
+
             game_renderer.winSound();
             game_renderer.showResults(
                 saw_race_times ? last_race_times_msg.race_times : std::vector<ServerMessage::PlayerRaceTime>(),
                 saw_total_times ? last_total_times_msg.total_times : std::vector<ServerMessage::PlayerTotalTime>(),
-                original_player_id  
+                original_player_id,
+                upgrade_speed,
+                upgrade_acceleration,
+                upgrade_handling,
+                upgrade_durability
             );
         }
 
@@ -306,6 +322,13 @@ void Client::start()
                 mainCarCollisionFlag = main_pos.collision_flag;
                 mainCarIsStopping = main_pos.is_stopping;
                 mainCarHP = main_pos.hp;
+
+                game_renderer.updateResultsUpgrades(
+                    main_pos.upgrade_speed,
+                    main_pos.upgrade_acceleration,
+                    main_pos.upgrade_handling,
+                    main_pos.upgrade_durability
+                );
             }
             else if (game_renderer.mainCar)
             {
