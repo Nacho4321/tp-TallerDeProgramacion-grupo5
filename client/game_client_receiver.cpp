@@ -5,6 +5,7 @@ GameClientReceiver::GameClientReceiver(Protocol& proto, Queue<ServerMessage>& me
     protocol(proto), incoming_messages(messages), join_results(joins) {}
 
 void GameClientReceiver::run() {
+    std::cout << "[ClientReceiver] Thread iniciado" << std::endl;
     try {
         while (should_keep_running()) {
             ServerMessage positionsMsg;
@@ -12,8 +13,10 @@ void GameClientReceiver::run() {
             uint8_t opcode = 0;
             bool ok = protocol.receiveAnyServerPacket(positionsMsg, joinResp, opcode);
             if (!ok) {
+                std::cout << "[ClientReceiver] Conexión cerrada o error" << std::endl;
                 break;
             }
+            std::cout << "[ClientReceiver] Recibido opcode: 0x" << std::hex << (int)opcode << std::dec << std::endl;
             if (opcode == GAME_JOINED) {
                 ServerMessage m; 
                 m.opcode = GAME_JOINED; 
