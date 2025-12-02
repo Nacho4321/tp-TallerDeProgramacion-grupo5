@@ -19,6 +19,7 @@
 #include "gameloop/bridge/bridge_handler.h"
 #include "gameloop/checkpoint/checkpoint_handler.h"
 #include "gameloop/physics/physics_handler.h"
+#include "gameloop/collision/collision_handler.h"
 #define INITIAL_ID 1
 #include "game_state.h"
 
@@ -105,14 +106,8 @@ private:
     void update_body_positions();
 
     // Helpers usados por el contact listener
-    int find_player_by_body(b2Body *body);
     void process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpointFix);
     void complete_player_race(PlayerData &player_data);
-    void disqualify_player(PlayerData &player_data);
-
-    // Car collision damage system
-    void handle_car_collision(b2Fixture *fixture_a, b2Fixture *fixture_b);
-    void apply_collision_damage(PlayerData &player_data, int player_id, float impact_velocity, const std::string &car_name, float frontal_multiplier = 1.0f);
 
     // Setup and initialization helpers
     void setup_world();

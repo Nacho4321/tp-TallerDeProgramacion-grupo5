@@ -27,6 +27,7 @@ target_sources(taller_tests
     ${CMAKE_SOURCE_DIR}/server/gameloop/bridge/bridge_handler.cpp
     ${CMAKE_SOURCE_DIR}/server/gameloop/checkpoint/checkpoint_handler.cpp
     ${CMAKE_SOURCE_DIR}/server/gameloop/physics/physics_handler.cpp
+    ${CMAKE_SOURCE_DIR}/server/gameloop/collision/collision_handler.cpp
 
     PUBLIC
     # .h files

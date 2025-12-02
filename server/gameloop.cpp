@@ -164,7 +164,8 @@ void GameLoop::process_playing_state(float &acum)
             // Procesar cheat de descalificación pendiente
             if (player_data.pending_disqualification && !player_data.is_dead)
             {
-                disqualify_player(player_data);
+                CollisionHandler::disqualify_player(player_data);
+                check_race_completion();
                 player_data.pending_disqualification = false;
             }
 
@@ -839,16 +840,6 @@ void GameLoop::CheckpointContactListener::set_owner(GameLoop *g)
     owner = g;
 }
 
-int GameLoop::find_player_by_body(b2Body *body)
-{
-    for (auto &entry : players)
-    {
-        if (entry.second.body == body)
-            return entry.first; // player id
-    }
-    return -1;
-}
-
 void GameLoop::safe_destroy_body(b2Body *&body)
 {
     if (!body)
@@ -871,35 +862,6 @@ void GameLoop::safe_destroy_body(b2Body *&body)
     {
         std::cerr << "[GameLoop] Unknown error destroying body" << std::endl;
     }
-}
-
-void GameLoop::disqualify_player(PlayerData &player_data)
-{
-    // Marcar como muerto y descalificado
-    player_data.car.hp = 0.0f;
-    player_data.is_dead = true;
-    player_data.race_finished = true;
-    player_data.disqualified = true;
-    player_data.god_mode = false; // Desactivar god mode
-
-    // Asignar tiempo de descalificación: 10 minutos
-    uint32_t dq_ms = 10u * 60u * 1000u;
-    int round_idx = player_data.rounds_completed;
-    if (round_idx >= 0 && round_idx < TOTAL_ROUNDS)
-    {
-        // Preservar penalizaciones existentes y sumar la descalificación
-        uint32_t existing_time = player_data.round_times_ms[round_idx];
-        player_data.round_times_ms[round_idx] = existing_time + dq_ms;
-    }
-
-    player_data.rounds_completed = std::min(player_data.rounds_completed + 1, TOTAL_ROUNDS);
-    player_data.total_time_ms += dq_ms;
-
-    // Marcar el body para destrucción
-    player_data.mark_body_for_removal = true;
-    player_data.collision_this_frame = true;
-
-    check_race_completion();
 }
 
 void GameLoop::process_pair(b2Fixture *maybePlayerFix, b2Fixture *maybeCheckpointFix)
@@ -930,180 +892,10 @@ void GameLoop::handle_begin_contact(b2Fixture *fixture_a, b2Fixture *fixture_b)
     process_pair(fixture_b, fixture_a);
 
     // Checkeo colisiones entre autos
-    handle_car_collision(fixture_a, fixture_b);
-}
-
-void GameLoop::handle_car_collision(b2Fixture *fixture_a, b2Fixture *fixture_b)
-{
-    if (game_state != GameState::PLAYING)
-        return;
-
-    b2Body *body_a = fixture_a->GetBody();
-    b2Body *body_b = fixture_b->GetBody();
-
-    uint16 cat_a = fixture_a->GetFilterData().categoryBits;
-    uint16 cat_b = fixture_b->GetFilterData().categoryBits;
-
-    // Skipeo si alguno es sensor
-    bool a_is_sensor = fixture_a->IsSensor();
-    bool b_is_sensor = fixture_b->IsSensor();
-
-    if (a_is_sensor || b_is_sensor)
-        return;
-
-    bool a_is_player = (cat_a == CAR_GROUND || cat_a == CAR_BRIDGE);
-    bool b_is_player = (cat_b == CAR_GROUND || cat_b == CAR_BRIDGE);
-
-    // TODO: borrar este log cuando funcione todo bien
-    std::string collision_type_a = "";
-    std::string collision_type_b = "";
-
-    if (a_is_player && b_is_player)
+    bool any_death = CollisionHandler::handle_car_collision(fixture_a, fixture_b, players, game_state);
+    if (any_death)
     {
-        collision_type_a = "PLAYER vs PLAYER";
-        collision_type_b = "PLAYER vs PLAYER";
-    }
-    else if (a_is_player)
-    {
-        if (cat_b == 0x0001)
-        {
-            collision_type_a = "PLAYER vs WALL";
-        }
-        else
-        {
-            collision_type_a = "PLAYER vs NPC/OBSTACLE";
-        }
-    }
-    else if (b_is_player)
-    {
-        if (cat_a == 0x0001)
-        {
-            collision_type_b = "PLAYER vs WALL";
-        }
-        else
-        {
-            collision_type_b = "PLAYER vs NPC/OBSTACLE";
-        }
-    }
-
-    // Aplicar daño para el jugador A si es un jugador
-    if (a_is_player)
-    {
-        int player_a_id = find_player_by_body(body_a);
-        if (player_a_id != -1)
-        {
-            auto it_a = players.find(player_a_id);
-            if (it_a != players.end())
-            {
-                b2Vec2 vel_a = body_a->GetLinearVelocity();
-                b2Vec2 vel_b = body_b->GetLinearVelocity();
-                b2Vec2 relative_vel = vel_a - vel_b;
-                float impact_velocity = relative_vel.Length();
-
-                // Detectar choque frontal: si las velocidades son opuestas (ángulo cercano a 180°)
-                float frontal_multiplier = 1.0f;
-                if (vel_a.Length() > 1.0f && vel_b.Length() > 1.0f)
-                {
-                    // Normalizar y calcular producto punto
-                    b2Vec2 dir_a = vel_a;
-                    dir_a.Normalize();
-                    b2Vec2 dir_b = vel_b;
-                    dir_b.Normalize();
-                    float dot = b2Dot(dir_a, dir_b);
-
-                    // Si dot < -0.5, significa que los vectores apuntan en direcciones opuestas
-                    // (ángulo > 120°). Cuanto más negativo, más frontal es el choque.
-                    if (dot < -0.5f)
-                    {
-                        // Mapear de [-1.0, -0.5] a [2.5, 1.5]
-                        // dot = -1.0 (180°) -> multiplier = 2.5x
-                        // dot = -0.5 (120°) -> multiplier = 1.5x
-                        frontal_multiplier = 1.5f + (-dot - 0.5f) * 2.0f;
-                    }
-                }
-
-                std::cout << "[Collision] " << collision_type_a
-                          << " | Player " << player_a_id
-                          << " | Impact: " << impact_velocity << " m/s" << std::endl;
-
-                apply_collision_damage(it_a->second, player_a_id, impact_velocity, it_a->second.car.car_name, frontal_multiplier);
-            }
-        }
-    }
-
-    // Aplicar daño para el jugador B si es un jugador
-    if (b_is_player)
-    {
-        int player_b_id = find_player_by_body(body_b);
-        if (player_b_id != -1)
-        {
-            auto it_b = players.find(player_b_id);
-            if (it_b != players.end())
-            {
-                b2Vec2 vel_a = body_a->GetLinearVelocity();
-                b2Vec2 vel_b = body_b->GetLinearVelocity();
-                b2Vec2 relative_vel = vel_b - vel_a; // Invertido para B
-                float impact_velocity = relative_vel.Length();
-
-                // Detectar choque frontal para el jugador B
-                float frontal_multiplier = 1.0f;
-                if (vel_a.Length() > 1.0f && vel_b.Length() > 1.0f)
-                {
-                    // Agarro los 2 vectores de velocidad, los normalizo y calculo el producto punto
-                    b2Vec2 dir_a = vel_a;
-                    dir_a.Normalize();
-                    b2Vec2 dir_b = vel_b;
-                    dir_b.Normalize();
-                    float dot = b2Dot(dir_a, dir_b);
-
-                    if (dot < -0.5f)
-                    {
-                        frontal_multiplier = 1.5f + (-dot - 0.5f) * 2.0f;
-                    }
-                }
-
-                if (!a_is_player || !b_is_player)
-                {
-                    std::cout << "[Collision] " << collision_type_b
-                              << " | Player " << player_b_id
-                              << " | Impact: " << impact_velocity << " m/s" << std::endl;
-                }
-
-                apply_collision_damage(it_b->second, player_b_id, impact_velocity, it_b->second.car.car_name, frontal_multiplier);
-            }
-        }
-    }
-}
-
-void GameLoop::apply_collision_damage(PlayerData &player_data, int player_id, float impact_velocity, const std::string &car_name, float frontal_multiplier)
-{
-    if (player_data.is_dead)
-    {
-        return;
-    }
-
-    // Usar durability del player (upgradeada) en lugar del YAML
-    float durability = player_data.car.durability;
-
-    // Formula: damage = impact_velocity * multiplier * frontal_multiplier * 0.1
-    // frontal_multiplier: 1.0 para colisiones normales, 2.5 para choques frontales en contramano
-    // (10 m/s) son aprox 10 damage (o 25 si es frontal)
-    float damage = impact_velocity * durability * frontal_multiplier * 0.1f;
-
-    // Solo aplico daño si es significativo
-    // TODO: Por ahi meter el 0.5 al YAML o hacerlo una constante global
-    if (damage < 0.5f)
-    {
-        return;
-    }
-
-    player_data.car.hp -= damage;
-
-    player_data.collision_this_frame = true;
-
-    if (player_data.car.hp <= 0.0f)
-    {
-        disqualify_player(player_data);
+        check_race_completion();
     }
 }
 
