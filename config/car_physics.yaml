@@ -108,7 +108,7 @@ defaults:
     # - Higher = collisions deal more damage
     # - Lower = more forgiving, survives harder hits
     # - Actual damage depends on impact velocity
-    collision_damage_multiplier: 10.0
+    collision_damage_multiplier: 7.0
 
 # Specific car type configurations
 # Each car inherits from defaults and can override specific values
