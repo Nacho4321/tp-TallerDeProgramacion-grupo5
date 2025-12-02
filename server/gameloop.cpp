@@ -132,6 +132,7 @@ void GameLoop::process_playing_state(float &acum)
         reset_accumulator.store(false);
         std::cout << "[GameLoop] Physics accumulator reset on start." << std::endl;
     }
+    check_round_timeout();
 
     // Reset collision flags at the start of each frame
     for (auto &entry : players)
@@ -257,6 +258,49 @@ void GameLoop::check_race_completion()
                   << std::endl;
 
         pending_race_reset.store(true);
+    }
+}
+
+void GameLoop::check_round_timeout()
+{
+    // Se llama desde el game loop principal (NO bajo lock de Box2D)
+    if (game_state != GameState::PLAYING || round_timeout_checked)
+        return;
+
+    auto now = std::chrono::steady_clock::now();
+    auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - round_start_time).count();
+
+    // Verificar si se cumplieron los 10 minutos
+    if (elapsed_ms >= ROUND_TIME_LIMIT_MS)
+    {
+
+        std::lock_guard<std::mutex> lk(players_map_mutex);
+
+        // Penalizar a todos los jugadores que NO han terminado la ronda
+        for (auto &[id, player_data] : players)
+        {
+            if (!player_data.race_finished && !player_data.is_dead)
+            {
+                // Aplicar la penalización de 10 minutos
+                uint32_t timeout_penalty = 10u * 60u * 1000u; // 10 minutos en ms
+                int round_idx = player_data.rounds_completed;
+
+                if (round_idx >= 0 && round_idx < TOTAL_ROUNDS)
+                {
+                    uint32_t existing_time = player_data.round_times_ms[round_idx];
+                    player_data.round_times_ms[round_idx] = existing_time + timeout_penalty;
+                    player_data.total_time_ms = player_data.round_times_ms[0] +
+                                                player_data.round_times_ms[1] +
+                                                player_data.round_times_ms[2];
+                }
+
+                player_data.race_finished = true;
+                player_data.god_mode = true;
+            }
+        }
+
+        pending_race_reset.store(true);
+        round_timeout_checked = true;
     }
 }
 
@@ -410,10 +454,9 @@ void GameLoop::complete_player_race(PlayerData &player_data)
 
         player_data.round_times_ms[round_idx] = new_total_time;
     }
-
-    // Incrementar ronda completada y acumular tiempo total
     player_data.rounds_completed = std::min(player_data.rounds_completed + 1, TOTAL_ROUNDS);
-    player_data.total_time_ms += static_cast<uint32_t>(elapsed_ms) + existing_penalization;
+    player_data.total_time_ms += static_cast<uint32_t>(elapsed_ms);
+
     player_data.god_mode = true;
     check_race_completion();
 }
@@ -464,6 +507,10 @@ void GameLoop::transition_to_playing_state()
     {
         player_data.lap_start_time = race_start_time;
     }
+
+    // Iniciar contador de 10 minutos para la ronda
+    round_start_time = race_start_time;
+    round_timeout_checked = false;
     std::cout << "[GameLoop] Race timer started for all players" << std::endl;
 
     broadcast_game_started();
@@ -964,9 +1011,9 @@ void GameLoop::disqualify_player(PlayerData &player_data, int player_id)
     int round_idx = player_data.rounds_completed;
     if (round_idx >= 0 && round_idx < TOTAL_ROUNDS)
     {
-        player_data.round_times_ms[round_idx] = dq_ms;
-        std::cout << "[Death] Player " << player_id << " DISQUALIFIED at round " << round_idx
-                  << " (10min penalty)" << std::endl;
+        // Preservar penalizaciones existentes y sumar la descalificación
+        uint32_t existing_time = player_data.round_times_ms[round_idx];
+        player_data.round_times_ms[round_idx] = existing_time + dq_ms;
     }
 
     player_data.rounds_completed = std::min(player_data.rounds_completed + 1, TOTAL_ROUNDS);
