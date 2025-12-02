@@ -30,7 +30,7 @@ struct PlayerData
     CarInfo car;
     UpgradeLevels upgrades;  // Contadores de niveles de mejora
     Position position;
-    UpgradeLevels upgrades;  // Niveles de mejora aplicados
+
     // Indice del próximo checkpoint que el jugador debe pasar (empieza en 0)
     int next_checkpoint = 0;
     // Tiempo de inicio de la ronda actual

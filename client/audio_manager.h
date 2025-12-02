@@ -16,6 +16,7 @@ private:
     std::unique_ptr<SDL2pp::Chunk> collisionSound;
     std::unique_ptr<SDL2pp::Chunk> engineSound;
     std::unique_ptr<SDL2pp::Chunk> winSound;
+    std::unique_ptr<SDL2pp::Chunk> breakingSound;
 
     std::map<int, int> carEngineChannels;
     int mainCarEngineChannel;
@@ -46,6 +47,7 @@ public:
 
     void playExplosionSound(float worldX, float worldY, float listenerX, float listenerY);
     void playCollisionSound(float worldX, float worldY, float listenerX, float listenerY);
+    void playBreakingSound(float worldX, float worldY, float listenerX, float listenerY);
     void playWinSound();
 
     void startCarEngine(int carId, float worldX, float worldY, float listenerX, float listenerY, bool isMainCar = false);

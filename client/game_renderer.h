@@ -58,7 +58,7 @@ private:
     void renderHPBar(const Car& car, int carScreenX, int carScreenY, int spriteWidth, int spriteHeight);
     void renderUpperLayer();
     void renderCheckpoints();
-    void updateMainCar(const CarPosition &position, bool collisionFlag, float hp);
+    void updateMainCar(const CarPosition &position, bool collisionFlag, bool isStopping, float hp);
     void updateCheckpoints(const std::vector<Position> &positions);
 
     void updateOtherCars(const std::map<int, std::pair<CarPosition, int>> &positions,
@@ -91,6 +91,7 @@ public:
                 const std::map<int, std::pair<CarPosition, int>> &otherCarPositions,
                 const std::vector<Position> &next_checkpoints,
                 bool mainCarCollisionFlag,
+                bool mainCarIsStopping,
                 float mainCarHP,
                 const std::map<int, bool> &otherCarsCollisionFlags);
 

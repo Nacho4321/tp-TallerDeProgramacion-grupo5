@@ -73,7 +73,7 @@ GameRenderer::GameRenderer(const char *windowTitle, int windowWidth, int windowH
     }
 }
 
-void GameRenderer::updateMainCar(const CarPosition &position, bool collisionFlag, float hp)
+void GameRenderer::updateMainCar(const CarPosition &position, bool collisionFlag, bool isStopping, float hp)
 {
     audioManager->updateCarEngineVolume(-1, 0, 0, 0, 0);
     mainCar->setPosition(position);
@@ -87,6 +87,16 @@ void GameRenderer::updateMainCar(const CarPosition &position, bool collisionFlag
             audioManager->playCollisionSound(position.x, position.y, position.x, position.y);
         }
     }
+
+
+    if (isStopping && !mainCar->previousIsStopping && mainCar)
+    {
+        if (!resultsScreen->isVisible()) {
+            audioManager->playBreakingSound(position.x, position.y, position.x, position.y);
+        }
+    }
+
+    mainCar->previousIsStopping = isStopping;
 }
 
 void GameRenderer::updateOtherCars(const std::map<int, std::pair<CarPosition, int>> &positions,
@@ -217,9 +227,9 @@ void GameRenderer::cleanupRemovedCars(
 }
 
 void GameRenderer::render(const CarPosition &mainCarPos, int mainCarTypeId, const std::map<int, std::pair<CarPosition, int>> &otherCarPositions,
-                          const std::vector<Position> &next_checkpoints, bool mainCarCollisionFlag, float mainCarHP, const std::map<int, bool> &otherCarsCollisionFlags)
+                          const std::vector<Position> &next_checkpoints, bool mainCarCollisionFlag, bool mainCarIsStopping, float mainCarHP, const std::map<int, bool> &otherCarsCollisionFlags)
 {
-    updateMainCar(mainCarPos, mainCarCollisionFlag, mainCarHP);
+    updateMainCar(mainCarPos, mainCarCollisionFlag, mainCarIsStopping, mainCarHP);
     setMainCarType(mainCarTypeId);
     updateOtherCars(otherCarPositions, otherCarsCollisionFlags);
     updateCheckpoints(next_checkpoints);

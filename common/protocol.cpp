@@ -149,7 +149,7 @@ bool Protocol::receiveAnyServerPacket(ServerMessage& outServer,
         return true;
     }
     std::cout << "[Protocol] receiveAnyServerPacket: opcode desconocido " << int(outOpcode) << std::endl;
-     return false;
+    return true;
 }
 
 void Protocol::sendMessage(ServerMessage& out) {
