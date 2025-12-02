@@ -16,11 +16,4 @@ struct Event
 
     virtual ~Event() = default;
 };
-
-struct PlayerMovedEvent : public Event
-{
-    Position pos;
-    explicit PlayerMovedEvent(int client_id, std::string action, Position new_position);
-};
-
 #endif
