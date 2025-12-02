@@ -399,7 +399,6 @@ void EventDispatcher::cheat_full_upgrade(Event &event)
               << " handling=" << it->second.car.handling
               << " durability=" << it->second.car.durability << std::endl;
 }
-}
 
 // void EventDispatcher::upgrade_speed(Event &event)
 // {
