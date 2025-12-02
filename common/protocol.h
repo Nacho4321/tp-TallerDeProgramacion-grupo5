@@ -71,6 +71,8 @@ private:
     void insertUint32(std::uint32_t value);
     void insertFloat(float value);
     void insertInt(int value);
+    void insertString(const std::string& str);
+    void insertPosition(const Position& pos);
 
     // Extrae tipos específicos del buffer
     uint16_t exportUint16(const std::vector<uint8_t> &buffer, size_t &idx);
@@ -81,6 +83,11 @@ private:
 
     // Lee player_id y game_id de la red y los coloca en msg
     void readClientIds(ClientMessage& msg);
+    
+    // Helpers de receive para receivePositionsUpdate
+    bool readPosition(Position& pos);
+    bool readString(std::string& str);
+    bool readPlayerPositionUpdate(PlayerPositionUpdate& update);
 
     // Traduce un ClientMessage a bytes
     std::vector<std::uint8_t> encodeClientMessage(const ClientMessage &msg);

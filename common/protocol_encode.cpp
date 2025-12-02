@@ -80,20 +80,12 @@ void Protocol::logClientEncode(uint8_t opcode, const ClientMessage& msg) {
 // Helpers de encode, ClientMessage
 
 void Protocol::encodeCreateGame(const ClientMessage& msg) {
-    uint16_t len = static_cast<uint16_t>(msg.game_name.size());
-    insertUint16(len);
-    for (char c : msg.game_name) {
-        buffer.push_back(static_cast<uint8_t>(c));
-    }
+    insertString(msg.game_name);
     buffer.push_back(msg.map_id);
 }
 
 void Protocol::encodeChangeCar(const ClientMessage& msg) {
-    uint16_t len = static_cast<uint16_t>(msg.car_type.size());
-    insertUint16(len);
-    for (char c : msg.car_type) {
-        buffer.push_back(static_cast<uint8_t>(c));
-    }
+    insertString(msg.car_type);
 }
 
 void Protocol::encodeUpgrade(const ClientMessage& msg) {
@@ -128,33 +120,18 @@ void Protocol::encodeUpdatePositions(ServerMessage& out) {
 
     for (auto &pos_update : out.positions) {
         insertInt(pos_update.player_id);
-        buffer.push_back(pos_update.new_pos.on_bridge ? 1 : 0);
-        buffer.push_back(static_cast<int8_t>(pos_update.new_pos.direction_x));
-        buffer.push_back(static_cast<int8_t>(pos_update.new_pos.direction_y));
-
-        insertFloat(pos_update.new_pos.new_X);
-        insertFloat(pos_update.new_pos.new_Y);
-        insertFloat(pos_update.new_pos.angle);
+        insertPosition(pos_update.new_pos);
 
         // Checkpoints
         uint8_t next_count = static_cast<uint8_t>(pos_update.next_checkpoints.size());
         buffer.push_back(next_count);
 
         for (const auto &cp : pos_update.next_checkpoints) {
-            buffer.push_back(cp.on_bridge ? 1 : 0);
-            buffer.push_back(static_cast<int8_t>(cp.direction_x));
-            buffer.push_back(static_cast<int8_t>(cp.direction_y));
-            insertFloat(cp.new_X);
-            insertFloat(cp.new_Y);
-            insertFloat(cp.angle);
+            insertPosition(cp);
         }
 
         // Car type
-        uint16_t carLen = static_cast<uint16_t>(pos_update.car_type.size());
-        insertUint16(carLen);
-        for (char c : pos_update.car_type) {
-            buffer.push_back(static_cast<uint8_t>(c));
-        }
+        insertString(pos_update.car_type);
 
         // HP y flags
         insertFloat(pos_update.hp);
@@ -186,11 +163,7 @@ void Protocol::encodeGamesList(ServerMessage& out) {
         insertUint32(g.game_id);
         insertUint32(g.player_count);
         buffer.push_back(g.map_id);
-        uint16_t len = static_cast<uint16_t>(g.name.size());
-        insertUint16(len);
-        for (char c : g.name) {
-            buffer.push_back(static_cast<uint8_t>(c));
-        }
+        insertString(g.name);
     }
 }
 
