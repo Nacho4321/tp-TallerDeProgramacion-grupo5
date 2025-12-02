@@ -235,11 +235,11 @@ void GameRenderer::render(const CarPosition &mainCarPos, int mainCarTypeId, cons
     renderer.SetDrawColor(0, 0, 0, 255);
     renderer.Clear();
     renderBackground();
-    
-    std::vector<Car> on_bridge_cars;
+
+    std::vector<Car*> on_bridge_cars;
     if (mainCar->getPosition().on_bridge)
     {
-        on_bridge_cars.push_back(*mainCar);
+        on_bridge_cars.push_back(mainCar.get());
     }
     else
     {
@@ -250,7 +250,7 @@ void GameRenderer::render(const CarPosition &mainCarPos, int mainCarTypeId, cons
     {
         if (car.getPosition().on_bridge)
         {
-            on_bridge_cars.push_back(car);
+            on_bridge_cars.push_back(&car);
         }
         else
         {
@@ -260,9 +260,9 @@ void GameRenderer::render(const CarPosition &mainCarPos, int mainCarTypeId, cons
 
     renderUpperLayer();
 
-    for (auto &car : on_bridge_cars)
+    for (auto *car : on_bridge_cars)
     {
-        renderCar(car);
+        renderCar(*car);
     }
 
     renderCheckpoints();
