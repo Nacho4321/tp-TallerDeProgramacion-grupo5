@@ -39,13 +39,13 @@ void EventDispatcher::init_handlers()
     listeners[std::string(CHANGE_CAR_STR) + " " + LIMOUSINE_CAR] = [this](Event &e)
     { change_car(e, LIMOUSINE_CAR); };
     listeners[std::string(UPGRADE_CAR_STR) + " 0"] = [this](Event &e)
-    { upgrade_max_acceleration(e); };  // ACCELERATION_BOOST
+    { upgrade_max_acceleration(e); }; // ACCELERATION_BOOST
     listeners[std::string(UPGRADE_CAR_STR) + " 1"] = [this](Event &e)
-    { upgrade_max_speed(e); };  // SPEED_BOOST
+    { upgrade_max_speed(e); }; // SPEED_BOOST
     listeners[std::string(UPGRADE_CAR_STR) + " 2"] = [this](Event &e)
-    { upgrade_handling(e); };  // HANDLING_IMPROVEMENT
+    { upgrade_handling(e); }; // HANDLING_IMPROVEMENT
     listeners[std::string(UPGRADE_CAR_STR) + " 3"] = [this](Event &e)
-    { upgrade_durability(e); };  // DURABILITY_ENHANCEMENT
+    { upgrade_durability(e); }; // DURABILITY_ENHANCEMENT
     // Cheats handlers
     listeners[CHEAT_GOD_MODE_STR] = [this](Event &e)
     { cheat_god_mode(e); };
@@ -157,7 +157,7 @@ void EventDispatcher::change_car(Event &event, const std::string &car_type)
     it->second.car.acceleration = phys.max_acceleration; // px/s^2
     it->second.car.hp = phys.max_hp;                     // Set HP from physics config
     it->second.car.durability = phys.collision_damage_multiplier;
-    it->second.car.handling = phys.torque;               // Torque para giros
+    it->second.car.handling = phys.torque; // Torque para giros
     // Re-crear el body para que el fixture (hitbox) coincida con el tamaño físico del nuevo auto.
     b2Body *oldBody = it->second.body;
     if (oldBody)
@@ -209,7 +209,7 @@ void EventDispatcher::change_car(Event &event, const std::string &car_type)
 }
 void EventDispatcher::handle_event(Event &event)
 {
-    std::cout << "[EventDispatcher] Received event: action='" << event.action 
+    std::cout << "[EventDispatcher] Received event: action='" << event.action
               << "' client_id=" << event.client_id << std::endl;
     auto it = listeners.find(event.action);
     if (it != listeners.end())
@@ -224,14 +224,15 @@ void EventDispatcher::handle_event(Event &event)
 
 void EventDispatcher::upgrade_max_speed(Event &event)
 {
-    std::cout << "[EventDispatcher] upgrade_max_speed called, client_id=" << event.client_id 
+    std::cout << "[EventDispatcher] upgrade_max_speed called, client_id=" << event.client_id
               << " current_state=" << static_cast<int>(current_state) << std::endl;
     if (current_state != GameState::STARTING)
         return;
 
     std::lock_guard<std::mutex> lock(players_map_mutex);
     auto it = players.find(event.client_id);
-    if (it == players.end())
+    int rounds = it->second.rounds_completed;
+    if (it == players.end() || rounds == 0)
         return;
 
     if (it->second.upgrades.speed >= MAX_UPGRADES_PER_STAT)
@@ -240,21 +241,24 @@ void EventDispatcher::upgrade_max_speed(Event &event)
     float old_speed = it->second.car.speed;
     it->second.car.speed *= SPEED_UPGRADE_MULTIPLIER;
     it->second.upgrades.speed++;
-    std::cout << "[EventDispatcher] Player " << event.client_id << " speed upgraded to level " 
-              << static_cast<int>(it->second.upgrades.speed) << ": " 
+    uint64_t penalization = uint64_t(PENALIZATION_TIME) + uint64_t(it->second.round_times_ms.at(rounds));
+    it->second.round_times_ms.at(rounds) = uint32_t(penalization);
+    std::cout << "[EventDispatcher] Player " << event.client_id << " speed upgraded to level "
+              << static_cast<int>(it->second.upgrades.speed) << ": "
               << old_speed << " -> " << it->second.car.speed << std::endl;
 }
 
 void EventDispatcher::upgrade_max_acceleration(Event &event)
 {
-    std::cout << "[EventDispatcher] upgrade_max_acceleration called, client_id=" << event.client_id 
+    std::cout << "[EventDispatcher] upgrade_max_acceleration called, client_id=" << event.client_id
               << " current_state=" << static_cast<int>(current_state) << std::endl;
     if (current_state != GameState::STARTING)
         return;
 
     std::lock_guard<std::mutex> lock(players_map_mutex);
     auto it = players.find(event.client_id);
-    if (it == players.end())
+    int rounds = it->second.rounds_completed;
+    if (it == players.end() || rounds == 0)
         return;
 
     if (it->second.upgrades.acceleration >= MAX_UPGRADES_PER_STAT)
@@ -263,21 +267,24 @@ void EventDispatcher::upgrade_max_acceleration(Event &event)
     float old_accel = it->second.car.acceleration;
     it->second.car.acceleration *= ACCELERATION_UPGRADE_MULTIPLIER;
     it->second.upgrades.acceleration++;
-    std::cout << "[EventDispatcher] Player " << event.client_id << " acceleration upgraded to level " 
-              << static_cast<int>(it->second.upgrades.acceleration) << ": " 
+    uint64_t penalization = uint64_t(PENALIZATION_TIME) + uint64_t(it->second.round_times_ms.at(rounds));
+    it->second.round_times_ms.at(rounds) = uint32_t(penalization);
+    std::cout << "[EventDispatcher] Player " << event.client_id << " acceleration upgraded to level "
+              << static_cast<int>(it->second.upgrades.acceleration) << ": "
               << old_accel << " -> " << it->second.car.acceleration << std::endl;
 }
 
 void EventDispatcher::upgrade_durability(Event &event)
 {
-    std::cout << "[EventDispatcher] upgrade_durability called, client_id=" << event.client_id 
+    std::cout << "[EventDispatcher] upgrade_durability called, client_id=" << event.client_id
               << " current_state=" << static_cast<int>(current_state) << std::endl;
     if (current_state != GameState::STARTING)
         return;
 
     std::lock_guard<std::mutex> lock(players_map_mutex);
     auto it = players.find(event.client_id);
-    if (it == players.end())
+    int rounds = it->second.rounds_completed;
+    if (it == players.end() || rounds == 0)
         return;
 
     if (it->second.upgrades.durability >= MAX_UPGRADES_PER_STAT)
@@ -286,21 +293,24 @@ void EventDispatcher::upgrade_durability(Event &event)
     float old_durability = it->second.car.durability;
     it->second.car.durability -= DURABILITY_UPGRADE_REDUCTION;
     it->second.upgrades.durability++;
-    std::cout << "[EventDispatcher] Player " << event.client_id << " durability upgraded to level " 
-              << static_cast<int>(it->second.upgrades.durability) << ": " 
+    uint64_t penalization = uint64_t(PENALIZATION_TIME) + uint64_t(it->second.round_times_ms.at(rounds));
+    it->second.round_times_ms.at(rounds) = uint32_t(penalization);
+    std::cout << "[EventDispatcher] Player " << event.client_id << " durability upgraded to level "
+              << static_cast<int>(it->second.upgrades.durability) << ": "
               << old_durability << " -> " << it->second.car.durability << std::endl;
 }
 
 void EventDispatcher::upgrade_handling(Event &event)
 {
-    std::cout << "[EventDispatcher] upgrade_handling called, client_id=" << event.client_id 
+    std::cout << "[EventDispatcher] upgrade_handling called, client_id=" << event.client_id
               << " current_state=" << static_cast<int>(current_state) << std::endl;
     if (current_state != GameState::STARTING)
         return;
 
     std::lock_guard<std::mutex> lock(players_map_mutex);
     auto it = players.find(event.client_id);
-    if (it == players.end())
+    int rounds = it->second.rounds_completed;
+    if (it == players.end() || rounds == 0)
         return;
 
     if (it->second.upgrades.handling >= MAX_UPGRADES_PER_STAT)
@@ -309,8 +319,10 @@ void EventDispatcher::upgrade_handling(Event &event)
     float old_handling = it->second.car.handling;
     it->second.car.handling *= HANDLING_UPGRADE_MULTIPLIER;
     it->second.upgrades.handling++;
-    std::cout << "[EventDispatcher] Player " << event.client_id << " handling upgraded to level " 
-              << static_cast<int>(it->second.upgrades.handling) << ": " 
+    uint64_t penalization = uint64_t(PENALIZATION_TIME) + uint64_t(it->second.round_times_ms.at(rounds));
+    it->second.round_times_ms.at(rounds) = uint32_t(penalization);
+    std::cout << "[EventDispatcher] Player " << event.client_id << " handling upgraded to level "
+              << static_cast<int>(it->second.upgrades.handling) << ": "
               << old_handling << " -> " << it->second.car.handling << std::endl;
 }
 
@@ -321,9 +333,9 @@ void EventDispatcher::cheat_god_mode(Event &event)
     auto it = players.find(event.client_id);
     if (it == players.end())
         return;
-    
+
     it->second.god_mode = !it->second.god_mode;
-    std::cout << "[CHEAT] Player " << event.client_id << " GOD MODE " 
+    std::cout << "[CHEAT] Player " << event.client_id << " GOD MODE "
               << (it->second.god_mode ? "ENABLED" : "DISABLED") << std::endl;
 }
 
@@ -333,10 +345,10 @@ void EventDispatcher::cheat_die(Event &event)
     auto it = players.find(event.client_id);
     if (it == players.end())
         return;
-    
+
     // Marcar para descalificación - el gameloop lo procesará
     it->second.pending_disqualification = true;
-    it->second.god_mode = false;  // Desactivar god mode
+    it->second.god_mode = false; // Desactivar god mode
     std::cout << "[CHEAT] Player " << event.client_id << " marked for INSTANT DIE (will be processed by gameloop)" << std::endl;
 }
 
@@ -346,7 +358,7 @@ void EventDispatcher::cheat_skip_round(Event &event)
     auto it = players.find(event.client_id);
     if (it == players.end())
         return;
-    
+
     // Marcar para completar ronda - el gameloop lo procesará
     it->second.pending_race_complete = true;
     std::cout << "[CHEAT] Player " << event.client_id << " marked for SKIP ROUND (will be processed by gameloop)" << std::endl;
@@ -358,44 +370,55 @@ void EventDispatcher::cheat_full_upgrade(Event &event)
     auto it = players.find(event.client_id);
     if (it == players.end())
         return;
-    
+
     // Aplicar multiplicadores para todos los upgrades restantes
-    while (it->second.upgrades.speed < MAX_UPGRADES_PER_STAT) {
+    while (it->second.upgrades.speed < MAX_UPGRADES_PER_STAT)
+    {
         it->second.car.speed *= SPEED_UPGRADE_MULTIPLIER;
         it->second.upgrades.speed++;
     }
-    while (it->second.upgrades.acceleration < MAX_UPGRADES_PER_STAT) {
+    while (it->second.upgrades.acceleration < MAX_UPGRADES_PER_STAT)
+    {
         it->second.car.acceleration *= ACCELERATION_UPGRADE_MULTIPLIER;
         it->second.upgrades.acceleration++;
     }
-    while (it->second.upgrades.handling < MAX_UPGRADES_PER_STAT) {
+    while (it->second.upgrades.handling < MAX_UPGRADES_PER_STAT)
+    {
         it->second.car.handling *= HANDLING_UPGRADE_MULTIPLIER;
         it->second.upgrades.handling++;
     }
-    while (it->second.upgrades.durability < MAX_UPGRADES_PER_STAT) {
+    while (it->second.upgrades.durability < MAX_UPGRADES_PER_STAT)
+    {
         it->second.car.durability -= DURABILITY_UPGRADE_REDUCTION;
         it->second.upgrades.durability++;
     }
+
+    std::cout << "[CHEAT] Player " << event.client_id << " FULL UPGRADE activated. Stats: "
+              << "speed=" << it->second.car.speed
+              << " accel=" << it->second.car.acceleration
+              << " handling=" << it->second.car.handling
+              << " durability=" << it->second.car.durability << std::endl;
+}
 }
 
 // void EventDispatcher::upgrade_speed(Event &event)
 // {
 //     if (current_state != GameState::STARTING)
 //         return;
-    
+
 //     std::lock_guard<std::mutex> lock(players_map_mutex);
 //     auto it = players.find(event.client_id);
 //     if (it == players.end())
 //         return;
-    
+
 //     if (it->second.upgrades.speed >= MAX_UPGRADE_LEVEL)
 //         return;
-    
+
 //     const CarPhysics &phys = CarPhysicsConfig::getInstance().getCarPhysics(it->second.car.car_name);
 //     it->second.car.speed *= SPEED_UPGRADE_MULTIPLIER;
 //     it->second.upgrades.speed++;
-    
-//     std::cout << "[EventDispatcher] Player " << event.client_id 
+
+//     std::cout << "[EventDispatcher] Player " << event.client_id
 //               << " upgrade_speed nivel " << static_cast<int>(it->second.upgrades.speed)
 //               << " -> speed=" << it->second.car.speed << std::endl;
 // }
@@ -404,19 +427,19 @@ void EventDispatcher::cheat_full_upgrade(Event &event)
 // {
 //     if (current_state != GameState::STARTING)
 //         return;
-    
+
 //     std::lock_guard<std::mutex> lock(players_map_mutex);
 //     auto it = players.find(event.client_id);
 //     if (it == players.end())
 //         return;
-    
+
 //     if (it->second.upgrades.acceleration >= MAX_UPGRADE_LEVEL)
 //         return;
-    
+
 //     it->second.car.acceleration *= ACCELERATION_UPGRADE_MULTIPLIER;
 //     it->second.upgrades.acceleration++;
-    
-//     std::cout << "[EventDispatcher] Player " << event.client_id 
+
+//     std::cout << "[EventDispatcher] Player " << event.client_id
 //               << " upgrade_acceleration nivel " << static_cast<int>(it->second.upgrades.acceleration)
 //               << " -> acceleration=" << it->second.car.acceleration << std::endl;
 // }
@@ -425,19 +448,19 @@ void EventDispatcher::cheat_full_upgrade(Event &event)
 // {
 //     if (current_state != GameState::STARTING)
 //         return;
-    
+
 //     std::lock_guard<std::mutex> lock(players_map_mutex);
 //     auto it = players.find(event.client_id);
 //     if (it == players.end())
 //         return;
-    
+
 //     if (it->second.upgrades.handling >= MAX_UPGRADE_LEVEL)
 //         return;
-    
+
 //     it->second.car.handling *= HANDLING_UPGRADE_MULTIPLIER;
 //     it->second.upgrades.handling++;
-    
-//     std::cout << "[EventDispatcher] Player " << event.client_id 
+
+//     std::cout << "[EventDispatcher] Player " << event.client_id
 //               << " upgrade_handling nivel " << static_cast<int>(it->second.upgrades.handling)
 //               << " -> handling=" << it->second.car.handling << std::endl;
 // }
@@ -446,20 +469,20 @@ void EventDispatcher::cheat_full_upgrade(Event &event)
 // {
 //     if (current_state != GameState::STARTING)
 //         return;
-    
+
 //     std::lock_guard<std::mutex> lock(players_map_mutex);
 //     auto it = players.find(event.client_id);
 //     if (it == players.end())
 //         return;
-    
+
 //     if (it->second.upgrades.durability >= MAX_UPGRADE_LEVEL)
 //         return;
-    
+
 //     // Reduce el multiplicador de daño (menos daño recibido)
 //     it->second.car.durability *= (1.0f - DURABILITY_UPGRADE_REDUCTION);
 //     it->second.upgrades.durability++;
-    
-//     std::cout << "[EventDispatcher] Player " << event.client_id 
+
+//     std::cout << "[EventDispatcher] Player " << event.client_id
 //               << " upgrade_durability nivel " << static_cast<int>(it->second.upgrades.durability)
 //               << " -> durability=" << it->second.car.durability << std::endl;
 // }
